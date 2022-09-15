@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from Configuraciones.configuracion_cambio_plan import *
+from Configuraciones.configuracion_movimientos_parque import *
 
 
 from Querys.sql import *
