@@ -35,10 +35,7 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 # Configurar las siguientes  consultas de acuerdo al orden de la tabla params de la base de datos URM #
 # en el servidor 10.112.152.183                                                                       #
 #*****************************************************************************************************#
-
-   
-
-	RUTA="" # RUTA es la carpeta del File System (URM-3.5.1) donde se va a trabajar 
+RUTA="" # RUTA es la carpeta del File System (URM-3.5.1) donde se va a trabajar 
 
 	
 	#Verificar que la configuraciÃ³n de la entidad exista
@@ -125,8 +122,6 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
     LOGS=$RUTA_LOG/Log
 	#LOGPATH ruta base donde se guardan los logs
     LOGPATH=$RUTA_LOG/Log
-
-
 #------------------------------------------------------
 # VERIFICACION INICIAL 
 #------------------------------------------------------
@@ -161,7 +156,6 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
   eval monthless1=`echo $fecha_finMesAntf2 | cut -c5-6`    
   fechaMes=$yearless1$monthless1									  #Formato YYYYMM
   fechaIniMes=$yearless1$monthless1$day                            #Formato YYYYMMDD  
-  
 #------------------------------------------------------
 # CREACION DE LOGS 
 #------------------------------------------------------

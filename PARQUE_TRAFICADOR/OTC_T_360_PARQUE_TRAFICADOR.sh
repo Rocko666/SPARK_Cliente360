@@ -133,55 +133,6 @@
     LOGPATH=$RUTA_LOG/Log
 
 #------------------------------------------------------
-# DEFINICION DE FUNCIONES
-#------------------------------------------------------
-
-    # Guarda los resultados en los archivos de correspondientes y registra las entradas en la base de datos de control    
-    function log() #funcion 4 argumentos (tipo, tarea, salida, mensaje)
-    {
-        if [ "$#" -lt 4 ]; then
-            echo "Faltan argumentosen el llamado a la funcion"
-            return 1 # Numero de argumentos no completo
-        else
-            if [ "$1" = 'e' -o "$1" = 'E' ]; then
-                TIPOLOG=ERROR
-            else
-                TIPOLOG=INFO
-            fi
-                TAREA="$2"
-		            MEN="$4"
-				PASO_EJEC="$5"
-                FECHA=`date +%Y"-"%m"-"%d`
-                HORAS=`date +%H":"%M":"%S`
-                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
-                MSJ=$(echo " $TIME [$TIPOLOG] Tarea: $TAREA - $MEN ")
-                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
-                mysql -e "insert into logs values ('$ENTIDAD','$EJECUCION','$TIPOLOG','$FECHA','$HORAS','$TAREA',$3,'$MEN','$PASO_EJEC','$NAME_SHELL')"
-                echo $MSJ
-                return 0
-        fi
-    }
-	
-	
-    function stat() #funcion 4 argumentos (Tarea, duracion, fuente, destino)
-    {
-        if [ "$#" -lt 4 ]; then
-            echo "Faltan argumentosen el llamado a la funcion"
-            return 1 # Numero de argumentos no completo
-        else
-                TAREA="$1"
-		        DURACION="$2"
-                FECHA=`date +%Y"-"%m"-"%d`
-                HORAS=`date +%H":"%M":"%S`
-                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
-                MSJ=$(echo " $TIME [INFO] Tarea: $TAREA - Duracion : $DURACION ")
-                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
-                mysql -e "insert into stats values ('$ENTIDAD','$EJECUCION','$TAREA','$FECHA $HORAS','$DURACION',$3,'$4')"
-                echo $MSJ
-                return 0
-        fi
-    }
-#------------------------------------------------------
 # VERIFICACION INICIAL 
 #------------------------------------------------------
        
@@ -277,76 +228,7 @@ f_check=`date -d "$FECHAEJE" "+%d"`
         
         #Consulta a ejecutar
  
-	/usr/bin/hive -e "set hive.cli.print.header=false;	
-	set hive.vectorized.execution.enabled=false;
-	set hive.vectorized.execution.reduce.enabled=false;
-	
-	DROP TABLE $ESQUEMA_TEMP.OTC_T_voz_dias_tmp;
-	   
-	CREATE TABLE $ESQUEMA_TEMP.OTC_T_voz_dias_tmp AS
-    SELECT distinct cast(msisdn as bigint) msisdn, cast(fecha as bigint) fecha, 1 AS T_VOZ
-		from db_altamira.otc_t_ppcs_llamadas
-		where fecha >= $f_inicio and fecha <= $FECHAEJE
-		and tip_prepago in (select distinct codigo from db_reportes.otc_t_dev_cat_plan where marca='Movistar');
-		
-	DROP TABLE $ESQUEMA_TEMP.OTC_T_datos_dias_tmp;
-	
-	CREATE TABLE  $ESQUEMA_TEMP.OTC_T_datos_dias_tmp AS
-	select distinct cast(msisdn as bigint) msisdn,cast(feh_llamada as bigint) fecha,1 AS T_DATOS
-		from db_altamira.otc_t_ppcs_diameter 
-		where feh_llamada >= '$f_inicio' and feh_llamada <= '$FECHAEJE'
-		and tip_prepago in (select distinct codigo from db_reportes.otc_t_dev_cat_plan where marca='Movistar');
-		
-		
-	DROP TABLE $ESQUEMA_TEMP.OTC_T_sms_dias_tmp;
-
-	CREATE TABLE $ESQUEMA_TEMP.OTC_T_sms_dias_tmp AS
-	SELECT distinct cast(msisdn as bigint) msisdn,cast(fecha as bigint) fecha,1 AS T_SMS
-		from db_altamira.otc_t_ppcs_mecoorig
-		where fecha >= $f_inicio and fecha <= $FECHAEJE
-		and tip_prepago in (select distinct codigo from db_reportes.otc_t_dev_cat_plan where marca='Movistar');
-		
-	DROP TABLE $ESQUEMA_TEMP.OTC_T_cont_dias_tmp;
-	
-	CREATE TABLE $ESQUEMA_TEMP.OTC_T_cont_dias_tmp AS
-	SELECT distinct cast(msisdn as bigint) msisdn,cast(fecha as bigint) fecha,1 AS T_CONTENIDO
-		from db_altamira.otc_t_ppcs_content
-		where fecha >= $f_inicio and fecha <= $FECHAEJE
-		and tip_prepago in (select distinct codigo from db_reportes.otc_t_dev_cat_plan where marca='Movistar');
-
-	DROP TABLE	$ESQUEMA_TEMP.OTC_T_parque_traficador_dias_tmp;
-
-	CREATE TABLE $ESQUEMA_TEMP.OTC_T_parque_traficador_dias_tmp AS	
-	WITH contadias AS (
-	SELECT distinct msisdn,fecha FROM $ESQUEMA_TEMP.OTC_T_voz_dias_tmp
-	UNION
-	SELECT distinct msisdn,fecha FROM $ESQUEMA_TEMP.OTC_T_datos_dias_tmp
-	UNION
-	SELECT distinct msisdn,fecha FROM $ESQUEMA_TEMP.OTC_T_sms_dias_tmp
-	union
-	SELECT distinct msisdn,fecha FROM $ESQUEMA_TEMP.OTC_T_cont_dias_tmp
-	)
-	SELECT
-	CASE WHEN telefono LIKE '30%' THEN substr(telefono,3) ELSE telefono END AS TELEFONO
-	,$FECHAEJE fecha_corte
-	,sum(T_voz) dias_voz
-	,sum(T_datos) dias_datos
-	,sum(T_sms) dias_sms
-	,sum(T_CONTENIDO) dias_conenido
-	,sum(total) dias_total
-	from ( SELECT contadias.msisdn TELEFONO
-	,contadias.fecha
-	,COALESCE(p.T_voz,0) T_voz
-    , COALESCE(a.T_datos,0) T_datos
-    , COALESCE(m.T_sms,0) T_sms
-    , COALESCE(n.T_CONTENIDO,0) T_CONTENIDO
-    , COALESCE (p.T_voz,a.T_datos,m.T_sms,n.T_CONTENIDO,0) total
-    FROM   contadias
-    LEFT JOIN $ESQUEMA_TEMP.OTC_T_voz_dias_tmp p ON contadias.msisdn = p.msisdn and contadias.fecha=p.fecha
-    LEFT JOIN $ESQUEMA_TEMP.OTC_T_datos_dias_tmp a ON contadias.msisdn = a.msisdn and contadias.fecha=a.fecha
-    LEFT JOIN $ESQUEMA_TEMP.OTC_T_sms_dias_tmp m ON contadias.msisdn = m.msisdn and contadias.fecha=m.fecha
-    LEFT JOIN $ESQUEMA_TEMP.OTC_T_cont_dias_tmp n ON contadias.msisdn = n.msisdn and contadias.fecha=n.fecha) bb
-	group by telefono;" 2>> $LOGS/$EJECUCION_LOG.log
+	/usr/bin/hive -e "SQL1" 2>> $LOGS/$EJECUCION_LOG.log
 
 				# Verificacion de creacion tabla external
 		if [ $? -eq 0 ]; then
