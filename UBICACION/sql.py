@@ -32,7 +32,7 @@ WHERE franja_horaria={f_horaria}
 
 # db_cs_altas.otc_t_BAJAS_bi
 @cargar_consulta
-def fun_otc_t_bajas_bi(base_ipaccess_consultas, mksharevozdatos_90, fecha_ejecucion):
+def fun_mksharevozdatos_90_max(base_ipaccess_consultas, mksharevozdatos_90, fecha_ejecucion):
     qry = '''
         SELECT max(fecha_proceso) max_fecha 
         FROM {bdd_consultas}.{tabla_mksharevozdatos_90} 

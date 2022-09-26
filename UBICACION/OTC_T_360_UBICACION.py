@@ -27,7 +27,6 @@ def proceso(sqlContext, val_fecha_ejecucion):
     valor_str_retorno = func_proceso_cambioplan_principal(sqlContext, val_fecha_ejecucion)
     return valor_str_retorno
 
-
 if __name__ == '__main__':
     
     parser = argparse.ArgumentParser(description=msg())
