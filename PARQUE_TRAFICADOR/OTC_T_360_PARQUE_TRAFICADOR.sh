@@ -5,11 +5,6 @@
 # Las tildes hansido omitidas intencionalmente en el script              #
 #------------------------------------------------------------------------#
 
-##########################################################################
-#------------------------------------------------------
-# VARIABLES CONFIGURABLES POR PROCESO (MODIFICAR)
-#------------------------------------------------------
-	
 	ENTIDAD=OTC_T_360_PARQUE_TRAFICADOR
     # AMBIENTE (1=produccion, 0=desarrollo)
     ((AMBIENTE=1))
@@ -18,35 +13,6 @@
 	PASO=$2
 	COLA_EJECUCION=default;
 	#COLA_EJECUCION=capa_semantica;
-	
-		
-#*****************************************************************************************************#
-#                                            Â¡Â¡ ATENCION !!                                           #
-#                                                                                                     #
-# Configurar las siguientes  consultas de acuerdo al orden de la tabla params de la# base de datos URM #
-# en el servidor 10.112.152.183                                                                       #
-#*****************************************************************************************************#
-
-	isnum() { awk -v a="$1" 'BEGIN {print (a == a + 0)}'; }
-	
-	function isParamListNum() #parametro es el grupo de valores separados por ;
-    {
-        local value
-		local isnumPar
-        for value in `echo "$1" | sed -e 's/;/\n/g'`
-        do
-		    isnumPar=`isnum "$value"`
-            if [  "$isnumPar" ==  "0" ]; then
-                ((rc=999))
-                echo " `date +%a" "%d"/"%m"/"%Y" "%X` [ERROR] $rc Parametro $value $2 no son numericos"
-                exit $rc
-			fi
-        done	     
-	
-	}  
-
-	RUTA="" # RUTA es la carpeta del File System (URM-3.5.1) donde se va a trabajar 
-
 	
 	#Verificar que la configuraciÃ³n de la entidad exista
 	if [ "$AMBIENTE" = "1" ]; then
@@ -61,12 +27,6 @@
         exit $rc
     fi
 	
-	# Verificacion de fecha de ejecucion
-    if [ -z "$FECHAEJE" ]; then #valida que este en blanco el parametro
-        ((rc=2))
-        echo " $TIME [ERROR] $rc Falta el parametro de fecha de ejecucion del programa"
-        exit $rc
-    fi
 	
 	
 	if [ "$AMBIENTE" = "1" ]; then
@@ -133,25 +93,6 @@
     LOGPATH=$RUTA_LOG/Log
 
 #------------------------------------------------------
-# VERIFICACION INICIAL 
-#------------------------------------------------------
-       
-        #Verificar si existe la ruta de sistema 
-        if ! [ -e "$RUTA" ]; then
-            ((rc=10))
-            echo "$TIME [ERROR] $rc la ruta provista en el script no existe en el sistema o no tiene permisos sobre la misma. Cree la ruta con los permisos adecuados y vuelva a ejecutar el programa"
-            exit $rc
-        else 
-            if ! [ -e "$LOGPATH" ]; then
-				mkdir -p $RUTA/$ENTIDAD/Log
-					if ! [ $? -eq 0 ]; then
-						((rc=11))
-						echo " $TIME [ERROR] $rc no se pudo crear la ruta de logs"
-						exit $rc
-					fi
-			fi
-        fi
-#------------------------------------------------------
 # DEFINICION DE FECHAS
 #------------------------------------------------------
 
@@ -165,57 +106,7 @@ f_check=`date -d "$FECHAEJE" "+%d"`
         fi
 	echo $f_inicio" Fecha Inicio"
 	echo $FECHAEJE" Fecha Ejecucion"
- #------------------------------------------------------
-# CREACION DE LOGS 
-#------------------------------------------------------
-    #Verificar si hay parÃ¡metro de re-ejecuciÃ³n
-    if [ "$PASO" = "0" ]; then
 
-        echo $DIA-$HORA" Creacion de directorio para almacenamiento de logs" 
-        
-        #Si ya existe la ruta en la que voy a trabajar, eliminarla
-        if  [ -e "$LOGS" ]; then
-            #eliminar el directorio LOGS si existiese
-            #rm -rf $LOGS
-			echo $DIA-$HORA" Directorio "$LOGS " ya existe"			
-		else
-			#Cree el directorio LOGS para la ubicacion ingresada		
-			mkdir -p $LOGS
-			#Validacion de greacion completa
-            if  ! [ -e "$LOGS" ]; then
-            (( rc = 21)) 
-            echo $DIA-$HORA" Error $rc : La ruta $LOGS no pudo ser creada" 
-			log e "CREAR DIRECTORIO LOG" $rc  " $DIA-$HORA' Error $rc: La ruta $LOGS no pudo ser creada'" $PASO	
-            exit $rc
-            fi
-        fi
-    
-        # CREACION DEL ARCHIVO DE LOG 
-        echo "# Entidad: "$ENTIDAD" Fecha: "$FECHAEJE $DIA"-"$HORA > $LOGS/$EJECUCION_LOG.log
-        if [ $? -eq 0 ];	then
-            echo "# Fecha de inicio: "$DIA" "$HORA >> $LOGS/$EJECUCION_LOG.log
-            echo "---------------------------------------------------------------------" >> $LOGS/$EJECUCION_LOG.log
-        else
-            (( rc = 22))
-            echo $DIA-$HORA" Error $rc : Fallo al crear el archivo de log $LOGS/$EJECUCION_LOG.log"
-			log e "CREAR ARCHIVO LOG" $rc  " $DIA-$HORA' Error $rc: Fallo al crear el archivo de log $LOGS/$EJECUCION_LOG.log'" $PASO
-            exit $rc
-        fi
-        
-        # CREACION DE ARCHIVO DE ERROR 
-        
-        echo "# Entidad: "$ENTIDAD" Fecha: "$FECHAEJE $DIA"-"$HORA > $LOGS/$EJECUCION_LOG.log
-        if [ $? -eq 0 ];	then
-            echo "# Fecha de inicio: "$DIA" "$HORA >> $LOGS/$EJECUCION_LOG.log
-            echo "---------------------------------------------------------------------" >> $LOGS/$EJECUCION_LOG.log
-        else
-            (( rc = 23)) 
-            echo $DIA-$HORA" Error $rc : Fallo al crear el archivo de error $LOGS/$EJECUCION_LOG.log"
-			log e "CREAR ARCHIVO LOG ERROR" $rc  " $DIA-$HORA' Error $rc: Fallo al crear el archivo de error $LOGS/$EJECUCION_LOG.log'" $PASO
-            exit $rc
-        fi
-	PASO=2
-    fi
 
 #------------------------------------------------------
 # EJECUCION DE CONSULTA EN HIVE (INSERTAR TEMP)
@@ -245,13 +136,4 @@ f_check=`date -d "$FECHAEJE" "+%d"`
 	 PASO=3
     fi
 	
-#------------------------------------------------------
-# LIMPIEZA DE ARCHIVOS TEMPORALES 
-#------------------------------------------------------
-#BB	    /usr/bin/hive -e "set hive.cli.print.header=false ; 
-#BB		drop table $ESQUEMA_TEMP.OTC_T_voz_dias_tmp;
-#BB		drop table $ESQUEMA_TEMP.OTC_T_datos_dias_tmp;
-#BB		drop table $ESQUEMA_TEMP.OTC_T_sms_dias_tmp;
-#BB		drop table $ESQUEMA_TEMP.OTC_T_cont_dias_tmp;" 2>> $LOGS/$EJECUCION_LOG.log	
-
 exit $rc

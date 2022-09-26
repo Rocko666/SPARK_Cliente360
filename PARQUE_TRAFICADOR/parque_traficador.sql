@@ -1,12 +1,3 @@
-SET
-hive.cli.print.header = FALSE;
-
-SET
-hive.vectorized.execution.enabled = FALSE;
-
-SET
-hive.vectorized.execution.reduce.enabled = FALSE;
-
 DROP TABLE $ESQUEMA_TEMP.OTC_T_voz_dias_tmp;
 
 CREATE TABLE $ESQUEMA_TEMP.OTC_T_voz_dias_tmp AS
@@ -87,6 +78,8 @@ WHERE
 	WHERE
 		marca = 'Movistar');
 
+
+--- las siguientes istrucciones no estan en querys
 DROP TABLE $ESQUEMA_TEMP.OTC_T_parque_traficador_dias_tmp;
 
 CREATE TABLE $ESQUEMA_TEMP.OTC_T_parque_traficador_dias_tmp AS	
