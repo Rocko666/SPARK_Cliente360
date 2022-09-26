@@ -10,7 +10,7 @@ import pandas as pd
 
 @seguimiento_transformacion
 # Funcion Principal 
-def func_proceso_cambioplan_principal(sqlContext, val_fecha_ejecucion, val_base_reportes, val_otc_t_360_ubicacion, val_franja_horaria):
+def func_proceso_principal(sqlContext, val_fecha_ejecucion, val_base_reportes, val_otc_t_360_ubicacion, val_franja_horaria):
     
     # controlpoint1    
     val_str_controlpoint1, df_mksharevozdatos_90, df_mksharevozdatos_90_max, df_mksharevozdatos_90_final = fun_controlpoint1(sqlContext, val_fecha_ejecucion, val_franja_horaria)
@@ -63,12 +63,12 @@ def fun_controlpoint2(sqlContext, df_mksharevozdatos_90_final, val_fecha_ejecuci
 
 @seguimiento_transformacion
 # Generamos un dataframe en base a los datos de la tabla db_cs_altas.PLAN_1
-def fun_cargar_df_mksharevozdatos_90(sqlContext):
+def fun_cargar_df_mksharevozdatos_90(sqlContext, franja_horaria):
     df_mksharevozdatos_90_tmp = fun_mksharevozdatos_90(sqlContext, val_base_ipaccess_consultas, val_mksharevozdatos_90, val_franja_horaria)
     
     df_mksharevozdatos_90 = df_mksharevozdatos_90_tmp.cache()
         
-    str_datos_df = fun_obtener_datos_df(val_cp_se_calcula, df_mksharevozdatos_90)
+    str_datos_df = fun_obtener_datos_df(val_se_calcula, df_mksharevozdatos_90)
     return df_mksharevozdatos_90, "Transformacion => fun_cargar_df_mksharevozdatos_90 => df_mksharevozdatos_90" + str_datos_df
 
 @seguimiento_transformacion
@@ -78,7 +78,7 @@ def fun_cargar_df_mksharevozdatos_90_max(sqlContext):
     
     df_mksharevozdatos_90_max = df_mksharevozdatos_90_max_tmp.cache()
         
-    str_datos_df = fun_obtener_datos_df(val_cp_se_calcula, df_mksharevozdatos_90_max)
+    str_datos_df = fun_obtener_datos_df(val_se_calcula, df_mksharevozdatos_90_max)
     return df_mksharevozdatos_90_max, "Transformacion => fun_cargar_df_mksharevozdatos_90_max => df_mksharevozdatos_90_max" + str_datos_df
 
 @seguimiento_transformacion
@@ -92,7 +92,7 @@ def fun_cargar_df_mksharevozdatos_90_final(sqlContext, df_parque_actual_cp_1, df
     
     df_mksharevozdatos_90_final = df_mksharevozdatos_90_final_tmp.cache()
     
-    str_datos_df = fun_obtener_datos_df(val_cp_se_calcula,df_mksharevozdatos_90_final)
+    str_datos_df = fun_obtener_datos_df(val_se_calcula,df_mksharevozdatos_90_final)
     return df_mksharevozdatos_90_final, "Transformacion => fun_cargar_df_mksharevozdatos_90_final => df_mksharevozdatos_90_final" + str_datos_df
 
 ### control point 2

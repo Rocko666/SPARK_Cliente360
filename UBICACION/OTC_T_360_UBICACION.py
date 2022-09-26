@@ -22,9 +22,9 @@ def entrada(reproceso, formato_fecha, fecha_ejecucion):
     return val_fecha_proc
 
 # Unificamos las funciones que vamos a ejecutar
-def proceso(sqlContext, val_fecha_ejecucion):
+def proceso(sqlContext, fecha_ejecucion, base_reportes, otc_t_360_ubicacion, franja_horaria):
 
-    valor_str_retorno = func_proceso_cambioplan_principal(sqlContext, val_fecha_ejecucion)
+    valor_str_retorno = func_proceso_principal(sqlContext, fecha_ejecucion, base_reportes, otc_t_360_ubicacion, franja_horaria)
     return valor_str_retorno
 
 if __name__ == '__main__':
@@ -58,7 +58,7 @@ if __name__ == '__main__':
     try:
         val_fecha_proc = entrada(val_reproceso, val_formato_fecha, val_fecha_ejecucion)
         print(msg_succ("\n val_fecha_proc: %s \n" %(val_fecha_proc)))
-        val_proceso = proceso(sqlContext, val_fecha_ejecucion)
+        val_proceso = proceso(sqlContext, val_fecha_ejecucion, val_base_reportes, val_otc_t_360_ubicacion, val_franja_horaria)
         print(msg_succ("Ejecucion Exitosa: \n %s " % val_proceso))
             
     except Exception as e:

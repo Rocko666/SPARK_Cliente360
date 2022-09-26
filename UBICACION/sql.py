@@ -26,7 +26,7 @@ def fun_mksharevozdatos_90(base_ipaccess_consultas, mksharevozdatos_90, franja_h
 ,cod_zipcode
 ,fecha_proceso
 FROM {bdd_consultas}.{tabla_mksharevozdatos_90}
-WHERE franja_horaria={f_horaria}
+WHERE franja_horaria='{f_horaria}'
     '''.format(bdd_consultas=base_ipaccess_consultas, tabla_mksharevozdatos_90=mksharevozdatos_90, f_horaria=franja_horaria)
     return qry 
 

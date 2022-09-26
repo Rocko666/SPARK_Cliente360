@@ -35,8 +35,8 @@ def validar_fecha(fecha, formato):
 
 def last_day_of_month(date_value):
     return date_value.replace(day = monthrange(date_value.year, date_value.month)[1])
- 
- 
+
+
 def fun_obtener_datos_df(se_calcula,df):
     val_cadena = ''
     if se_calcula:
@@ -80,8 +80,8 @@ def fun_obtener_fecha_particion(sqlContext, bdd, nombre_tabla, fec_ini, fec_fin,
 # FECHAS PROCESO 
 def obtener_fecha_del_proceso(fecha_ejecucion, formato_fecha):
     # SET FECHA_PROC
-    val_fecha_proc = datetime.strptime(str(fecha_ejecucion), formato_fecha_sin_hms).date()
-    val_fecha_proc = val_fecha_proc.strftime(formato_fecha_sin_hms)
+    val_fecha_proc = datetime.strptime(str(fecha_ejecucion), formato_fecha).date()
+    val_fecha_proc = val_fecha_proc.strftime(formato_fecha)
         
     return val_fecha_proc
 

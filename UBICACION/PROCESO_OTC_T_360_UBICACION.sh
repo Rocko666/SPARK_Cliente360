@@ -25,11 +25,11 @@ echo "Paramatros enviados al shell:" $'\n(1)' $1 $'\n(2)' $2 $'\n(3)' $3 $'\n(4)
 ENTIDAD=D_OTC_T_360_UBICACION
 VAL_CADENA_JDBC=`mysql -N  <<<"select valor from params_des where ENTIDAD = 'D_PARAM_BEELINE' AND parametro = 'VAL_CADENA_JDBC';"`
 VAL_COLA_EJECUCION=`mysql -N  <<<"select valor from params_des where ENTIDAD = 'D_PARAM_BEELINE' AND parametro = 'VAL_COLA_EJECUCION';"`
-VAL_USUARIO_BEELINE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and parametro = 'VAL_USER';"`
+VAL_USUARIO_BEELINE=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and parametro = 'VAL_USER';"`
 
 VAL_NOMBRE_PROCESO_HIVE_QUERY='PySparkShell_OTC_T_360_UBICACION'
 #Verificar demas parametros de Mysql
-if [ -z "$VAL_COLA_EJECUCION" ] || [ -z "$VAL_CADENA_JDBC" ] || [ -z "$VAL_USUARIO_BEELINE" ]; then
+if [ -z "$VAL_COLA_EJECUCION" ] || [ -z "$VAL_CADENA_JDBC" ] || [ -z "$VAL_USUARIO_BEELINE" ] ; then
     error=1
     echo " $TIME [ERROR] $rc alguno de los parametros de myqsql esta vacio o nulo"
     exit $error
@@ -89,4 +89,4 @@ fi
 
 exit $error
 
-# sh -x /home/nae108834/PRY_PYSPARK_MOVIMIENTOS/Bin/PROCESO_CAMBIO_PLAN.sh 20220831 0 /home/nae108834/ SPARK_Cliente360 OTC_T_360_UBICACION /usr/hdp/current/spark2-client/bin/spark-submit
+# sh -x /home/nae108834/SPARK_Cliente360/OTC_T_360_UBICACION/Bin/OTC_T_360_UBICACION.sh 20220831 0 /home/nae108834/SPARK_Cliente360 OTC_T_360_UBICACION OTC_T_360_UBICACION /usr/hdp/current/spark2-client/bin/spark-submit
