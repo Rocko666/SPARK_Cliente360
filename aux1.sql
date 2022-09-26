@@ -64,7 +64,7 @@ set hive.cli.print.header=false ;
 
 
 
-			df_a.show(5)
+df_a.show(5)
 df_mpn.show(5)
 df_ri.show(5)
 df_u.show(5)

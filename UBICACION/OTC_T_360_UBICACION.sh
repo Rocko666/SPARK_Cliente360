@@ -20,93 +20,82 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 #------------------------------------------------------
 # VARIABLES CONFIGURABLES POR PROCESO (MODIFICAR)
 #------------------------------------------------------
-	
-	ENTIDAD=OTC_T_360_UBICACION
-    # AMBIENTE (1=produccion, 0=desarrollo)
-    ((AMBIENTE=0))
-    FECHAEJE=$1 # yyyyMMdd
-    # Variable de control de que paso ejecutar
-	
-	PASO=$2
-		
-#*****************************************************************************************************#
-#                                            Â¡Â¡ ATENCION !!                                           #
-#                                                                                                     #
-# Configurar las siguientes  consultas de acuerdo al orden de la tabla params de la base de datos URM #
-# en el servidor 10.112.152.183                                                                       #
-#*****************************************************************************************************#
-RUTA="" # RUTA es la carpeta del File System (URM-3.5.1) donde se va a trabajar 
 
-	
-	#Verificar que la configuraciÃ³n de la entidad exista
-	if [ "$AMBIENTE" = "1" ]; then
-		ExisteEntidad=`mysql -N  <<<"select count(*) from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
-	else
-		ExisteEntidad=`mysql -N  <<<"select count(*) from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
-	fi
-	 
-    if ! [ "$ExisteEntidad" -gt 0 ]; then #-gt mayor a -lt menor a
-       echo " $TIME [ERROR] $rc No existen parametros para la entidad $ENTIDAD"
-        ((rc=1))
-        exit $rc
-    fi
-	
-	# Verificacion de fecha de ejecucion
-    if [ -z "$FECHAEJE" ]; then #valida que este en blanco el parametro
-        ((rc=2))
-        echo " $TIME [ERROR] $rc Falta el parametro de fecha de ejecucion del programa"
-        exit $rc
-    fi
-	
-	
-	if [ "$AMBIENTE" = "1" ]; then
-		# Cargar Datos desde la base
-		RUTA=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
-		#Limpiar (1=si, 0=no)
-		TEMP=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
-		  if [ $TEMP = "1" ];then
-		((LIMPIAR=1))
-		else
-		((LIMPIAR=0))
-		  fi
-		NAME_SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
-		RUTA_LOG=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
-		
-	else 
-		# Cargar Datos desde la base
-		RUTA=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
-		#Limpiar (1=si, 0=no)
-		TEMP=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
-		  if [ $TEMP = "1" ];then
-		((LIMPIAR=1))
-		else
-		((LIMPIAR=0))
-		  fi
-		NAME_SHELL=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
-		RUTA_LOG=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
+ENTIDAD=OTC_T_360_UBICACION
+# AMBIENTE (1=produccion, 0=desarrollo)
+((AMBIENTE=0))
+FECHAEJE=$1 # yyyyMMdd
+# Variable de control de que paso ejecutar
+PASO=$2
+
+#Verificar que la configuraciÃ³n de la entidad exista
+if [ "$AMBIENTE" = "1" ]; then
+    ExisteEntidad=`mysql -N  <<<"select count(*) from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
+else
+    ExisteEntidad=`mysql -N  <<<"select count(*) from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
+fi
+    
+if ! [ "$ExisteEntidad" -gt 0 ]; then #-gt mayor a -lt menor a
+    echo " $TIME [ERROR] $rc No existen parametros para la entidad $ENTIDAD"
+    ((rc=1))
+    exit $rc
+fi
+
+# Verificacion de fecha de ejecucion
+if [ -z "$FECHAEJE" ]; then #valida que este en blanco el parametro
+    ((rc=2))
+    echo " $TIME [ERROR] $rc Falta el parametro de fecha de ejecucion del programa"
+    exit $rc
+fi
+
+
+if [ "$AMBIENTE" = "1" ]; then
+    # Cargar Datos desde la base
+    RUTA=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
+    #Limpiar (1=si, 0=no)
+    TEMP=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
+        if [ $TEMP = "1" ];then
+    ((LIMPIAR=1))
+    else
+    ((LIMPIAR=0))
+        fi
+    NAME_SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
+    RUTA_LOG=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
+    
+else 
+    # Cargar Datos desde la base
+    RUTA=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
+    #Limpiar (1=si, 0=no)
+    TEMP=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
+        if [ $TEMP = "1" ];then
+    ((LIMPIAR=1))
+    else
+    ((LIMPIAR=0))
+        fi
+    NAME_SHELL=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
+    RUTA_LOG=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
 
 	fi	
 	
-	 #Verificar si tuvo datos de la base
-    TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
-    if [ -z "$RUTA" ]; then
-    ((rc=3))
-    echo " $TIME [ERROR] $rc No se han obtenido los valores necesarios desde la base de datos"
-    exit $rc
-    fi
-	
-	# Verificacion de re-ejecucion
-    if [ -z "$PASO" ]; then
-        PASO=0
-        echo " $TIME [INFO] $rc Este es un proceso normal"
-    else
-        echo " $TIME [INFO] $rc Este es un proceso de re-ejecucion"
+#Verificar si tuvo datos de la base
+TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
+if [ -z "$RUTA" ]; then
+((rc=3))
+echo " $TIME [ERROR] $rc No se han obtenido los valores necesarios desde la base de datos"
+exit $rc
+fi
 
-    fi
+# Verificacion de re-ejecucion
+if [ -z "$PASO" ]; then
+    PASO=0
+    echo " $TIME [INFO] $rc Este es un proceso normal"
+else
+    echo " $TIME [INFO] $rc Este es un proceso de re-ejecucion"
+
+fi
 #------------------------------------------------------
 # VARIABLES DE OPERACION Y AUTOGENERADAS
 #------------------------------------------------------
-   
     EJECUCION=$ENTIDAD$FECHAEJE
     #DIA: Obtiene la fecha del sistema
     DIA=`date '+%Y%m%d'` 

@@ -5,101 +5,37 @@ from Funciones.funcion import *
 
 # db_cs_altas.OTC_T_ALTAS_BI
 @cargar_consulta
-def fun_otc_t_altas_bi(base_pro_transfer_consultas, otc_t_altas_bi):
+def fun_mksharevozdatos_90(base_ipaccess_consultas, mksharevozdatos_90, franja_horaria):
     qry = '''
-        SELECT
-            'ALTA' AS tipo
-            , telefono
-            , fecha_alta
-            , canal
-            , sub_canal
-            , CAST( NULL AS STRING) AS nuevo_sub_canal
-            , portabilidad
-            , operadora_origen
-            , 'MOVISTAR (OTECEL)' AS operadora_destino
-            , CAST( NULL AS STRING) AS motivo
-            , distribuidor
-            , oficina
-            , CASE
-                WHEN upper(linea_negocio) LIKE '%POSPAGO%'
-                AND upper(portabilidad)= 'NO' THEN 'ALTA POSPAGO'
-                WHEN upper(linea_negocio) LIKE '%POSPAGO%'
-                AND upper(portabilidad)= 'SI' THEN 'ALTA PORTABILIDAD POSPAGO'
-                WHEN upper(linea_negocio) LIKE '%POSPAGO%'
-                AND upper(portabilidad)= 'INTRA' THEN 'ALTA PORTABILIDAD POSPAGO'
-                WHEN upper(linea_negocio) LIKE '%PREPAGO%'
-                AND upper(portabilidad)= 'NO' THEN 'ALTA PREPAGO'
-                WHEN upper(linea_negocio) LIKE '%PREPAGO%'
-                AND upper(portabilidad)= 'SI' THEN 'ALTA PORTABILIDAD PREPAGO'
-                WHEN upper(linea_negocio) LIKE '%PREPAGO%'
-                AND upper(portabilidad)= 'INTRA' THEN 'ALTA PORTABILIDAD PREPAGO'
-                ELSE ''
-            END AS sub_movimiento
-            , imei
-            , equipo
-            , icc
-            , ciudad
-            , provincia
-            , cod_categoria
-            , domain_login_ow
-            , nombre_usuario_ow
-            , domain_login_sub
-            , nombre_usuario_sub
-            , forma_pago
-            , cod_da
-            , nom_usuario
-            , canal_comercial
-            , campania
-            , codigo_distribuidor
-            , nom_distribuidor
-            , codigo_plaza
-            , nom_plaza
-            , region
-            , CAST( NULL AS STRING) AS ruc_distribuidor
-            , provincia_ivr
-            , ejecutivo_asignado_ptr
-            , area_ptr
-            , codigo_vendedor_da_ptr
-            , jefatura_ptr
-            , provincia_ms
-            , codigo_usuario
-            , calf_riesgo
-            , cap_endeu
-            , valor_cred
-        FROM {bdd_consultas}.{tabla_otc_t_altas_bi}
-        WHERE p_fecha_proceso={fecha_movimientos_cp} and marca ='TELEFONICA'
-    '''.format(bdd_consultas=base_pro_transfer_consultas, tabla_otc_t_altas_bi=otc_t_altas_bi)
+        SELECT id_cliente as telefono
+,franja_horaria 
+,id_celda
+,lat_celda
+,lon_celda
+,dpa_sector
+,cod_sector
+,dpa_zona
+,cod_zona
+,dpa_parroquia
+,cod_parroquia
+,dpa_canton
+,cod_canton
+,dpa_provincia
+,cod_provincia
+,dpa_zipcode
+,cod_zipcode
+,fecha_proceso
+FROM {bdd_consultas}.{tabla_mksharevozdatos_90}
+WHERE franja_horaria={f_horaria}
+    '''.format(bdd_consultas=base_ipaccess_consultas, tabla_mksharevozdatos_90=mksharevozdatos_90, f_horaria=franja_horaria)
     return qry 
 
 # db_cs_altas.otc_t_BAJAS_bi
 @cargar_consulta
-def fun_otc_t_bajas_bi(base_pro_transfer_consultas, otc_t_bajas_bi):
+def fun_otc_t_bajas_bi(base_ipaccess_consultas, mksharevozdatos_90, fecha_ejecucion):
     qry = '''
-        SELECT
-            'BAJA' AS tipo
-            , telefono
-            , fecha_baja AS fecha
-            , CAST(NULL AS string) AS canal
-            , CAST(NULL AS string) AS sub_canal
-            , CAST(NULL AS string) AS nuevo_sub_canal
-            , portabilidad
-            , 'movistar (otecel)' AS operadora_origen
-            , operadora_destino
-            , motivo_baja AS motivo
-            , CAST(NULL AS string) AS distribuidor
-            , CAST(NULL AS string) AS oficina
-            --insertado en rf
-            , 'baja chargeback' AS sub_movimiento
-            , codigo_usuario AS domain_login_ow
-            , ejecutivo_asignado_ptr
-            , area_ptr
-            , codigo_vendedor_da_ptr
-            , jefatura_ptr
-            ,(CASE
-                WHEN lower(motivo_baja) = 'cobranzas' THEN 'involuntario'
-                ELSE 'voluntario'
-            END) AS vol_invol
-        FROM {bdd_consultas}.{tabla_otc_t_bajas_bi}
-        WHERE p_fecha_proceso={fecha_movimientos_cp} and marca ='TELEFONICA'
-    '''.format(bdd_consultas=base_pro_transfer_consultas, tabla_otc_t_bajas_bi=otc_t_bajas_bi)
+        SELECT max(fecha_proceso) max_fecha 
+        FROM {bdd_consultas}.{tabla_mksharevozdatos_90} 
+        WHERE fecha_proceso <= {fecha_ejecucion}
+    '''.format(bdd_consultas=base_ipaccess_consultas, tabla_mksharevozdatos_90=mksharevozdatos_90, fecha_eje=fecha_ejecucion)
     return qry 
