@@ -24,7 +24,7 @@ select numero_telefono
 , fecha_proceso --cada dia  del rango
 , sum(valor_recarga_base)/1.12 valor_recargas --retitar el IVA
 , count(1) cantidad_recargas
-from db_cs_recargas.otc_t_cs_detalle_recargas a
+from db_cs_recargas.otc_t_cs_detalle_recargas a -- transactional TRUE
 inner join db_altamira.par_origen_recarga ori  -- usar el cat?logo de recargas v?lidas
 on ori.ORIGENRECARGAID= a.origen_recarga_aa
 where (fecha_proceso >= $fechaIni_menos_3meses AND fecha_proceso <= $fecha_eje2)
@@ -47,7 +47,7 @@ case when r.operadora='MOVISTAR' then 'TELEFONICA' else r.operadora end as marca
 ,SUM(r.valor_recarga_base)/1.12 coste--Para quitar el valor del impuesto
 ,count(*) cantidad --combos o bonos seg?n el tipo de la tabla db_reportes.cat_bonos_pdv , hacer el case correspondiente
 ,$fecha_eje2 as fecha_proc ------- parametro del ultimo dia del rango
-from db_cs_recargas.otc_T_cs_detalle_recargas r
+from db_cs_recargas.otc_T_cs_detalle_recargas r -- transactional TRUE
 inner join (select distinct codigo_pm, tipo from db_reportes.cat_bonos_pdv ) b --INNER join db_reportes.cat_bonos_pdv b
 on (b.codigo_pm=r.codigo_paquete
 and (r.codigo_paquete<>''

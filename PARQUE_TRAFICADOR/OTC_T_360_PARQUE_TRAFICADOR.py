@@ -12,17 +12,18 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 # Validamos los parametros de entrada
-def entrada(reproceso, formato_fecha, fecha_ejecucion):
+def entrada(reproceso, formato_fecha, fecha_ejecucion, fecha_inicio):
     validar_fecha(fecha_ejecucion, formato_fecha)
+    validar_fecha(fecha_inicio, formato_fecha)
     
-    val_fecha_proc = obtener_fecha_del_proceso(fecha_ejecucion, formato_fecha)
+    val_fecha_proc, val_fecha_ini = obtener_fecha_del_proceso(fecha_ejecucion, formato_fecha)
     
-    return val_fecha_proc
+    return val_fecha_proc, val_fecha_ini
 
 # Unificamos las funciones que vamos a ejecutar
-def proceso(sqlContext, fecha_ejecucion, base_reportes, otc_t_360_ubicacion, franja_horaria):
+def proceso(sqlContext, fecha_ejecucion, fecha_inicio, base_reportes, otc_t_360_ubicacion):
 
-    valor_str_retorno = func_proceso_principal(sqlContext, fecha_ejecucion, base_reportes, otc_t_360_ubicacion, franja_horaria)
+    valor_str_retorno = func_proceso_principal(sqlContext, fecha_ejecucion, fecha_inicio, base_reportes, base_altamira)
     return valor_str_retorno
 
 if __name__ == '__main__':

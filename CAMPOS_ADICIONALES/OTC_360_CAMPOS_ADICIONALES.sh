@@ -15,13 +15,13 @@ SQOOP_HOME=/usr/hdp/current/sqoop-client
 
 export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HIVE_HOME}/lib/hive-metastore-${version}.jar,$HIVE_HOME/lib/libthrift-0.9.3.jar,$HIVE_HOME/lib/hive-exec-${version}.jar,$HIVE_HOME/lib/libfb303-0.9.3.jar,$HIVE_HOME/lib/jdo-api-3.0.1.jar,$SQOOP_HOME/lib/slf4j-api-1.7.7.jar,$HIVE_HOME/lib/hive-cli-${version}.jar
 
+
 ##########################################################################
 #------------------------------------------------------
 # VARIABLES CONFIGURABLES POR PROCESO (MODIFICAR)
 #------------------------------------------------------
 	
-	ENTIDAD=OTC_T_360_GENERAL_PREVIO
-
+	ENTIDAD=OTC_T_360_CAMPOS_ADICIONALES
     # AMBIENTE (1=produccion, 0=desarrollo)
     ((AMBIENTE=1))
     FECHAEJE=$1 # yyyyMMdd
@@ -61,7 +61,7 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 	if [ "$AMBIENTE" = "1" ]; then
 		ExisteEntidad=`mysql -N  <<<"select count(*) from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
 	else
-		ExisteEntidad=`mysql -N  <<<"select count(*) from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
+		ExisteEntidad=`mysql -N  <<<"select count(*) from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
 	fi
 	 
     if ! [ "$ExisteEntidad" -gt 0 ]; then #-gt mayor a -lt menor a
@@ -81,17 +81,30 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 	if [ "$AMBIENTE" = "1" ]; then
 		# Cargar Datos desde la base
 		RUTA=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
-		NAME_SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
-        ESQUEMA_TABLA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'ESQUEMA_TABLA' );"`
+		#Limpiar (1=si, 0=no)
+		TEMP=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
+		if [ $TEMP = "1" ];then
+			((LIMPIAR=1))
+			else
+			((LIMPIAR=0))
+		fi
+	NAME_SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
+        ESQUEMA_TEMP=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'ESQUEMA_TEMP' );"`
     	RUTA_LOG=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
 		
 	else 
 		# Cargar Datos desde la base
-		RUTA=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
-		NAME_SHELL=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
-        ESQUEMA_TABLA=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'ESQUEMA_TABLA' );"`
-		RUTA_LOG=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
-		
+		RUTA=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
+		#Limpiar (1=si, 0=no)
+		TEMP=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
+		if [ $TEMP = "1" ];then
+			((LIMPIAR=1))
+			else
+			((LIMPIAR=0))
+		fi
+		NAME_SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
+	        ESQUEMA_TEMP=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'ESQUEMA_TEMP' );"`
+		RUTA_LOG=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`		
 	fi	
 	
 	 #Verificar si tuvo datos de la base
@@ -155,43 +168,36 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
   day="01"
   fechaMes=$year$month
   fechaIniMes=$year$month$day                            #Formato YYYYMMDD
-  fecha_eje1=`date '+%Y-%m-%d' -d "$FECHAEJE"`
-  let fecha_hoy=$fecha_eje1
-  fecha_eje2=`date '+%Y%m%d' -d "$FECHAEJE"`
-  let fecha_proc1=$fecha_eje2
-  fecha_eje4=`date '+%d-%m-%Y' -d "$FECHAEJE"`
-  let fecha_g=$fecha_eje4
-  fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "$fechaIniMes"`
-  let fechainiciomes=$fecha_inico_mes_1_1
-  fecha_inico_mes_1_2=`date '+%Y%m%d' -d "$fechaIniMes"`
-  let fechainiciomes=$fecha_inico_mes_1_2
-  fecha_eje3=`date '+%Y%m%d' -d "$FECHAEJE-1 day"`
-  let fecha_proc_menos1=$fecha_eje3
-  fechamas1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
-  let fecha_mas_uno=$fechamas1
-  let fechaInimenos1mes=$fechaInimenos1mes_1*1
-  fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`						  
-  let fechaInimenos1mes=$fechaInimenos1mes_1*1
-  fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
-  let fechamas11=$fechamas1_1*1
-  #fechamenos1mes_1=`date '+%Y%m%d' -d "$FECHAEJE-1 month"`
+  
   path_actualizacion=$RUTA"/Bin/OTC_F_RESTA_1_MES.sh"
+  
+  #fechaInimenos1mes_1=`date '+%Y%m%d' -d "$fechaIniMes-1 month"`
+  
+  fechaInimenos1mes_1=`sh $path_actualizacion $fechaIniMes`       #Formato YYYYMMDD
+ 
+  
+  let fechaInimenos1mes=$fechaInimenos1mes_1*1
+  fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`  
+  let fechamas1=$fechamas1_1*1
+
+  #fechamenos1mes_1=`date '+%Y%m%d' -d "$FECHAEJE-1 month"`
+ 
   fechamenos1mes_1=`sh $path_actualizacion $FECHAEJE`       #Formato YYYYMMDD
-
+ 
   let fechamenos1mes=$fechamenos1mes_1*1
+  
   #fechamenos2mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-1 month"`
+  fechamenos2mes_1=`sh $path_actualizacion $fechamenos1mes`
   
-  
-  fechamenos2mes_1=`sh $path_actualizacion $fechamenos1mes`       #Formato YYYYMMDD
-
   let fechamenos2mes=$fechamenos2mes_1*1
+  
   fechamenos6mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-6 month"`
   let fechamenos6mes=$fechamenos6mes_1*1  
 
   #fechaInimenos1mes_1=`date '+%Y%m%d' -d "$fechaIniMes-1 month"`
-
-  fechaInimenos1mes_1=`sh $path_actualizacion $fechaIniMes`       #Formato YYYYMMDD
-
+  
+  fechaInimenos1mes_1=`sh $path_actualizacion $fechaIniMes`
+  
   let fechaInimenos1mes=$fechaInimenos1mes_1*1
   fechaInimenos2mes_1=`date '+%Y%m%d' -d "$fechaIniMes-2 month"`
   let fechaInimenos2mes=$fechaInimenos2mes_1*1
@@ -200,6 +206,8 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 
   fechamenos5_1=`date '+%Y%m%d' -d "$FECHAEJE-10 day"`
   let fechamenos5=$fechamenos5_1*1
+
+  fechamas1_2=`date '+%Y-%m-%d' -d "$fechamas1"`
  
   
 #------------------------------------------------------
@@ -264,7 +272,7 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
         INICIO=$(date +%s)
         
         #Consulta a ejecutar
-		/usr/bin/hive -e "sql 1" 2 >> $LOGS/$EJECUCION_LOG.log
+		/usr/bin/hive -e "sql 1" 2>> $LOGS/$EJECUCION_LOG.log
 				
 				# Verificacion de creacion tabla external
 		if [ $? -eq 0 ]; then
@@ -280,5 +288,27 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
         stat "HIVE tablas temporales temp" $TOTAL "0" "0"		
 	 PASO=3
     fi	
-	
-exit $rc 
+
+
+#INICIO VALIDACION DE QUE LA TABLA DE CARTERA TENGA REGISTROS
+QUEUENAME=capa_semantica
+conteo1=`hive --hiveconf tez.queue.name=${QUEUENAME} -S -e "select count(1) from $ESQUEMA_TEMP.otc_t_360_cartera_vencimiento; "`
+
+echo "Numero registros: "$conteo1 &>> $LOGS/$EJECUCION_LOG.log
+if [ 0 -eq $conteo1 ];then
+	((rc=90)) 
+	log e "El Query de cartera no obtuvo valores de la fuente $TDDB.$TDTABLE registros:${conteo1}" $PASO
+	exit $rc;
+else
+   log i "Query de cartera" $rc  " SI se obtuvo valores de la fuente $TDDB.$TDTABLE registros= ${conteo1}" $PASO
+fi
+#FIN VALIDACION DE QUE LA TABLA DE CARTERA TENGA REGISTROS
+
+        FIN=$(date +%s)
+        DIF=$(echo "$FIN - $INICIO" | bc)
+        TOTAL=$(printf '%d:%d:%d\n' $(($DIF/3600)) $(($DIF%3600/60)) $(($DIF%60)))
+        stat "HIVE tablas temporales temp" $TOTAL "0" "0"		
+	 PASO=4	
+
+		
+exit $rc

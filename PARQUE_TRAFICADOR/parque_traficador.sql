@@ -6,7 +6,7 @@ CREATE TABLE $ESQUEMA_TEMP.OTC_T_voz_dias_tmp AS
 	, CAST(fecha AS bigint) fecha
 	, 1 AS T_VOZ
 FROM
-	db_altamira.otc_t_ppcs_llamadas
+	db_altamira.otc_t_ppcs_llamadas -- SNAPPY
 WHERE
 	fecha >= $f_inicio
 	AND fecha <= $FECHAEJE
@@ -14,7 +14,7 @@ WHERE
 	SELECT
 		DISTINCT codigo
 	FROM
-		db_reportes.otc_t_dev_cat_plan
+		db_reportes.otc_t_dev_cat_plan-- TRANSACTIONAL TRUE
 	WHERE
 		marca = 'Movistar');
 
@@ -26,7 +26,7 @@ CREATE TABLE $ESQUEMA_TEMP.OTC_T_datos_dias_tmp AS
 	, CAST(feh_llamada AS bigint) fecha
 	, 1 AS T_DATOS
 FROM
-	db_altamira.otc_t_ppcs_diameter
+	db_altamira.otc_t_ppcs_diameter -- SNAPPY
 WHERE
 	feh_llamada >= '$f_inicio'
 	AND feh_llamada <= '$FECHAEJE'
@@ -46,7 +46,7 @@ CREATE TABLE $ESQUEMA_TEMP.OTC_T_sms_dias_tmp AS
 	, CAST(fecha AS bigint) fecha
 	, 1 AS T_SMS
 FROM
-	db_altamira.otc_t_ppcs_mecoorig
+	db_altamira.otc_t_ppcs_mecoorig -- SNAPPY
 WHERE
 	fecha >= $f_inicio
 	AND fecha <= $FECHAEJE
@@ -66,7 +66,7 @@ CREATE TABLE $ESQUEMA_TEMP.OTC_T_cont_dias_tmp AS
 	, CAST(fecha AS bigint) fecha
 	, 1 AS T_CONTENIDO
 FROM
-	db_altamira.otc_t_ppcs_content
+	db_altamira.otc_t_ppcs_content -- SNAPPY
 WHERE
 	fecha >= $f_inicio
 	AND fecha <= $FECHAEJE

@@ -145,55 +145,6 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
     LOGPATH=$RUTA_LOG/Log
 
 #------------------------------------------------------
-# DEFINICION DE FUNCIONES
-#------------------------------------------------------
-
-    # Guarda los resultados en los archivos de correspondientes y registra las entradas en la base de datos de control    
-    function log() #funcion 4 argumentos (tipo, tarea, salida, mensaje)
-    {
-        if [ "$#" -lt 4 ]; then
-            echo "Faltan argumentos en el llamado a la funcion"
-            return 1 # Numero de argumentos no completo
-        else
-            if [ "$1" = 'e' -o "$1" = 'E' ]; then
-                TIPOLOG=ERROR
-            else
-                TIPOLOG=INFO
-            fi
-                TAREA="$2"
-		            MEN="$4"
-				PASO_EJEC="$5"
-                FECHA=`date +%Y"-"%m"-"%d`
-                HORAS=`date +%H":"%M":"%S`
-                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
-                MSJ=$(echo " $TIME [$TIPOLOG] Tarea: $TAREA - $MEN ")
-                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
-                mysql -e "insert into logs values ('$ENTIDAD','$EJECUCION','$TIPOLOG','$FECHA','$HORAS','$TAREA',$3,'$MEN','$PASO_EJEC','$NAME_SHELL')"
-                echo $MSJ
-                return 0
-        fi
-    }
-	
-	
-    function stat() #funcion 4 argumentos (Tarea, duracion, fuente, destino)
-    {
-        if [ "$#" -lt 4 ]; then
-            echo "Faltan argumentosen el llamado a la funcion"
-            return 1 # Numero de argumentos no completo
-        else
-                TAREA="$1"
-		        DURACION="$2"
-                FECHA=`date +%Y"-"%m"-"%d`
-                HORAS=`date +%H":"%M":"%S`
-                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
-                MSJ=$(echo " $TIME [INFO] Tarea: $TAREA - Duracion : $DURACION ")
-                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
-                mysql -e "insert into stats values ('$ENTIDAD','$EJECUCION','$TAREA','$FECHA $HORAS','$DURACION',$3,'$4')"
-                echo $MSJ
-                return 0
-        fi
-    }
-#------------------------------------------------------
 # VERIFICACION INICIAL 
 #------------------------------------------------------
        
@@ -324,10 +275,7 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 	
 		#/usr/bin/hive -e 
 		beeline -u $VAL_CADENA_JDBC -n $VAL_USER --hiveconf tez.queue.name=$VAL_COLA_EJECUCION \
-		-e "set hive.cli.print.header=false;
-		set hive.vectorized.execution.enabled=false;
-		set hive.vectorized.execution.reduce.enabled=false;
-	           ALTER TABLE db_reportes.otc_t_360_ingresos DROP IF EXISTS PARTITION(fecha_proceso=$FECHAEJE);" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
+		-e "sql 2" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 	 
 	log i "HIVE" $rc  " FINALIZACION EJECUCION de la DROP PARTITION en HIVE" $PASO
 	

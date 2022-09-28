@@ -1,9 +1,15 @@
 #!/bin/bash
 ##########################################################################
-#   Script de carga de Generica para entidades de URM con reejecución    #
+#   Script de carga de Generica para entidades de URM con reejecuciÃƒÂ³n    #
 # Creado 13-Jun-2018 (LC) Version 1.0                                    #
 # Las tildes hansido omitidas intencionalmente en el script              #
 #------------------------------------------------------------------------#
+#########################################################################################################
+# MODIFICACIONES																				        #
+# FECHA  		AUTOR     		DESCRIPCION MOTIVO														#
+# YYYY-MM-DD    NOMBRE			                                                     	  				#
+# 2022-06-15    BRIGITTE BALON Se aplica refactoring aplicando estandares y creando un hql              #
+#########################################################################################################
 
 
 version=1.2.1000.2.6.4.0-91
@@ -15,49 +21,34 @@ SQOOP_HOME=/usr/hdp/current/sqoop-client
 
 export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HIVE_HOME}/lib/hive-metastore-${version}.jar,$HIVE_HOME/lib/libthrift-0.9.3.jar,$HIVE_HOME/lib/hive-exec-${version}.jar,$HIVE_HOME/lib/libfb303-0.9.3.jar,$HIVE_HOME/lib/jdo-api-3.0.1.jar,$SQOOP_HOME/lib/slf4j-api-1.7.7.jar,$HIVE_HOME/lib/hive-cli-${version}.jar
 
+
 ##########################################################################
 #------------------------------------------------------
 # VARIABLES CONFIGURABLES POR PROCESO (MODIFICAR)
 #------------------------------------------------------
 	
-	ENTIDAD=OTC_T_360_GENERAL_PREVIO
-
+	ENTIDAD=OTC_T_360_MODELO
     # AMBIENTE (1=produccion, 0=desarrollo)
     ((AMBIENTE=1))
     FECHAEJE=$1 # yyyyMMdd
-    # Variable de control de que paso ejecutar
+    # Variable de control de que paso ejecutar	
 	PASO=$2
-	ESQUEMA_TEMP=db_temporales
+
+    #TABLA_PIVOTANTE=db_temporales.otc_t_360_parque_1_tmp
 		
 #*****************************************************************************************************#
-#                                            ¡¡ ATENCION !!                                           #
+#                                            Ã‚Â¡Ã‚Â¡ ATENCION !!                                           #
 #                                                                                                     #
 # Configurar las siguientes  consultas de acuerdo al orden de la tabla params de la base de datos URM #
 # en el servidor 10.112.152.183                                                                       #
 #*****************************************************************************************************#
 
-	isnum() { awk -v a="$1" 'BEGIN {print (a == a + 0)}'; }
-	
-	function isParamListNum() #parametro es el grupo de valores separados por ;
-    {
-        local value
-		local isnumPar
-        for value in `echo "$1" | sed -e 's/;/\n/g'`
-        do
-		    isnumPar=`isnum "$value"`
-            if [  "$isnumPar" ==  "0" ]; then
-                ((rc=999))
-                echo " `date +%a" "%d"/"%m"/"%Y" "%X` [ERROR] $rc Parametro $value $2 no son numericos"
-                exit $rc
-			fi
-        done	     
-	
-	}  
+   
 
 	RUTA="" # RUTA es la carpeta del File System (URM-3.5.1) donde se va a trabajar 
 
 	
-	#Verificar que la configuración de la entidad exista
+	#Verificar que la configuraciÃƒÂ³n de la entidad exista
 	if [ "$AMBIENTE" = "1" ]; then
 		ExisteEntidad=`mysql -N  <<<"select count(*) from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
 	else
@@ -81,17 +72,35 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 	if [ "$AMBIENTE" = "1" ]; then
 		# Cargar Datos desde la base
 		RUTA=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
+		#Limpiar (1=si, 0=no)
+		TEMP=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
+		  if [ $TEMP = "1" ];then
+		((LIMPIAR=1))
+		else
+		((LIMPIAR=0))
+		  fi
 		NAME_SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
-        ESQUEMA_TABLA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'ESQUEMA_TABLA' );"`
-    	RUTA_LOG=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
-		
+		RUTA_LOG=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
+		VAL_COLA_EJECUCION=`mysql -N  <<<"select valor from params where ENTIDAD = 'PARAM_BEELINE' AND parametro = 'VAL_COLA_EJECUCION';"`
+		VAL_CADENA_JDBC=`mysql -N  <<<"select valor from params where ENTIDAD = 'PARAM_BEELINE' AND parametro = 'VAL_CADENA_JDBC';"`
+		VAL_USER=`mysql -N  <<<"select valor from params where ENTIDAD = 'PARAM_BEELINE' AND parametro = 'VAL_USER';"`
+
 	else 
 		# Cargar Datos desde la base
 		RUTA=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
+		#Limpiar (1=si, 0=no)
+		TEMP=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
+		  if [ $TEMP = "1" ];then
+		((LIMPIAR=1))
+		else
+		((LIMPIAR=0))
+		  fi
 		NAME_SHELL=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
-        ESQUEMA_TABLA=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'ESQUEMA_TABLA' );"`
 		RUTA_LOG=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
-		
+		VAL_COLA_EJECUCION=`mysql -N  <<<"select valor from params_des where ENTIDAD = 'D_PARAM_BEELINE' AND parametro = 'VAL_COLA_EJECUCION';"`
+		VAL_CADENA_JDBC=`mysql -N  <<<"select valor from params_des where ENTIDAD = 'D_PARAM_BEELINE' AND parametro = 'VAL_CADENA_JDBC';"`
+		VAL_USER=`mysql -N  <<<"select valor from params_des where ENTIDAD = 'D_PARAM_BEELINE' AND parametro = 'VAL_USER';"`
+
 	fi	
 	
 	 #Verificar si tuvo datos de la base
@@ -119,14 +128,18 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
     DIA=`date '+%Y%m%d'` 
     #HORA: Obtiene hora del sistema
     HORA=`date '+%H%M%S'` 
+    EJECUCION=$ENTIDAD$FECHAEJE"_"$DIA$HORA
     # rc es una variable que devuelve el codigo de error de ejecucion
     ((rc=0)) 
-    #EJECUCION_LOG Entidad_Fecha_hora nombre del archivo log
-	EJECUCION_LOG=$EJECUCION"_"$DIA$HORA		
+	#INPUT_BI donde BI deposita el archivo csv con la columna agregada
+    INPUT_BI=$RUTA/$ENTIDAD"_BI"/Input
+	#OUTPUT_BI es la ruta donde se deposita el archivo csv para que BI aumente la columna faltante
+    OUTPUT_BI=$RUTA/$ENTIDAD"_BI"/Output	
     #LOGS es la ruta de carpeta de logs por entidad
     LOGS=$RUTA_LOG/Log
 	#LOGPATH ruta base donde se guardan los logs
     LOGPATH=$RUTA_LOG/Log
+
 
 #------------------------------------------------------
 # VERIFICACION INICIAL 
@@ -153,59 +166,22 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
   eval year=`echo $FECHAEJE | cut -c1-4`
   eval month=`echo $FECHAEJE | cut -c5-6`
   day="01"
-  fechaMes=$year$month
-  fechaIniMes=$year$month$day                            #Formato YYYYMMDD
-  fecha_eje1=`date '+%Y-%m-%d' -d "$FECHAEJE"`
-  let fecha_hoy=$fecha_eje1
-  fecha_eje2=`date '+%Y%m%d' -d "$FECHAEJE"`
-  let fecha_proc1=$fecha_eje2
-  fecha_eje4=`date '+%d-%m-%Y' -d "$FECHAEJE"`
-  let fecha_g=$fecha_eje4
-  fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "$fechaIniMes"`
-  let fechainiciomes=$fecha_inico_mes_1_1
-  fecha_inico_mes_1_2=`date '+%Y%m%d' -d "$fechaIniMes"`
-  let fechainiciomes=$fecha_inico_mes_1_2
-  fecha_eje3=`date '+%Y%m%d' -d "$FECHAEJE-1 day"`
-  let fecha_proc_menos1=$fecha_eje3
-  fechamas1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
-  let fecha_mas_uno=$fechamas1
-  let fechaInimenos1mes=$fechaInimenos1mes_1*1
-  fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`						  
-  let fechaInimenos1mes=$fechaInimenos1mes_1*1
-  fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
-  let fechamas11=$fechamas1_1*1
-  #fechamenos1mes_1=`date '+%Y%m%d' -d "$FECHAEJE-1 month"`
-  path_actualizacion=$RUTA"/Bin/OTC_F_RESTA_1_MES.sh"
-  fechamenos1mes_1=`sh $path_actualizacion $FECHAEJE`       #Formato YYYYMMDD
-
-  let fechamenos1mes=$fechamenos1mes_1*1
-  #fechamenos2mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-1 month"`
-  
-  
-  fechamenos2mes_1=`sh $path_actualizacion $fechamenos1mes`       #Formato YYYYMMDD
-
-  let fechamenos2mes=$fechamenos2mes_1*1
-  fechamenos6mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-6 month"`
-  let fechamenos6mes=$fechamenos6mes_1*1  
-
-  #fechaInimenos1mes_1=`date '+%Y%m%d' -d "$fechaIniMes-1 month"`
-
-  fechaInimenos1mes_1=`sh $path_actualizacion $fechaIniMes`       #Formato YYYYMMDD
-
-  let fechaInimenos1mes=$fechaInimenos1mes_1*1
-  fechaInimenos2mes_1=`date '+%Y%m%d' -d "$fechaIniMes-2 month"`
-  let fechaInimenos2mes=$fechaInimenos2mes_1*1
-  fechaInimenos3mes_1=`date '+%Y%m%d' -d "$fechaIniMes-3 month"`
-  let fechaInimenos3mes=$fechaInimenos3mes_1*1
-
-  fechamenos5_1=`date '+%Y%m%d' -d "$FECHAEJE-10 day"`
-  let fechamenos5=$fechamenos5_1*1
- 
+  fechaFinMes=$year$month$day                            #Formato YYYYMMDD
+  fechaFinMes1=`sh /URM/util/last_day.sh $FECHAEJE`       #Formato YYYYMMDD
+  fecha_mas1f1=`sh /URM/util/add_day.sh $fechaFinMes1 1`  #Formato YYYYMMDD
+  fecha_mesAntf1=`sh /URM/util/minus_day.sh $fechaFinMes1 31`  #Formato YYYYMMDD
+  fecha_finMesAntf2=`sh /URM/util/last_day.sh $fecha_mesAntf1`    #Formato YYYY-MM-DD
+  eval yearless1=`echo $fecha_finMesAntf2 | cut -c1-4`
+  eval monthless1=`echo $fecha_finMesAntf2 | cut -c5-6`    
+  fechaMes=$yearless1$monthless1									  #Formato YYYYMM
+  fechaIniMes=$yearless1$monthless1$day                            #Formato YYYYMMDD  
+  fecha_ult_imei_ini=`date -d "${FECHAEJE} -7 day"  +"%Y%m%d"`
+  VAL_FEC_NEXT=`date -d "${FECHAEJE} +1 day"  +"%Y%m%d"`
   
 #------------------------------------------------------
 # CREACION DE LOGS 
 #------------------------------------------------------
-    #Verificar si hay parámetro de re-ejecución
+    #Verificar si hay parÃƒÂ¡metro de re-ejecuciÃƒÂ³n
     if [ "$PASO" = "0" ]; then
 
         echo $DIA-$HORA" Creacion de directorio para almacenamiento de logs" 
@@ -228,27 +204,27 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
         fi
     
         # CREACION DEL ARCHIVO DE LOG 
-        echo "# Entidad: "$ENTIDAD" Fecha: "$FECHAEJE $DIA"-"$HORA > $LOGS/$EJECUCION_LOG.log
+        echo "# Entidad: "$ENTIDAD" Fecha: "$FECHAEJE $DIA"-"$HORA > $LOGS/$EJECUCION.log
         if [ $? -eq 0 ];	then
-            echo "# Fecha de inicio: "$DIA" "$HORA >> $LOGS/$EJECUCION_LOG.log
-            echo "---------------------------------------------------------------------" >> $LOGS/$EJECUCION_LOG.log
+            echo "# Fecha de inicio: "$DIA" "$HORA >> $LOGS/$EJECUCION.log
+            echo "---------------------------------------------------------------------" >> $LOGS/$EJECUCION.log
         else
             (( rc = 22))
-            echo $DIA-$HORA" Error $rc : Fallo al crear el archivo de log $LOGS/$EJECUCION_LOG.log"
-			log e "CREAR ARCHIVO LOG" $rc  " $DIA-$HORA' Error $rc: Fallo al crear el archivo de log $LOGS/$EJECUCION_LOG.log'" $PASO
+            echo $DIA-$HORA" Error $rc : Fallo al crear el archivo de log $LOGS/$EJECUCION.log"
+			log e "CREAR ARCHIVO LOG" $rc  " $DIA-$HORA' Error $rc: Fallo al crear el archivo de log $LOGS/$EJECUCION.log'" $PASO
             exit $rc
         fi
         
         # CREACION DE ARCHIVO DE ERROR 
         
-        echo "# Entidad: "$ENTIDAD" Fecha: "$FECHAEJE $DIA"-"$HORA > $LOGS/$EJECUCION_LOG.log
+        echo "# Entidad: "$ENTIDAD" Fecha: "$FECHAEJE $DIA"-"$HORA > $LOGS/$EJECUCION.log
         if [ $? -eq 0 ];	then
-            echo "# Fecha de inicio: "$DIA" "$HORA >> $LOGS/$EJECUCION_LOG.log
-            echo "---------------------------------------------------------------------" >> $LOGS/$EJECUCION_LOG.log
+            echo "# Fecha de inicio: "$DIA" "$HORA >> $LOGS/$EJECUCION.log
+            echo "---------------------------------------------------------------------" >> $LOGS/$EJECUCION.log
         else
             (( rc = 23)) 
-            echo $DIA-$HORA" Error $rc : Fallo al crear el archivo de error $LOGS/$EJECUCION_LOG.log"
-			log e "CREAR ARCHIVO LOG ERROR" $rc  " $DIA-$HORA' Error $rc: Fallo al crear el archivo de error $LOGS/$EJECUCION_LOG.log'" $PASO
+            echo $DIA-$HORA" Error $rc : Fallo al crear el archivo de error $LOGS/$EJECUCION.log"
+			log e "CREAR ARCHIVO LOG ERROR" $rc  " $DIA-$HORA' Error $rc: Fallo al crear el archivo de error $LOGS/$EJECUCION.log'" $PASO
             exit $rc
         fi
 	PASO=2
@@ -256,29 +232,44 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 
 #------------------------------------------------------
 # EJECUCION DE CONSULTA EN HIVE (INSERTAR TEMP)
+# EJECUCION DE CONSULTA EN HIVE (INSERTAR QUERY)
 #------------------------------------------------------
-  #Verificar si hay parámetro de re-ejecución
-    if [ "$PASO" = "2" ]; then
-        log i "HIVE" $rc  " Ejecucion de la consulta en HIVE"
-        # Inicio del marcado de tiempo para la tarea actual
-        INICIO=$(date +%s)
-        
-        #Consulta a ejecutar
-		/usr/bin/hive -e "sql 1" 2 >> $LOGS/$EJECUCION_LOG.log
+  #Verificar si hay parÃƒÂ¡metro de re-ejecuciÃƒÂ³n
+if [ "$PASO" = "2" ]; then
+log i "HIVE" $rc  " Ejecucion de la consulta en HIVE"
+# Inicio del marcado de tiempo para la tarea actual
+INICIO=$(date +%s)
+echo "==== Ejecuta HQL carga_otc_t_360_modelo.sql ===="`date '+%Y%m%d%H%M%S'` >> $LOGS/$EJECUCION.log
+beeline -u $VAL_CADENA_JDBC -n $VAL_USER --hiveconf tez.queue.name=$VAL_COLA_EJECUCION --hiveconf hive.query.name=OTC_T_360_MODELO \
+--hivevar fechaeje=$FECHAEJE --hivevar fecha_ult_imei_ini=$fecha_ult_imei_ini --hivevar fecha_next=$VAL_FEC_NEXT -f ${RUTA}/sql/carga_otc_t_360_modelo.sql 2>> $LOGS/$EJECUCION.log
+
+#VALIDA EJECUCION DEL HQL DE INSERCION
+echo "==== Valida ejecucion del HQL carga_otc_t_360_modelo.sql ===="`date '+%Y%m%d%H%M%S'` >> $LOGS/$EJECUCION.log
+error_crea=`egrep 'Error:|FAILED:|Failed to connect|Could not open client' $LOGS/$EJECUCION.log | wc -l`
+	if [ $error_crea -eq 0 ];then
+		echo "==== OK - La ejecucion del HQL carga_otc_t_360_modelo.sql es EXITOSO ===="`date '+%H%M%S'` >> $LOGS/$EJECUCION.log
+		else
+		echo "==== ERROR - En la ejecucion del HQL carga_otc_t_360_modelo.sql ====" >> $LOGS/$EJECUCION.log
+		exit 1
+	fi
 				
-				# Verificacion de creacion tabla external
-		if [ $? -eq 0 ]; then
-			log i "HIVE" $rc  " Fin de creacion e insert en tabla temporales sin dependencia " $PASO
-			else
-			(( rc = 40)) 
-			log e "HIVE" $rc  " Fallo al ejecutar script desde HIVE - Tabla" $PASO
-			exit $rc
-		fi	
-        FIN=$(date +%s)
-        DIF=$(echo "$FIN - $INICIO" | bc)
-        TOTAL=$(printf '%d:%d:%d\n' $(($DIF/3600)) $(($DIF%3600/60)) $(($DIF%60)))
-        stat "HIVE tablas temporales temp" $TOTAL "0" "0"		
-	 PASO=3
-    fi	
-	
+FIN=$(date +%s)
+DIF=$(echo "$FIN - $INICIO" | bc)
+TOTAL=$(printf '%d:%d:%d\n' $(($DIF/3600)) $(($DIF%3600/60)) $(($DIF%60)))
+stat "HIVE tablas temporales temp" $TOTAL "0" "0"	
+stat "Modelo" $TOTAL 0 0	
+PASO=0
+fi	
+
+#------------------------------------------------------
+# LIMPIEZA DE ARCHIVOS TEMPORALES 
+#------------------------------------------------------
+#bb	     /usr/bin/hive -e "set hive.cli.print.header=false ; 
+#bb			drop table db_reportes.otc_t_modelo_trafic_tech_tmp;
+#bb			drop table db_reportes.otc_t_modelo_trafic_tech_tmp_1;
+#bb			drop table db_reportes.otc_t_modelo_abonados_vlrs_tmp;
+#bb			drop table db_reportes.otc_t_360_mod_imei_tmp;
+#bb			drop table db_reportes.otc_t_360_modelo_d_tacs_tmp;			 
+#bb			drop table db_reportes.otc_t_360_modelo_tmp_final;" 2>> $LOGS/$EJECUCION.log	
+
 exit $rc 

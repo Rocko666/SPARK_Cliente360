@@ -5,17 +5,6 @@
 # Las tildes hansido omitidas intencionalmente en el script              #
 #------------------------------------------------------------------------#
 
-
-version=1.2.1000.2.6.4.0-91
-HADOOP_CLASSPATH=$(hcat -classpath) export HADOOP_CLASSPATH
-
-HIVE_HOME=/usr/hdp/current/hive-client
-HCAT_HOME=/usr/hdp/current/hive-webhcat
-SQOOP_HOME=/usr/hdp/current/sqoop-client
-
-export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HIVE_HOME}/lib/hive-metastore-${version}.jar,$HIVE_HOME/lib/libthrift-0.9.3.jar,$HIVE_HOME/lib/hive-exec-${version}.jar,$HIVE_HOME/lib/libfb303-0.9.3.jar,$HIVE_HOME/lib/jdo-api-3.0.1.jar,$SQOOP_HOME/lib/slf4j-api-1.7.7.jar,$HIVE_HOME/lib/hive-cli-${version}.jar
-
-
 ##########################################################################
 #------------------------------------------------------
 # VARIABLES CONFIGURABLES POR PROCESO (MODIFICAR)

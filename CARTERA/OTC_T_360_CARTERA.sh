@@ -133,55 +133,6 @@ TOPE_RECARGAS
     LOGPATH=$RUTA_LOG/Log
 
 #------------------------------------------------------
-# DEFINICION DE FUNCIONES
-#------------------------------------------------------
-
-    # Guarda los resultados en los archivos de correspondientes y registra las entradas en la base de datos de control    
-    function log() #funcion 4 argumentos (tipo, tarea, salida, mensaje)
-    {
-        if [ "$#" -lt 4 ]; then
-            echo "Faltan argumentosen el llamado a la funcion"
-            return 1 # Numero de argumentos no completo
-        else
-            if [ "$1" = 'e' -o "$1" = 'E' ]; then
-                TIPOLOG=ERROR
-            else
-                TIPOLOG=INFO
-            fi
-                TAREA="$2"
-		            MEN="$4"
-				PASO_EJEC="$5"
-                FECHA=`date +%Y"-"%m"-"%d`
-                HORAS=`date +%H":"%M":"%S`
-                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
-                MSJ=$(echo " $TIME [$TIPOLOG] Tarea: $TAREA - $MEN ")
-                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
-                mysql -e "insert into logs values ('$ENTIDAD','$EJECUCION','$TIPOLOG','$FECHA','$HORAS','$TAREA',$3,'$MEN','$PASO_EJEC','$NAME_SHELL')"
-                echo $MSJ
-                return 0
-        fi
-    }
-	
-	
-    function stat() #funcion 4 argumentos (Tarea, duracion, fuente, destino)
-    {
-        if [ "$#" -lt 4 ]; then
-            echo "Faltan argumentosen el llamado a la funcion"
-            return 1 # Numero de argumentos no completo
-        else
-                TAREA="$1"
-		        DURACION="$2"
-                FECHA=`date +%Y"-"%m"-"%d`
-                HORAS=`date +%H":"%M":"%S`
-                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
-                MSJ=$(echo " $TIME [INFO] Tarea: $TAREA - Duracion : $DURACION ")
-                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
-                mysql -e "insert into stats values ('$ENTIDAD','$EJECUCION','$TAREA','$FECHA $HORAS','$DURACION',$3,'$4')"
-                echo $MSJ
-                return 0
-        fi
-    }
-#------------------------------------------------------
 # VERIFICACION INICIAL 
 #------------------------------------------------------
        
@@ -277,10 +228,7 @@ fi
 
 	log i "HIVE" $rc  " INICIO EJECUCION de la DROP PARTITION en HIVE" $PASO
 	
-		/usr/bin/hive -e "set hive.cli.print.header=false;
-		set hive.vectorized.execution.enabled=false;
-		set hive.vectorized.execution.reduce.enabled=false;
-		   ALTER TABLE db_reportes.otc_t_360_cartera DROP IF EXISTS PARTITION(fecha_proceso=$FECHAEJE);" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
+		/usr/bin/hive -e "sql 1" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 	 
 	log i "HIVE" $rc  " FINALIZACION EJECUCION de la DROP PARTITION en HIVE" $PASO
 	
@@ -295,34 +243,7 @@ fi
    
 	log i "HIVE" $rc  " INICIO EJECUCION del INSERT en HIVE" $PASO
 		
-		/usr/bin/hive -e "set hive.cli.print.header=false;
-		set hive.vectorized.execution.enabled=false;
-		set hive.vectorized.execution.reduce.enabled=false;
-				
-			insert into db_reportes.otc_t_360_cartera partition(fecha_proceso)
-				select 
-				t1.cuenta_facturacion,
-				t1.vencimiento,
-				t1.ddias_total,
-				t1.estado_cuenta,
-				t1.forma_pago,
-				t1.tarjeta,
-				t1.banco,
-				t1.provincia,
-				t1.ciudad,
-				t1.lineas_activas,
-				t1.lineas_desconectadas,
-				t1.sub_segmento,
-				t1.cr_cobranza,
-				t1.ciclo_periodo,
-				t1.tipo_cliente,
-				t1.tipo_identificacion,
-				case when (t2.account_num is not null and t2.account_num <> '') then 'SI' else 'NO' end as existe_en_360,
-				$FECHAEJE as fecha_proceso
-				from $ESQUEMA_TEMP.otc_t_360_cartera_vencimiento t1
-				left join 
-				(select account_num, count(1) as cant from db_reportes.otc_t_360_general where fecha_proceso=$FECHAEJE group by account_num) t2
-				on (t1.cuenta_facturacion=t2.account_num);" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
+		/usr/bin/hive -e "sql 2" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
 			# Verificacion de creacion de archivo
 			if [ $? -eq 0 ]; then
