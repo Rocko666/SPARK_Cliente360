@@ -193,3 +193,8 @@ left join r_boe_ord_item oi on
 	and oi.phone_number = ri.object_id
 where
 	a.fvc between '30/06/2022' and '30/08/2022';
+
+
+
+
+	
