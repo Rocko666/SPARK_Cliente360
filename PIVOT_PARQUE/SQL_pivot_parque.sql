@@ -1,30 +1,28 @@
 --- SQL 1
 set hive.cli.print.header=false;	
-		set hive.vectorized.execution.enabled=false;
-		set hive.vectorized.execution.reduce.enabled=false;
-		set tez.queue.name=$COLA_EJECUCION;
+set hive.vectorized.execution.enabled=false;
+set hive.vectorized.execution.reduce.enabled=false;
+set tez.queue.name=$COLA_EJECUCION;
 
-		drop table $ESQUEMA_TEMP.tmp_360_alta_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pp_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_upsell_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_downsell_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_misma_tarifa_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_act$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_baja_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_parque_inactivo$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp1$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inac$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_1$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_parque_1_tmp$ABREVIATURA_TEMP;
-		drop table $ESQUEMA_TEMP.tmp_360_motivos_suspension$ABREVIATURA_TEMP;
-		drop table $ESQUEMA_TEMP.tmp_360_base_preactivos$ABREVIATURA_TEMP;
-		
-	
+drop table $ESQUEMA_TEMP.tmp_360_alta_tmp$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pp_tmp$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_upsell_tmp$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_downsell_tmp$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_misma_tarifa_tmp$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_act$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_baja_tmp$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_parque_inactivo$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp1$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inac$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_1$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_parque_1_tmp$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_motivos_suspension$ABREVIATURA_TEMP;
+drop table $ESQUEMA_TEMP.tmp_360_base_preactivos$ABREVIATURA_TEMP;
 
 --SE OBTIENEN LAS ALTAS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO	
 create table $ESQUEMA_TEMP.tmp_360_alta_tmp$ABREVIATURA_TEMP as		

@@ -26,7 +26,11 @@ val_otc_t_ppcs_diameter='otc_t_ppcs_diameter'
 val_otc_t_ppcs_mecoorig='otc_t_ppcs_mecoorig'
 val_otc_t_ppcs_content='otc_t_ppcs_content'
 ##### val_=''
-
+val_otc_t_voz_dias_tmp = 'otc_t_voz_dias_tmp'
+val_otc_t_datos_dias_tmp = 'otc_t_datos_dias_tmp'
+val_otc_t_sms_dias_tmp = 'otc_t_sms_dias_tmp'
+val_otc_t_cont_dias_tmp = 'otc_t_cont_dias_tmp'
+val_otc_t_parque_traficador_dias_tmp = 'otc_t_parque_traficador_dias_tmp'
 # Para almacenar la temporal en HIVE
 val_genera_temp_mksharevozdatos_90 = False
 val_genera_temp_plan = False

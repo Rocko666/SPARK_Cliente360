@@ -2,17 +2,6 @@
 
 from Funciones.funcion import *
 
-# db_reportes.otc_t_dev_cat_plan
-@cargar_consulta
-def fun_otc_t_dev_cat_plan(base_reportes_consultas, otc_t_dev_cat_plan, marca):
-    qry = '''
-    SELECT 
-        codigo
-    FROM {bdd_consultas}.{tabla_otc_t_dev_cat_plan}
-    WHERE marca = '{marca}'
-    '''.format(bdd_consultas=base_reportes_consultas, tabla_otc_t_dev_cat_plan=otc_t_dev_cat_plan, val_marca=marca)
-    return qry 
-
 # db_altamira.otc_t_ppcs_llamadas
 @cargar_consulta
 def fun_otc_t_ppcs_llamadas(base_altamira_consultas, otc_t_ppcs_llamadas, fecha_ejecucion, fecha_ini):
@@ -27,6 +16,18 @@ def fun_otc_t_ppcs_llamadas(base_altamira_consultas, otc_t_ppcs_llamadas, fecha_
 	AND fecha <= {fecha_eje}
     '''.format(bdd_consultas=base_altamira_consultas, tabla_otc_t_ppcs_llamadas=otc_t_ppcs_llamadas, fecha_eje=fecha_ejecucion, fecha_inicio=fecha_ini)
     return qry 
+
+# db_reportes.otc_t_dev_cat_plan
+@cargar_consulta
+def fun_otc_t_dev_cat_plan(base_reportes_consultas, otc_t_dev_cat_plan, marca):
+    qry = '''
+    SELECT DISTINCT
+        codigo
+    FROM {bdd_consultas}.{tabla_otc_t_dev_cat_plan}
+    WHERE marca = '{marca}'
+    '''.format(bdd_consultas=base_reportes_consultas, tabla_otc_t_dev_cat_plan=otc_t_dev_cat_plan, val_marca=marca)
+    return qry 
+
 
 # db_altamira.otc_t_ppcs_diameter
 @cargar_consulta

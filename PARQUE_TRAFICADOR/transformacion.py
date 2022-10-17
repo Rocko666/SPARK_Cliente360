@@ -62,38 +62,144 @@ def fun_controlpoint2(sqlContext, df_mksharevozdatos_90_final, val_fecha_ejecuci
 # FUNCIONES QUE GENERAN DATAFRAME
 
 @seguimiento_transformacion
-# Generamos un dataframe en base a los datos de la tabla db_cs_altas.PLAN_1
-def fun_cargar_df_mksharevozdatos_90(sqlContext, franja_horaria):
-    df_mksharevozdatos_90_tmp = fun_mksharevozdatos_90(sqlContext, val_base_ipaccess_consultas, val_mksharevozdatos_90, val_franja_horaria)
+# Generamos un dataframe en base a los datos de la tabla db_altamira.otc_t_ppcs_llamadas
+def fun_cargar_df_otc_t_ppcs_llamadas(sqlContext):
+    df_otc_t_ppcs_llamadas_tmp = fun_otc_t_ppcs_llamadas(sqlContext, val_base_altamira_consultas, val_otc_t_ppcs_llamadas, val_fecha_ejecucion, val_fecha_ini)
     
-    df_mksharevozdatos_90 = df_mksharevozdatos_90_tmp.cache()
+    df_otc_t_ppcs_llamadas = df_otc_t_ppcs_llamadas_tmp.cache()
         
-    str_datos_df = fun_obtener_datos_df(val_se_calcula, df_mksharevozdatos_90)
-    return df_mksharevozdatos_90, "Transformacion => fun_cargar_df_mksharevozdatos_90 => df_mksharevozdatos_90" + str_datos_df
+    str_datos_df = fun_obtener_datos_df(val_se_calcula, df_otc_t_ppcs_llamadas)
+    return df_otc_t_ppcs_llamadas, "Transformacion => fun_cargar_df_otc_t_ppcs_llamadas => df_otc_t_ppcs_llamadas" + str_datos_df
 
 @seguimiento_transformacion
-# Generamos un dataframe en base a los datos de la tabla db_cs_altas.PLAN_1
-def fun_cargar_df_mksharevozdatos_90_max(sqlContext):
-    df_mksharevozdatos_90_max_tmp = fun_mksharevozdatos_90_max(sqlContext, val_base_ipaccess_consultas, val_mksharevozdatos_90, val_fecha_ejecucion)
+# Generamos un dataframe en base a los datos de la tabla db_reportes.otc_t_dev_cat_plan
+def fun_cargar_lista_otc_t_dev_cat_plan(sqlContext, ):
+    df_otc_t_dev_cat_plan_tmp = fun_otc_t_dev_cat_plan(sqlContext, val_base_altamira_consultas, val_otc_t_dev_cat_plan, val_fecha_ejecucion, val_fecha_ini)
     
-    df_mksharevozdatos_90_max = df_mksharevozdatos_90_max_tmp.cache()
-        
-    str_datos_df = fun_obtener_datos_df(val_se_calcula, df_mksharevozdatos_90_max)
-    return df_mksharevozdatos_90_max, "Transformacion => fun_cargar_df_mksharevozdatos_90_max => df_mksharevozdatos_90_max" + str_datos_df
+    df_otc_t_dev_cat_plan = df_otc_t_dev_cat_plan_tmp.cache()
+    list_dev_cat_plan_codigo = list(df_otc_t_dev_cat_plan.select('codigo').toPandas()['codigo'])
+    
+    str_datos_df = fun_obtener_datos_df(val_se_calcula, df_otc_t_dev_cat_plan)
+    return list_dev_cat_plan_codigo, "Transformacion => fun_cargar_lista_otc_t_dev_cat_plan => list_dev_cat_plan_codigo" + str_datos_df
 
 @seguimiento_transformacion
-# Generamos un dataframe en base a los datos de la tabla db_cs_altas.PARQUE_ACTUAL_CP
-def fun_cargar_df_mksharevozdatos_90_final(sqlContext, df_parque_actual_cp_1, df_parque_actual_cp_2):
-    t1 = df_mksharevozdatos_90.alias('t1')
-    t2 = df_mksharevozdatos_90_max.alias('t2')
+# Generamos un dataframe en base a los datos de la tabla db_altamira.otc_t_ppcs_diameter
+def fun_cargar_df_otc_t_ppcs_diameter(sqlContext, ):
+    df_otc_t_ppcs_diameter_tmp = fun_otc_t_ppcs_diameter(sqlContext, val_base_altamira_consultas, val_otc_t_ppcs_diameter, val_fecha_ejecucion, val_fecha_ini)
     
-    df_mksharevozdatos_90_final_tmp =  t1.join(t2, expr("t2.max_fecha = t1.fecha_proceso"), how='inner') \
-                                .selectExpr(u"t1.*")
+    df_otc_t_ppcs_diameter = df_otc_t_ppcs_diameter_tmp.cache()
+        
+    str_datos_df = fun_obtener_datos_df(val_se_calcula, df_otc_t_ppcs_diameter)
+    return df_otc_t_ppcs_diameter, "Transformacion => fun_cargar_df_otc_t_ppcs_diameter => df_otc_t_ppcs_diameter" + str_datos_df
+
+@seguimiento_transformacion
+# Generamos un dataframe en base a los datos de la tabla db_altamira.otc_t_ppcs_mecoorig
+def fun_cargar_df_otc_t_ppcs_mecoorig(sqlContext, ):
+    df_otc_t_ppcs_mecoorig_tmp = fun_otc_t_ppcs_mecoorig(sqlContext, val_base_altamira_consultas, val_otc_t_ppcs_mecoorig, val_fecha_ejecucion, val_fecha_ini)
     
-    df_mksharevozdatos_90_final = df_mksharevozdatos_90_final_tmp.cache()
+    df_otc_t_ppcs_mecoorig = df_otc_t_ppcs_mecoorig_tmp.cache()
+        
+    str_datos_df = fun_obtener_datos_df(val_se_calcula, df_otc_t_ppcs_mecoorig)
+    return df_otc_t_ppcs_mecoorig, "Transformacion => fun_cargar_df_otc_t_ppcs_mecoorig => df_otc_t_ppcs_mecoorig" + str_datos_df
+
+@seguimiento_transformacion
+# Generamos un dataframe en base a los datos de la tabla db_altamira.otc_t_ppcs_content
+def fun_cargar_df_otc_t_ppcs_content(sqlContext, ):
+    df_otc_t_ppcs_content_tmp = fun_otc_t_ppcs_content(sqlContext, val_base_altamira_consultas, val_otc_t_ppcs_content, val_fecha_ejecucion, val_fecha_ini)
     
-    str_datos_df = fun_obtener_datos_df(val_se_calcula,df_mksharevozdatos_90_final)
-    return df_mksharevozdatos_90_final, "Transformacion => fun_cargar_df_mksharevozdatos_90_final => df_mksharevozdatos_90_final" + str_datos_df
+    df_otc_t_ppcs_content = df_otc_t_ppcs_content_tmp.cache()
+        
+    str_datos_df = fun_obtener_datos_df(val_se_calcula, df_otc_t_ppcs_content)
+    return df_otc_t_ppcs_content, "Transformacion => fun_cargar_df_otc_t_ppcs_content => df_otc_t_ppcs_content" + str_datos_df
+
+@seguimiento_transformacion
+# Generamos un dataframe en base al dataframe y lista antes generados: df_otc_t_ppcs_llamadas, list_dev_cat_plan_codigo
+def fun_cargar_df_otc_t_voz_dias_tmp(sqlContext, df_otc_t_ppcs_llamadas, list_dev_cat_plan_codigo):
+    
+    df_otc_t_voz_dias_tmp = df_otc_t_ppcs_llamadas.filter(col('tip_prepago').isin(list_dev_cat_plan_codigo))
+        
+    df_otc_t_voz_dias_tmp = df_otc_t_voz_dias_tmp.selectExpr('msisdn','fecha','T_VOZ').distinct()
+    
+    df_otc_t_voz_dias_tmp = df_otc_t_voz_dias_tmp.cache()
+        
+    # Insercion de datos (sobre-escritura) para tabla DB_TEMPORALES.OTC_T_voz_dias_tmp
+    val_retorno_insercion = fun_realizar_insercion_df_tabla(sqlContext, val_base_temporales, val_otc_t_voz_dias_tmp, df_otc_t_voz_dias_tmp)
+    
+    print(msg_succ('======== df_otc_t_voz_dias_tmp  =>  fun_realizar_insercion_df_tabla ==========='))
+    print( msg_succ('%s => \n') % ( val_retorno_insercion ) )
+
+    return df_otc_t_voz_dias_tmp, "Transformacion => fun_cargar_df_otc_t_voz_dias_tmp => df_otc_t_voz_dias_tmp" + str_datos_df
+
+@seguimiento_transformacion
+# Generamos un dataframe en base al dataframe y lista antes generados: df_otc_t_ppcs_diameter, list_dev_cat_plan_codigo
+def fun_cargar_df_otc_t_datos_dias_tmp(sqlContext, df_otc_t_ppcs_diameter, list_dev_cat_plan_codigo):
+    
+    df_otc_t_datos_dias_tmp = df_otc_t_ppcs_diameter.filter(col('tip_prepago').isin(list_dev_cat_plan_codigo))
+        
+    df_otc_t_datos_dias_tmp = df_otc_t_datos_dias_tmp.selectExpr('msisdn','fecha','T_DATOS').distinct()
+    
+    df_otc_t_datos_dias_tmp = df_otc_t_datos_dias_tmp.cache()
+        
+    # Insercion de datos (sobre-escritura) para tabla DB_TEMPORALES.OTC_T_datos_dias_tmp
+    val_retorno_insercion = fun_realizar_insercion_df_tabla(sqlContext, val_base_temporales, val_otc_t_datos_dias_tmp, df_otc_t_datos_dias_tmp)
+    
+    print(msg_succ('======== df_otc_t_datos_dias_tmp  =>  fun_realizar_insercion_df_tabla ==========='))
+    print( msg_succ('%s => \n') % ( val_retorno_insercion ) )
+
+    return df_otc_t_datos_dias_tmp, "Transformacion => fun_cargar_df_otc_t_datos_dias_tmp => df_otc_t_datos_dias_tmp" + str_datos_df
+
+@seguimiento_transformacion
+# Generamos un dataframe en base al dataframe y lista antes generados: df_otc_t_ppcs_mecoorig, list_dev_cat_plan_codigo
+def fun_cargar_df_otc_t_sms_dias_tmp(sqlContext, df_otc_t_ppcs_mecoorig, list_dev_cat_plan_codigo):
+    
+    df_otc_t_sms_dias_tmp = df_otc_t_ppcs_mecoorig.filter(col('tip_prepago').isin(list_dev_cat_plan_codigo))
+        
+    df_otc_t_sms_dias_tmp = df_otc_t_sms_dias_tmp.selectExpr('msisdn','fecha','T_SMS').distinct()
+    
+    df_otc_t_sms_dias_tmp = df_otc_t_sms_dias_tmp.cache()
+        
+    # Insercion de datos (sobre-escritura) para tabla DB_TEMPORALES.OTC_T_datos_dias_tmp
+    val_retorno_insercion = fun_realizar_insercion_df_tabla(sqlContext, val_base_temporales, val_otc_t_sms_dias_tmp, df_otc_t_sms_dias_tmp)
+    
+    print(msg_succ('======== df_otc_t_sms_dias_tmp  =>  fun_realizar_insercion_df_tabla ==========='))
+    print( msg_succ('%s => \n') % ( val_retorno_insercion ) )
+
+    return df_otc_t_sms_dias_tmp, "Transformacion => fun_cargar_df_otc_t_sms_dias_tmp => df_otc_t_sms_dias_tmp" + str_datos_df
+
+@seguimiento_transformacion
+# Generamos un dataframe en base al dataframe y lista antes generados: df_otc_t_ppcs_content, list_dev_cat_plan_codigo
+def fun_cargar_df_otc_t_cont_dias_tmp(sqlContext, df_otc_t_ppcs_content, list_dev_cat_plan_codigo):
+    
+    df_otc_t_cont_dias_tmp = df_otc_t_ppcs_content.filter(col('tip_prepago').isin(list_dev_cat_plan_codigo))
+        
+    df_otc_t_cont_dias_tmp = df_otc_t_cont_dias_tmp.selectExpr('msisdn','fecha','T_CONTENIDO').distinct()
+    
+    df_otc_t_cont_dias_tmp = df_otc_t_cont_dias_tmp.cache()
+        
+    # Insercion de datos (sobre-escritura) para tabla DB_TEMPORALES.OTC_T_datos_dias_tmp
+    val_retorno_insercion = fun_realizar_insercion_df_tabla(sqlContext, val_base_temporales, val_otc_t_cont_dias_tmp, df_otc_t_cont_dias_tmp)
+    
+    print(msg_succ('======== df_otc_t_cont_dias_tmp  =>  fun_realizar_insercion_df_tabla ==========='))
+    print( msg_succ('%s => \n') % ( val_retorno_insercion ) )
+
+    return df_otc_t_cont_dias_tmp, "Transformacion => fun_cargar_df_otc_t_cont_dias_tmp => df_otc_t_cont_dias_tmp" + str_datos_df
+
+@seguimiento_transformacion
+#  Cargamos los Datos resultantes de la union de tablas en HIVE => db_temporales.otc_t_parque_traficador_dias_tmp
+def fun_cargar_df_otc_t_360_ubicacion(sqlContext, df_mksharevozdatos_90_final, val_base_reportes, val_otc_t_360_ubicacion, val_fecha_ejecucion): 
+    
+    # Insercion de Datos
+    val_retorno_insercion = fun_cargar_datos_dinamico(sqlContext, df_mksharevozdatos_90_final, val_base_reportes, val_otc_t_360_ubicacion, val_fecha_ejecucion, val_fecha_ejecucion, val_fecha_ejecucion)
+    print(msg_succ('======== df_otc_t_360_ubicacion  =>  fun_cargar_datos_dinamico ==========='))
+    print( msg_succ('%s => \n') % ( val_retorno_insercion ) )
+
+    str_datos_df = fun_obtener_datos_df(val_se_calcula,df_otc_t_360_ubicacion)
+    return "Transformacion => fun_cargar_df_otc_t_360_ubicacion => df_otc_t_360_ubicacion" + str_datos_df
+
+
+
+
+
 
 ### control point 2
 @seguimiento_transformacion

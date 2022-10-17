@@ -23,11 +23,11 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 	
 	ENTIDAD=OTC_T_360_PIVOTE_PARQUE
     # AMBIENTE (1=produccion, 0=desarrollo)
-    ((AMBIENTE=1))
+    ((AMBIENTE=0))
     FECHAEJE=$1 # yyyyMMdd
     # Variable de control de que paso ejecutar
 	PASO=$2
-	COLA_EJECUCION=capa_semantica;
+	COLA_EJECUCION=default;
 	ABREVIATURA_TEMP=_prod
 
 		

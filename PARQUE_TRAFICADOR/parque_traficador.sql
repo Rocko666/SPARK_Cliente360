@@ -60,7 +60,7 @@ WHERE
 
 DROP TABLE $ESQUEMA_TEMP.OTC_T_cont_dias_tmp;
 
-CREATE TABLE $ESQUEMA_TEMP.OTC_T_cont_dias_tmp AS
+CREATE TABLE $ESQUEMA_TEMP.otc_t_cont_dias_tmp AS
 	SELECT
 	DISTINCT CAST(msisdn AS bigint) msisdn
 	, CAST(fecha AS bigint) fecha
@@ -80,9 +80,9 @@ WHERE
 
 
 --- las siguientes istrucciones no estan en querys
-DROP TABLE $ESQUEMA_TEMP.OTC_T_parque_traficador_dias_tmp;
+DROP TABLE $ESQUEMA_TEMP.otc_t_parque_traficador_dias_tmp;
 
-CREATE TABLE $ESQUEMA_TEMP.OTC_T_parque_traficador_dias_tmp AS	
+CREATE TABLE $ESQUEMA_TEMP.otc_t_parque_traficador_dias_tmp AS	
 	WITH contadias AS (
 SELECT
 	DISTINCT msisdn
@@ -125,19 +125,11 @@ FROM
 	SELECT
 		contadias.msisdn TELEFONO
 		, contadias.fecha
-		, COALESCE(p.T_voz
-		, 0) T_voz
-		, COALESCE(a.T_datos
-		, 0) T_datos
-		, COALESCE(m.T_sms
-		, 0) T_sms
-		, COALESCE(n.T_CONTENIDO
-		, 0) T_CONTENIDO
-		, COALESCE (p.T_voz
-		, a.T_datos
-		, m.T_sms
-		, n.T_CONTENIDO
-		, 0) total
+		, COALESCE(p.T_voz, 0) T_voz
+		, COALESCE(a.T_datos, 0) T_datos
+		, COALESCE(m.T_sms, 0) T_sms
+		, COALESCE(n.T_CONTENIDO, 0) T_CONTENIDO
+		, COALESCE (p.T_voz, a.T_datos, m.T_sms, n.T_CONTENIDO, 0) total
 	FROM
 		contadias
 	LEFT JOIN $ESQUEMA_TEMP.OTC_T_voz_dias_tmp p ON
