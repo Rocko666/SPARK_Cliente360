@@ -26,8 +26,10 @@ val_tabla_cat_bonos_pdv = 'cat_bonos_pdv'
 
 val_fecha_cambio_buzon = 20210630
 
-val_abreviatura_temp='prod'
-val_esquema_temp='db_temporales'
+#val_abreviatura_temp='prod'
+val_abreviatura_temp='des'
+#val_esquema_temp='db_temporales'
+val_esquema_temp='db_desarrollo2021'
 
 
 #tablas para devengos

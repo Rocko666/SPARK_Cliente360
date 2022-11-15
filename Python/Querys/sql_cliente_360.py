@@ -226,7 +226,7 @@ def fun_extraer_movi_parque(fecha_alta_inicial, fecha_alta_final, fecha_proc, fe
             	fecha_alta,
             	fecha_baja,
             	nvl(fecha_modif,fecha_alta) fecha_last_status,
-            	case when (fecha_baja is null or fecha_baja = '') then current_timestamp() else fecha_baja end as fecha_baja_new,
+            	case when (fecha_baja is null or fecha_baja = '') then '2022-10-01 12:21:31.393' else fecha_baja end as fecha_baja_new,
             	estado_abonado,
             	{fecha_eje_pv} fecha_proceso, 
             	numero_abonado,
@@ -241,7 +241,7 @@ def fun_extraer_movi_parque(fecha_alta_inicial, fecha_alta_final, fecha_proc, fe
             	correo_cliente_pr,
             	telefono_cliente_pr,
             	imei,
-            	row_number() over (partition by num_telefonico order by (case when (fecha_baja is null or fecha_baja = '') then current_timestamp() else fecha_baja end) desc,fecha_alta desc,nvl(fecha_modif,fecha_alta) desc) as orden
+            	row_number() over (partition by num_telefonico order by (case when (fecha_baja is null or fecha_baja = '') then '2022-10-01 12:21:31.393' else fecha_baja end) desc,fecha_alta desc,nvl(fecha_modif,fecha_alta) desc) as orden
             	FROM db_cs_altas.otc_t_nc_movi_parque_v1
             	WHERE fecha_proceso = {fecha_proc}
             ) t
@@ -288,10 +288,12 @@ def fun_extraer_churn(fechamenos5, fechamas1):
             a.num_telefonico,
             a.counted_days,
             'churn' as fuente
-            from db_temporales.tmp_360_otc_t_360_churn90_ori_prod a
+            from db_desarrollo2021.tmp_360_otc_t_360_churn90_ori_des a
       '''.format(fechamenos5=fechamenos5, fechamas1=fechamas1)
     return qry
 
+
+##  tabla desde proceso RECARGAS EN CLIENTE 360 (DEPENDENCIA)
 @cargar_consulta
 def fun_extraer_churn_dia():
     qry = '''
@@ -310,7 +312,7 @@ def fun_extraer_churn_dia():
 def fun_extraer_churn_inac(fecha_inac_1):
     qry = '''
         SELECT num_telefonico,counted_days 
-        FROM db_temporales.tmp_360_otc_t_360_churn90_tmp1_prod
+        FROM db_desarrollo2021.tmp_360_otc_t_360_churn90_tmp1_des
       '''.format(fecha_inac_1=fecha_inac_1)
     return qry
 
@@ -318,7 +320,7 @@ def fun_extraer_churn_inac(fecha_inac_1):
 def fun_extraer_parque_inac():
     qry = '''
         SELECT telefono
-        FROM db_temporales.tmp_360_parque_inactivo_prod
+        FROM db_desarrollo2021.tmp_360_parque_inactivo_des
         group by telefono
       '''
     return qry

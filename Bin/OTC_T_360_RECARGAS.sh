@@ -25,7 +25,6 @@
 	PASO=$2
 		
 
-
 	
 	#Verificar que la configuraci?n de la entidad exista
 	if [ "$AMBIENTE" = "1" ]; then
