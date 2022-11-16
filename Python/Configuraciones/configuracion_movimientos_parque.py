@@ -17,7 +17,7 @@ val_base_pro_transfer_consultas = 'db_cs_altas'
 val_base_desa_transfer = 'db_desarrollo2021'
 
 # Tablas Fuente:
-val_otc_t_altas_bi = 'otc_t_altas_bi
+val_otc_t_altas_bi = 'otc_t_altas_bi'
 val_otc_t_bajas_bi = 'otc_t_bajas_bi'
 val_otc_t_transfer_in_bi = 'otc_t_transfer_in_bi'
 val_otc_t_transfer_out_bi = 'otc_t_transfer_out_bi'
