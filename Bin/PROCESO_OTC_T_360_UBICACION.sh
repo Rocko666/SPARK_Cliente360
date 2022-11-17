@@ -57,7 +57,7 @@ fi
 #################################################
 VAL_HORA=`date '+%Y%m%d%H%M%S'`
 VAL_FECHA_LOG=`date '+%Y%m%d%H%M%S'`
-VAL_RUTA_LOG=$VAL_RUTA_PROCESO/$VAL_NOMBRE_PROYECTO/Logs
+VAL_RUTA_LOG=$VAL_RUTA_PROCESO/Log
 VAL_NOMBRE_LOG=$VAL_NOMBRE_PROCESO"_"$VAL_FECHA_LOG.log
 VAL_LOG_EJECUCION_PRINCIPAL=$VAL_RUTA_LOG/"LogPrincipal_"$VAL_NOMBRE_LOG																 
 VAL_LOG_EJECUCION_PYTHON=$VAL_RUTA_LOG/$VAL_NOMBRE_LOG
@@ -89,4 +89,4 @@ fi
 
 exit $error
 
-# sh -x /home/nae108834/SPARK_Cliente360/OTC_T_360_UBICACION/Bin/OTC_T_360_UBICACION.sh 20220831 0 /home/nae108834/SPARK_Cliente360 OTC_T_360_UBICACION OTC_T_360_UBICACION /usr/hdp/current/spark2-client/bin/spark-submit
+# sh -x /home/nae108834/SPARK_Cliente360/Bin/OTC_T_360_UBICACION.sh 20220831 0 /home/nae108834/SPARK_Cliente360 Python CLIENTE_360_UBICACION /usr/hdp/current/spark2-client/bin/spark-submit

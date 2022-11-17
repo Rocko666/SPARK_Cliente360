@@ -16,6 +16,7 @@ val_base_reportes = 'db_desarrollo2021' ### 'db_reportes'
 val_base_ipaccess_consultas = 'db_ipaccess'
 
 # Tablas Finales
+val_otc_t_360_ubicacion_tmp = 'otc_t_360_ubicacion_tmp'
 val_otc_t_360_ubicacion = 'otc_t_360_ubicacion'
 
 # Tablas Temporales

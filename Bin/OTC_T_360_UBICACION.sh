@@ -5,86 +5,111 @@
 # Las tildes hansido omitidas intencionalmente en el script              #
 #------------------------------------------------------------------------#
 
+
+version=1.2.1000.2.6.4.0-91
+HADOOP_CLASSPATH=$(hcat -classpath) export HADOOP_CLASSPATH
+
+HIVE_HOME=/usr/hdp/current/hive-client
+HCAT_HOME=/usr/hdp/current/hive-webhcat
+SQOOP_HOME=/usr/hdp/current/sqoop-client
+
+export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HIVE_HOME}/lib/hive-metastore-${version}.jar,$HIVE_HOME/lib/libthrift-0.9.3.jar,$HIVE_HOME/lib/hive-exec-${version}.jar,$HIVE_HOME/lib/libfb303-0.9.3.jar,$HIVE_HOME/lib/jdo-api-3.0.1.jar,$SQOOP_HOME/lib/slf4j-api-1.7.7.jar,$HIVE_HOME/lib/hive-cli-${version}.jar
+
+
 ##########################################################################
 #------------------------------------------------------
 # VARIABLES CONFIGURABLES POR PROCESO (MODIFICAR)
 #------------------------------------------------------
+	
+	ENTIDAD=OTC_T_360_UBICACION
+    # AMBIENTE (1=produccion, 0=desarrollo)
+    ((AMBIENTE=1))
+    FECHAEJE=$1 # yyyyMMdd
+    # Variable de control de que paso ejecutar
+	
+	PASO=$2
+		
+#*****************************************************************************************************#
+#                                            Â¡Â¡ ATENCION !!                                           #
+#                                                                                                     #
+# Configurar las siguientes  consultas de acuerdo al orden de la tabla params de la base de datos URM #
+# en el servidor 10.112.152.183                                                                       #
+#*****************************************************************************************************#
 
-ENTIDAD=OTC_T_360_UBICACION
-# AMBIENTE (1=produccion, 0=desarrollo)
-((AMBIENTE=0))
-FECHAEJE=$1 # yyyyMMdd
-# Variable de control de que paso ejecutar
-PASO=$2
+   
 
-#Verificar que la configuraciÃ³n de la entidad exista
-if [ "$AMBIENTE" = "1" ]; then
-    ExisteEntidad=`mysql -N  <<<"select count(*) from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
-else
-    ExisteEntidad=`mysql -N  <<<"select count(*) from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
-fi
-    
-if ! [ "$ExisteEntidad" -gt 0 ]; then #-gt mayor a -lt menor a
-    echo " $TIME [ERROR] $rc No existen parametros para la entidad $ENTIDAD"
-    ((rc=1))
-    exit $rc
-fi
+	RUTA="" # RUTA es la carpeta del File System (URM-3.5.1) donde se va a trabajar 
 
-# Verificacion de fecha de ejecucion
-if [ -z "$FECHAEJE" ]; then #valida que este en blanco el parametro
-    ((rc=2))
-    echo " $TIME [ERROR] $rc Falta el parametro de fecha de ejecucion del programa"
-    exit $rc
-fi
-
-
-if [ "$AMBIENTE" = "1" ]; then
-    # Cargar Datos desde la base
-    RUTA=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
-    #Limpiar (1=si, 0=no)
-    TEMP=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
-        if [ $TEMP = "1" ];then
-    ((LIMPIAR=1))
-    else
-    ((LIMPIAR=0))
-        fi
-    NAME_SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
-    RUTA_LOG=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
-    
-else 
-    # Cargar Datos desde la base
-    RUTA=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
-    #Limpiar (1=si, 0=no)
-    TEMP=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
-        if [ $TEMP = "1" ];then
-    ((LIMPIAR=1))
-    else
-    ((LIMPIAR=0))
-        fi
-    NAME_SHELL=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
-    RUTA_LOG=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
+	
+	#Verificar que la configuraciÃ³n de la entidad exista
+	if [ "$AMBIENTE" = "1" ]; then
+		ExisteEntidad=`mysql -N  <<<"select count(*) from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
+	else
+		ExisteEntidad=`mysql -N  <<<"select count(*) from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
+	fi
+	 
+    if ! [ "$ExisteEntidad" -gt 0 ]; then #-gt mayor a -lt menor a
+       echo " $TIME [ERROR] $rc No existen parametros para la entidad $ENTIDAD"
+        ((rc=1))
+        exit $rc
+    fi
+	
+	# Verificacion de fecha de ejecucion
+    if [ -z "$FECHAEJE" ]; then #valida que este en blanco el parametro
+        ((rc=2))
+        echo " $TIME [ERROR] $rc Falta el parametro de fecha de ejecucion del programa"
+        exit $rc
+    fi
+	
+	
+	if [ "$AMBIENTE" = "1" ]; then
+		# Cargar Datos desde la base
+		RUTA=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
+		#Limpiar (1=si, 0=no)
+		TEMP=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
+		  if [ $TEMP = "1" ];then
+		((LIMPIAR=1))
+		else
+		((LIMPIAR=0))
+		  fi
+		NAME_SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
+		RUTA_LOG=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
+		
+	else 
+		# Cargar Datos desde la base
+		RUTA=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
+		#Limpiar (1=si, 0=no)
+		TEMP=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
+		  if [ $TEMP = "1" ];then
+		((LIMPIAR=1))
+		else
+		((LIMPIAR=0))
+		  fi
+		NAME_SHELL=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
+		RUTA_LOG=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
 
 	fi	
 	
-#Verificar si tuvo datos de la base
-TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
-if [ -z "$RUTA" ]; then
-((rc=3))
-echo " $TIME [ERROR] $rc No se han obtenido los valores necesarios desde la base de datos"
-exit $rc
-fi
+	 #Verificar si tuvo datos de la base
+    TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
+    if [ -z "$RUTA" ]; then
+    ((rc=3))
+    echo " $TIME [ERROR] $rc No se han obtenido los valores necesarios desde la base de datos"
+    exit $rc
+    fi
+	
+	# Verificacion de re-ejecucion
+    if [ -z "$PASO" ]; then
+        PASO=0
+        echo " $TIME [INFO] $rc Este es un proceso normal"
+    else
+        echo " $TIME [INFO] $rc Este es un proceso de re-ejecucion"
 
-# Verificacion de re-ejecucion
-if [ -z "$PASO" ]; then
-    PASO=0
-    echo " $TIME [INFO] $rc Este es un proceso normal"
-else
-    echo " $TIME [INFO] $rc Este es un proceso de re-ejecucion"
-
-fi
+    fi
 #------------------------------------------------------
 # VARIABLES DE OPERACION Y AUTOGENERADAS
 #------------------------------------------------------
+   
     EJECUCION=$ENTIDAD$FECHAEJE
     #DIA: Obtiene la fecha del sistema
     DIA=`date '+%Y%m%d'` 
@@ -100,6 +125,56 @@ fi
     LOGS=$RUTA_LOG/Log
 	#LOGPATH ruta base donde se guardan los logs
     LOGPATH=$RUTA_LOG/Log
+
+#------------------------------------------------------
+# DEFINICION DE FUNCIONES
+#------------------------------------------------------
+
+    # Guarda los resultados en los archivos de correspondientes y registra las entradas en la base de datos de control    
+    function log() #funcion 4 argumentos (tipo, tarea, salida, mensaje)
+    {
+        if [ "$#" -lt 4 ]; then
+            echo "Faltan argumentosen el llamado a la funcion"
+            return 1 # Numero de argumentos no completo
+        else
+            if [ "$1" = 'e' -o "$1" = 'E' ]; then
+                TIPOLOG=ERROR
+            else
+                TIPOLOG=INFO
+            fi
+                TAREA="$2"
+		            MEN="$4"
+				PASO_EJEC="$5"
+                FECHA=`date +%Y"-"%m"-"%d`
+                HORAS=`date +%H":"%M":"%S`
+                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
+                MSJ=$(echo " $TIME [$TIPOLOG] Tarea: $TAREA - $MEN ")
+                echo $MSJ >> $LOGS/$EJECUCION.log
+                mysql -e "insert into logs values ('$ENTIDAD','$EJECUCION','$TIPOLOG','$FECHA','$HORAS','$TAREA',$3,'$MEN','$PASO_EJEC','$NAME_SHELL')"
+                echo $MSJ
+                return 0
+        fi
+    }
+	
+	
+    function stat() #funcion 4 argumentos (Tarea, duracion, fuente, destino)
+    {
+        if [ "$#" -lt 4 ]; then
+            echo "Faltan argumentosen el llamado a la funcion"
+            return 1 # Numero de argumentos no completo
+        else
+                TAREA="$1"
+		        DURACION="$2"
+                FECHA=`date +%Y"-"%m"-"%d`
+                HORAS=`date +%H":"%M":"%S`
+                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
+                MSJ=$(echo " $TIME [INFO] Tarea: $TAREA - Duracion : $DURACION ")
+                echo $MSJ >> $LOGS/$EJECUCION.log
+                mysql -e "insert into stats values ('$ENTIDAD','$EJECUCION','$TAREA','$FECHA $HORAS','$DURACION',$3,'$4')"
+                echo $MSJ
+                return 0
+        fi
+    }
 #------------------------------------------------------
 # VERIFICACION INICIAL 
 #------------------------------------------------------
@@ -134,6 +209,7 @@ fi
   eval monthless1=`echo $fecha_finMesAntf2 | cut -c5-6`    
   fechaMes=$yearless1$monthless1									  #Formato YYYYMM
   fechaIniMes=$yearless1$monthless1$day                            #Formato YYYYMMDD  
+  
 #------------------------------------------------------
 # CREACION DE LOGS 
 #------------------------------------------------------
@@ -196,7 +272,31 @@ fi
         INICIO=$(date +%s)
         
         #Consulta a ejecutar
-		/usr/bin/hive -e "sql 1" 2>> $LOGS/$EJECUCION.log	
+		/usr/bin/hive -e "set hive.cli.print.header=false ;
+			drop table db_reportes.otc_t_360_ubicacion_tmp;
+            create table db_reportes.otc_t_360_ubicacion_tmp as 
+            select a.id_cliente as telefono
+            ,a.franja_horaria 
+            ,a.id_celda
+            ,a.lat_celda
+            ,a.lon_celda
+            ,a.dpa_sector
+            ,a.cod_sector
+            ,a.dpa_zona
+            ,a.cod_zona
+            ,a.dpa_parroquia
+            ,a.cod_parroquia
+            ,a.dpa_canton
+            ,a.cod_canton
+            ,a.dpa_provincia
+            ,a.cod_provincia
+            ,a.dpa_zipcode
+            ,a.cod_zipcode
+            ,a.fecha_proceso
+            from db_ipaccess.mksharevozdatos_90 a 
+            inner join (SELECT max(fecha_proceso) max_fecha FROM db_ipaccess.mksharevozdatos_90 where fecha_proceso <= '$FECHAEJE') fm on fm.max_fecha = a.fecha_proceso
+            where a.franja_horaria='GLOBAL';
+			" 2>> $LOGS/$EJECUCION.log	
 				
 				# Verificacion de creacion tabla external
 		if [ $? -eq 0 ]; then
@@ -221,7 +321,9 @@ fi
 	 
 	log i "HIVE" $rc  " INICIO EJECUCION de la TRUNCATE en HIVE" $PASO
 	
-	/usr/bin/hive -e " sql 2" 1>> $LOGS/$EJECUCION.log 2>> $LOGS/$EJECUCION.log
+	/usr/bin/hive -e "set hive.cli.print.header=false ; 
+	           ALTER TABLE db_reportes.otc_t_360_ubicacion DROP IF EXISTS PARTITION(fecha_proceso=$FECHAEJE);
+			   ;" 1>> $LOGS/$EJECUCION.log 2>> $LOGS/$EJECUCION.log
 	 
 	log i "HIVE" $rc  " FINALIZACION EJECUCION de la Drop partition en HIVE" $PASO
 	
@@ -236,7 +338,28 @@ fi
     
 	log i "HIVE" $rc  " INICIO EJECUCION del INSERT en HIVE" $PASO
 		
-		/usr/bin/hive -e "sql 3"
+		/usr/bin/hive -e "set hive.cli.print.header=false ; 
+				insert into db_reportes.otc_t_360_ubicacion partition(fecha_proceso)
+                select 
+				telefono
+            	,a.franja_horaria 
+           		,a.id_celda
+            	,a.lat_celda
+            	,a.lon_celda
+            	,a.dpa_sector
+            	,a.cod_sector
+            	,a.dpa_zona
+            	,a.cod_zona
+            	,a.dpa_parroquia
+            	,a.cod_parroquia
+            	,a.dpa_canton
+            	,a.cod_canton
+            	,a.dpa_provincia
+            	,a.cod_provincia
+            	,a.dpa_zipcode
+            	,a.cod_zipcode
+				,cast('$FECHAEJE' as bigint) as fecha_proceso
+				from db_reportes.otc_t_360_ubicacion_tmp a;"
 				1>> $LOGS/$EJECUCION.log 2>> $LOGS/$EJECUCION.log
 
 			log i "HIVE" $rc  " FINALIZACION EJECUCION del INSERT en HIVE" $PASO
@@ -259,5 +382,6 @@ fi
 # LIMPIEZA DE ARCHIVOS TEMPORALES 
 #------------------------------------------------------
 		
-	       /usr/bin/hive -e "sql 4" 2>> $LOGS/$EJECUCION.log
+	       /usr/bin/hive -e "set hive.cli.print.header=false ; 
+			drop table db_reportes.otc_t_360_ubicacion_tmp;" 2>> $LOGS/$EJECUCION.log
 exit $rc 
