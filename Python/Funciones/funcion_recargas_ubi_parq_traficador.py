@@ -78,12 +78,28 @@ def fun_obtener_fecha_particion(sqlContext, bdd, nombre_tabla, fec_ini, fec_fin,
 
 
 # FECHAS PROCESO 
-def obtener_fecha_del_proceso(fecha_ejecucion, formato_fecha):
+#*******************************************************************#
+#* 1. OTC_T_360_UBICACION                                           #
+#*******************************************************************#
+def obtener_fecha_del_proceso_ubicacion(fecha_ejecucion, formato_fecha):
     # SET FECHA_PROC
     val_fecha_proc = datetime.strptime(str(fecha_ejecucion), formato_fecha).date()
     val_fecha_proc = val_fecha_proc.strftime(formato_fecha)
         
     return val_fecha_proc
+
+#*******************************************************************#
+#* 2. OTC_T_360_PARQUE_TRAFICADOR                                   #
+#*******************************************************************#
+def obtener_fecha_del_proceso_parque_traficador(fecha_ejecucion, fecha_inicio, formato_fecha):
+    # SET FECHA_PROC
+    val_fecha_eje = datetime.strptime(str(fecha_ejecucion), formato_fecha).date()
+    val_fecha_eje = val_fecha_eje.strftime(formato_fecha)
+    
+    val_fecha_ini = datetime.strptime(str(fecha_inicio), formato_fecha).date()
+    val_fecha_ini = val_fecha_ini.strftime(formato_fecha)
+        
+    return val_fecha_eje, val_fecha_ini
 
 # GENERALES
 

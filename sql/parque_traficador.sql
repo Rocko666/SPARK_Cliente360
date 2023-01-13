@@ -1,3 +1,6 @@
+-- parque traficador obtiene una fecha por shell y es fecha eje=yyyyMMdd
+-- a su vez esta shellscript obtiene una fecha inicial por condiciones replicable a la nueva shell para pysprk
+-- el sql original embebido en la shell ejecuta estas dos fechas
 DROP TABLE $ESQUEMA_TEMP.OTC_T_voz_dias_tmp;
 
 CREATE TABLE $ESQUEMA_TEMP.OTC_T_voz_dias_tmp AS
