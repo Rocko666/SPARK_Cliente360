@@ -2,11 +2,11 @@
 ##########################################################################
 #   Script de carga de Generica para entidades de URM con reejecuciÃ³n    #
 # Creado 13-Jun-2018 (LC) Version 1.0                                    #
-# Las tildes hansido omitidas intencionalmente en el script              #
+# Las tildes han sido omitidas intencionalmente en el script              #
 #------------------------------------------------------------------------#
 
 
-version=1.2.1000.2.6.4.0-91
+version=1.2.1000.2.6.5.0-292
 HADOOP_CLASSPATH=$(hcat -classpath) export HADOOP_CLASSPATH
 
 HIVE_HOME=/usr/hdp/current/hive-client
@@ -21,7 +21,7 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 # VARIABLES CONFIGURABLES POR PROCESO (MODIFICAR)
 #------------------------------------------------------
 	
-	ENTIDAD=OTC_T_360_UBICACION
+	ENTIDAD=OTC_T_360_UBICACION otc_t_360_ubicacion
     # AMBIENTE (1=produccion, 0=desarrollo)
     ((AMBIENTE=1))
     FECHAEJE=$1 # yyyyMMdd
