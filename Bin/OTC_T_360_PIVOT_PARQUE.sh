@@ -6,7 +6,7 @@
 #------------------------------------------------------------------------#
 
 
-version=1.2.1000.2.6.4.0-91
+version=1.2.1000.2.6.5.0-292
 HADOOP_CLASSPATH=$(hcat -classpath) export HADOOP_CLASSPATH
 
 HIVE_HOME=/usr/hdp/current/hive-client
@@ -21,14 +21,14 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 # VARIABLES CONFIGURABLES POR PROCESO (MODIFICAR)
 #------------------------------------------------------
 	
-	ENTIDAD=D_OTC_T_360_PIVOTE_PARQUE
+	ENTIDAD=OTC_T_360_PIVOTE_PARQUE
     # AMBIENTE (1=produccion, 0=desarrollo)
-    ((AMBIENTE=0))
+    ((AMBIENTE=1))
     FECHAEJE=$1 # yyyyMMdd
     # Variable de control de que paso ejecutar
 	PASO=$2
 	COLA_EJECUCION=capa_semantica;
-	ABREVIATURA_TEMP=_des
+	ABREVIATURA_TEMP=_prod
 
 		
 #*****************************************************************************************************#
