@@ -1,10 +1,10 @@
 #########################################################################################################
-# NOMBRE: OTC_T_360_UBICACION.sh  		      												                        
+# NOMBRE: OTC_T_360_PIVOT_PARQUE.sh  		      												                        
 # DESCRIPCION:																							                                            
 # Shell que carga los datos desde hive y los exporta oracle		
 # Las tildes han sido omitidas intencionalmente en el script  	                                                 											             
 # AUTOR: Cristian Ortiz - Softconsulting             														                          
-# FECHA CREACION: 2023-01-13																			                                      
+# FECHA CREACION: 2023-01-16																			                                      
 # PARAMETROS DEL SHELL                            													                            
 # $1: Parametro de Fecha Inicial del proceso a ejecutar  								        		                    						                	
 #########################################################################################################
@@ -18,8 +18,9 @@
 # VARIABLES #
 ##############
 
-ENTIDAD=OTC_T_360_UBICACION
-SPARK_GENERICO=D_SPARK_GENERICO
+ENTIDAD=OTC_T_360_PIVOT_PARQUE
+SPARK_GENERICO=SPARK_GENERICO
+ABREVIATURA_TEMP=_prod
 
 SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'SHELL';"`
 
@@ -33,7 +34,6 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros definidos en la tabla params"
 VAL_RUTA=`mysql -N <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RUTA';"` 
 HIVEDB=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'HIVEDB';"`         
 HIVETABLE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'HIVETABLE';"`  
-TDCLASS_ORC=`mysql -N  <<<"select valor from params where ENTIDAD = '"$SPARK_GENERICO"' AND parametro = 'TDCLASS_ORC';"`          
 RUTA_PYTHON=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RUTA_PYTHON';"` 
 TABLA_MKSHAREVOZDATOS_90=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'TABLA_MKSHAREVOZDATOS_90';"` 
 VAL_ETP01_MASTER=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_MASTER';"`
@@ -67,8 +67,8 @@ if [ -z "$VAL_FECHA_PROCESO" ] ||
 	[ -z "$VAL_ETP01_EXECUTOR_MEMORY" ] ||
 	[ -z "$VAL_ETP01_NUM_EXECUTORS" ] ||
 	[ -z "$VAL_ETP01_NUM_EXECUTORS_CORES" ] ||
-	[ -z "$VAL_RUTA_SPARK" ] ||
-	[ -z "$TDCLASS_ORC" ]; then
+	[ -z "$ABREVIATURA_TEMP" ] ||
+	[ -z "$VAL_RUTA_SPARK" ]; then
   echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: $TIME [ERROR] $rc unos de los parametros esta vacio o es nulo" >> $VAL_LOG_EJECUCION
   error=1
   exit $error
@@ -76,17 +76,83 @@ fi
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros calculados de fechas  " >> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
+#------------------------------------------------------
+# DEFINICION DE FECHAS
+#------------------------------------------------------
 FECHA_EJECUCION=`date '+%Y%m%d' -d "$VAL_FECHA_PROCESO"`
 ETAPA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'ETAPA';"`
 
+eval year=`echo $VAL_FECHA_PROCESO | cut -c1-4`
+eval month=`echo $VAL_FECHA_PROCESO | cut -c5-6`
+day="01"
+fechaMes=$year$month
+fechaIniMes=$year$month$day                            #Formato YYYYMMDD
+fecha=`date "+%Y-%m-%d"`
+let fecha_hoy=$fecha
+fecha_proc=`date -d "${VAL_FECHA_PROCESO} +1 day"  +"%Y%m%d"`
+
+let fecha_proc1=$fecha_proc
+
+fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+let fechainiciomes=$fecha_inico_mes_1_1
+fechamas1_1=`date '+%Y%m%d' -d "$VAL_FECHA_PROCESO+1 day"`
+let fechamas1=$fechamas1_1*1
+
+fechaInimenos2mes_1=`date '+%Y%m%d' -d "$fechaIniMes-2 month"`
+let fechaInimenos2mes=$fechaInimenos2mes_1*1
+fechaInimenos3mes_1=`date '+%Y%m%d' -d "$fechaIniMes-3 month"`
+let fechaInimenos3mes=$fechaInimenos3mes_1*1
+fechamenos1_1=`date '+%Y%m%d' -d "$VAL_FECHA_PROCESO-1 day"`
+let fecha_menos1=$fechamenos1_1
+fechamenos5_1=`date '+%Y%m%d' -d "$VAL_FECHA_PROCESO-10 day"`
+let fechamenos5=$fechamenos5_1*1
+fechaeje1=`date '+%Y-%m-%d' -d "$VAL_FECHA_PROCESO"`
+let fecha_form_eje=$fechaeje1
+fecha_inac_1=`date '+%Y%m%d' -d "$fecha_inico_mes_1_1-1 day"`
+let fecha_foto_inac=$fecha_inac_1
+
+fecha_alt_ini=`date '+%Y-%m-%d' -d "$fecha_proc"`
+ultimo_dia_mes_ant=`date -d "${fechaIniMes} -1 day"  +"%Y%m%d"`
+fecha_alt_fin=`date '+%Y-%m-%d' -d "$ultimo_dia_mes_ant"`
+
+eval year_prev=`echo $ultimo_dia_mes_ant | cut -c1-4`
+eval month_prev=`echo $ultimo_dia_mes_ant | cut -c5-6`
+fechaIniMes_prev=$year_prev$month_prev$day                            #Formato YYYYMMDD
+
+fecha_alt_dos_meses_ant_fin=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+
+primer_dia_dos_meses_ant=`date '+%Y%m%d' -d "$fecha_alt_dos_meses_ant_fin - 1 month"`       #Formato YYYYMMDD
+
+ultimo_dia_tres_meses_ant=`date -d "${primer_dia_dos_meses_ant} -1 day"  +"%Y-%m-%d"`
+fecha_alt_dos_meses_ant_ini=`date '+%Y-%m-%d' -d "$ultimo_dia_tres_meses_ant"`
+
+
 if [ -z "$ETAPA" ] || 
-	[ -z "$FECHA_EJECUCION" ] ; then
+	[ -z "$FECHA_EJECUCION" ] ||
+	[ -z "$fecha_alt_ini" ] ||
+	[ -z "$fecha_alt_fin" ] || 
+	[ -z "$fecha_proc" ] || 
+	[ -z "$fechamenos5" ] 
+	[ -z "$fechamas1" ] ||
+	[ -z "$fecha_alt_dos_meses_ant_fin" ] || 
+	[ -z "$fecha_alt_dos_meses_ant_ini" ] || 
+	[ -z "$fechaIniMes" ] || 
+	[ -z "$fecha_inac_1" ] ; then
   echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: $TIME [ERROR] $rc unos de los parametros calculados esta vacio o es nulo" >> $VAL_LOG_EJECUCION
   error=1
   exit $error
 fi
 
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: FECHA_EJECUCION => " $FECHA_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fecha_alt_ini => " $fecha_alt_ini
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fecha_alt_fin => " $fecha_alt_fin
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fecha_proc => " $fecha_proc
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fechamenos5 => " $fechamenos5
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fechamas1 => " $fechamas1
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fecha_alt_dos_meses_ant_fin => " $fecha_alt_dos_meses_ant_fin
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fecha_alt_dos_meses_ant_ini => " $fecha_alt_dos_meses_ant_ini
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fechaIniMes => " $fechaIniMes
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fecha_inac_1 => " $fecha_inac_1
 
 ###########################################################################################################################################################
 
@@ -103,11 +169,23 @@ $VAL_RUTA_SPARK \
 --executor-memory $VAL_ETP01_EXECUTOR_MEMORY \
 --num-executors $VAL_ETP01_NUM_EXECUTORS \
 --executor-cores $VAL_ETP01_NUM_EXECUTORS_CORES \
-$RUTA_PYTHON/otc_t_360_ubicacion.py \
+$RUTA_PYTHON/OTC_T_360_PIVOT_PARQUE.py \
 --vSEntidad=$ENTIDAD \
 --vTMksharevozdatos_90=$TABLA_MKSHAREVOZDATOS_90 \
 --vSSchHiveMain=$HIVEDB \
 --vSTblHiveMain=$HIVETABLE \
+--fec_alt_ini=$fecha_alt_ini \
+--fec_alt_fin=$fecha_alt_fin \
+--fec_eje_pv=$VAL_FECHA_PROCESO \
+--fec_proc=$fecha_proc \
+--fec_menos_5=$fechamenos5 \
+--fec_mas_1=$fechamas1 \
+--fec_alt_dos_meses_ant_fin=$fecha_alt_dos_meses_ant_fin \
+--fec_alt_dos_meses_ant_ini=$fecha_alt_dos_meses_ant_ini \
+--fec_ini_mes=$fechaIniMes \
+--fec_inac_1=$fecha_inac_1 \
+--fechaeje1=$fechaeje1 \
+--ABREVIATURA_TEMP=$ABREVIATURA_TEMP \
 --vIFechaProceso=$VAL_FECHA_PROCESO >> $VAL_LOG_EJECUCION
 
 	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
@@ -134,5 +212,5 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Finalizar el proceso " >> $VAL_
 	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El Proceso termina de manera exitosa " >> $VAL_LOG_EJECUCION
 	`mysql -N  <<<"update params set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 
-	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_UBICACION finaliza correctamente " >> $VAL_LOG_EJECUCION
+	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_PIVOT_PARQUE finaliza correctamente " >> $VAL_LOG_EJECUCION
 fi

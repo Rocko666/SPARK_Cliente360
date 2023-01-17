@@ -5,17 +5,6 @@
 # Las tildes hansido omitidas intencionalmente en el script              #
 #------------------------------------------------------------------------#
 
-
-version=1.2.1000.2.6.5.0-292
-HADOOP_CLASSPATH=$(hcat -classpath) export HADOOP_CLASSPATH
-
-HIVE_HOME=/usr/hdp/current/hive-client
-HCAT_HOME=/usr/hdp/current/hive-webhcat
-SQOOP_HOME=/usr/hdp/current/sqoop-client
-
-export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HIVE_HOME}/lib/hive-metastore-${version}.jar,$HIVE_HOME/lib/libthrift-0.9.3.jar,$HIVE_HOME/lib/hive-exec-${version}.jar,$HIVE_HOME/lib/libfb303-0.9.3.jar,$HIVE_HOME/lib/jdo-api-3.0.1.jar,$SQOOP_HOME/lib/slf4j-api-1.7.7.jar,$HIVE_HOME/lib/hive-cli-${version}.jar
-
-
 ##########################################################################
 #------------------------------------------------------
 # VARIABLES CONFIGURABLES POR PROCESO (MODIFICAR)
@@ -30,32 +19,7 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 	COLA_EJECUCION=capa_semantica;
 	ABREVIATURA_TEMP=_prod
 
-		
-#*****************************************************************************************************#
-#                                            Â¡Â¡ ATENCION !!                                           #
-#                                                                                                     #
-# Configurar las siguientes  consultas de acuerdo al orden de la tabla params de la base de datos URM #
-# en el servidor 10.112.152.183                                                                       #
-#*****************************************************************************************************#
-
-	isnum() { awk -v a="$1" 'BEGIN {print (a == a + 0)}'; }
 	
-	function isParamListNum() #parametro es el grupo de valores separados por ;
-    {
-        local value
-		local isnumPar
-        for value in `echo "$1" | sed -e 's/;/\n/g'`
-        do
-		    isnumPar=`isnum "$value"`
-            if [  "$isnumPar" ==  "0" ]; then
-                ((rc=999))
-                echo " `date +%a" "%d"/"%m"/"%Y" "%X` [ERROR] $rc Parametro $value $2 no son numericos"
-                exit $rc
-			fi
-        done	     
-	
-	}  
-
 	RUTA="" # RUTA es la carpeta del File System (URM-3.5.1) donde se va a trabajar 
 	
 		#Verificar TABLA DE PARAMETROS A USAR
@@ -157,55 +121,6 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 	  #LOGPATH ruta base donde se guardan los logs
     LOGPATH=$RUTA_LOG/Log
 
-#------------------------------------------------------
-# DEFINICION DE FUNCIONES
-#------------------------------------------------------
-
-    # Guarda los resultados en los archivos de correspondientes y registra las entradas en la base de datos de control    
-    function log() #funcion 4 argumentos (tipo, tarea, salida, mensaje)
-    {
-        if [ "$#" -lt 4 ]; then
-            echo "Faltan argumentosen el llamado a la funcion"
-            return 1 # Numero de argumentos no completo
-        else
-            if [ "$1" = 'e' -o "$1" = 'E' ]; then
-                TIPOLOG=ERROR
-            else
-                TIPOLOG=INFO
-            fi
-                TAREA="$2"
-		            MEN="$4"
-				PASO_EJEC="$5"
-                FECHA=`date +%Y"-"%m"-"%d`
-                HORAS=`date +%H":"%M":"%S`
-                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
-                MSJ=$(echo " $TIME [$TIPOLOG] Tarea: $TAREA - $MEN ")
-                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
-                mysql -e "insert into logs values ('$ENTIDAD','$EJECUCION','$TIPOLOG','$FECHA','$HORAS','$TAREA',$3,'$MEN','$PASO_EJEC','$NAME_SHELL')"
-                echo $MSJ
-                return 0
-        fi
-    }
-	
-	
-    function stat() #funcion 4 argumentos (Tarea, duracion, fuente, destino)
-    {
-        if [ "$#" -lt 4 ]; then
-            echo "Faltan argumentosen el llamado a la funcion"
-            return 1 # Numero de argumentos no completo
-        else
-                TAREA="$1"
-		        DURACION="$2"
-                FECHA=`date +%Y"-"%m"-"%d`
-                HORAS=`date +%H":"%M":"%S`
-                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
-                MSJ=$(echo " $TIME [INFO] Tarea: $TAREA - Duracion : $DURACION ")
-                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
-                mysql -e "insert into stats values ('$ENTIDAD','$EJECUCION','$TAREA','$FECHA $HORAS','$DURACION',$3,'$4')"
-                echo $MSJ
-                return 0
-        fi
-    }
 #------------------------------------------------------
 # VERIFICACION INICIAL 
 #------------------------------------------------------
@@ -421,6 +336,12 @@ select a.telefono,a.fecha_cambio_plan
 from db_cs_altas.otc_t_cambio_plan_bi a
 where UPPER(A.tipo_movimiento)='MISMA_TARIFA' AND 
 a.p_fecha_proceso = $fecha_proc;
+
+
+
+-------hasta aqui esta en query.py
+
+
 
 --SE OBTIENEN LAS BAJAS INVOLUNTARIAS, EN EL PERIODO DEL MES
 drop table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP;

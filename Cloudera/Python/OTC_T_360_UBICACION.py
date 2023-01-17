@@ -14,7 +14,7 @@ import sys
 import os
 # General cliente 360
 #from otc_t_360_ubicacion_config import *
-from otc_t_360_ubicacion_query import *
+from query.otc_t_360_ubicacion_query import *
 # Genericos
 sys.path.insert(1,'/var/opt/tel_spark')
 from messages import *
