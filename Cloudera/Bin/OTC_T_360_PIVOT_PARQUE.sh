@@ -35,7 +35,8 @@ VAL_RUTA=`mysql -N <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND
 HIVEDB=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'HIVEDB';"`         
 HIVETABLE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'HIVETABLE';"`  
 RUTA_PYTHON=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RUTA_PYTHON';"` 
-TABLA_MKSHAREVOZDATOS_90=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'TABLA_MKSHAREVOZDATOS_90';"` 
+VAL_ESQUEMA_TMP=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ESQUEMA_TMP';"` 
+vTAltasBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTAltasBi';"` 
 VAL_ETP01_MASTER=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_MASTER';"`
 VAL_ETP01_DRIVER_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_DRIVER_MEMORY';"`
 VAL_ETP01_EXECUTOR_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_EXECUTOR_MEMORY';"`
@@ -61,7 +62,8 @@ if [ -z "$VAL_FECHA_PROCESO" ] ||
 	[ -z "$HIVEDB" ] || 
 	[ -z "$VAL_RUTA" ] || 
 	[ -z "$VAL_LOG_EJECUCION" ] ||
-	[ -z "$TABLA_MKSHAREVOZDATOS_90" ] ||
+	[ -z "$VAL_ESQUEMA_TMP" ] ||
+	[ -z "$vTAltasBi" ] ||
 	[ -z "$VAL_ETP01_MASTER" ] ||
 	[ -z "$VAL_ETP01_DRIVER_MEMORY" ] ||
 	[ -z "$VAL_ETP01_EXECUTOR_MEMORY" ] ||
@@ -171,8 +173,9 @@ $VAL_RUTA_SPARK \
 --executor-cores $VAL_ETP01_NUM_EXECUTORS_CORES \
 $RUTA_PYTHON/OTC_T_360_PIVOT_PARQUE.py \
 --vSEntidad=$ENTIDAD \
---vTMksharevozdatos_90=$TABLA_MKSHAREVOZDATOS_90 \
+--vTAltasBi=$vTAltasBi \
 --vSSchHiveMain=$HIVEDB \
+--vSSchHiveTmp=$VAL_ESQUEMA_TMP \
 --vSTblHiveMain=$HIVETABLE \
 --fec_alt_ini=$fecha_alt_ini \
 --fec_alt_fin=$fecha_alt_fin \
