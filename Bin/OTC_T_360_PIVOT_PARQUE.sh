@@ -275,21 +275,24 @@ fecha_alt_dos_meses_ant_ini=`date '+%Y-%m-%d' -d "$ultimo_dia_tres_meses_ant"`
 		set hive.vectorized.execution.reduce.enabled=false;
 		set tez.queue.name=$COLA_EJECUCION;
 
-		drop table $ESQUEMA_TEMP.tmp_360_alta_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pp_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_upsell_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_downsell_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_misma_tarifa_tmp$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp$ABREVIATURA_TEMP;
+		drop table $ESQUEMA_TEMP.tmp_360_alta_tmp$ABREVIATURA_TEMP;    --n1
+		 drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pp_tmp$ABREVIATURA_TEMP;  --n2
+		 drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP;  --n3
+		 drop table $ESQUEMA_TEMP.tmp_360_upsell_tmp$ABREVIATURA_TEMP;   --n4
+		 drop table $ESQUEMA_TEMP.tmp_360_downsell_tmp$ABREVIATURA_TEMP;  --n5
+		 drop table $ESQUEMA_TEMP.tmp_360_misma_tarifa_tmp$ABREVIATURA_TEMP;  --n6
+		 drop table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP;   --n7
+		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_ori$ABREVIATURA_TEMP; --n8  -- este drop se lo paso a la parte de arriba en migracion standares cloudera
+		 drop table $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP$ABREVIATURA_TEMP; --N9
+		 drop table $ESQUEMA_TEMP.tmp_360_baja_tmp$ABREVIATURA_TEMP;  --n10
+		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp$ABREVIATURA_TEMP; --n
+		 
 		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_act$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_baja_tmp$ABREVIATURA_TEMP;
+		 
 		 drop table $ESQUEMA_TEMP.tmp_360_parque_inactivo$ABREVIATURA_TEMP;
 		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp1$ABREVIATURA_TEMP;
 		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inac$ABREVIATURA_TEMP;
 		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact$ABREVIATURA_TEMP;
-		 drop table $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP$ABREVIATURA_TEMP;
 		 drop table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_1$ABREVIATURA_TEMP;
 		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_parque_1_tmp$ABREVIATURA_TEMP;
 		drop table $ESQUEMA_TEMP.tmp_360_motivos_suspension$ABREVIATURA_TEMP;
@@ -297,40 +300,40 @@ fecha_alt_dos_meses_ant_ini=`date '+%Y-%m-%d' -d "$ultimo_dia_tres_meses_ant"`
 		
 	
 
---SE OBTIENEN LAS ALTAS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO	
+--SE OBTIENEN LAS ALTAS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO	N1
 create table $ESQUEMA_TEMP.tmp_360_alta_tmp$ABREVIATURA_TEMP as		
 select a.telefono,a.numero_abonado,a.fecha_alta
 from db_cs_altas.otc_t_altas_bi a	 
 where a.p_fecha_proceso = $fecha_proc
 and a.marca='TELEFONICA';
 
---SE OBTIENEN LAS TRANSFERENCIAS POS A PRE DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO
+--SE OBTIENEN LAS TRANSFERENCIAS POS A PRE DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO  N2
 create table $ESQUEMA_TEMP.tmp_360_transfer_in_pp_tmp$ABREVIATURA_TEMP as		
 select a.telefono,a.fecha_transferencia
 from db_cs_altas.otc_t_transfer_out_bi a
 where a.p_fecha_proceso = $fecha_proc;
 
---SE OBTIENEN LAS TRANSFERENCIAS PRE A POS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO
+--SE OBTIENEN LAS TRANSFERENCIAS PRE A POS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO  N3
 create table $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP as		
 select a.telefono,a.fecha_transferencia
 from db_cs_altas.otc_t_transfer_in_bi a	 
 where a.p_fecha_proceso = $fecha_proc;
 
---SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO UPSELL
+--SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO UPSELL  n4
 create table $ESQUEMA_TEMP.tmp_360_upsell_tmp$ABREVIATURA_TEMP as
 select a.telefono,a.fecha_cambio_plan 
 from db_cs_altas.otc_t_cambio_plan_bi a
 where UPPER(A.tipo_movimiento)='UPSELL' AND 
 a.p_fecha_proceso = $fecha_proc;
 
---SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO DOWNSELL
+--SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO DOWNSELL  N5
 create table $ESQUEMA_TEMP.tmp_360_downsell_tmp$ABREVIATURA_TEMP as
 select a.telefono,a.fecha_cambio_plan
 from db_cs_altas.otc_t_cambio_plan_bi a
 where UPPER(A.tipo_movimiento)='DOWNSELL' AND
 a.p_fecha_proceso = $fecha_proc;
 
---SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO CROSSELL
+--SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO CROSSELL  N6
 create table $ESQUEMA_TEMP.tmp_360_misma_tarifa_tmp$ABREVIATURA_TEMP as
 select a.telefono,a.fecha_cambio_plan 
 from db_cs_altas.otc_t_cambio_plan_bi a
@@ -338,13 +341,8 @@ where UPPER(A.tipo_movimiento)='MISMA_TARIFA' AND
 a.p_fecha_proceso = $fecha_proc;
 
 
-
--------hasta aqui esta en query.py
-
-
-
---SE OBTIENEN LAS BAJAS INVOLUNTARIAS, EN EL PERIODO DEL MES
-drop table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP;
+--SE OBTIENEN LAS BAJAS INVOLUNTARIAS, EN EL PERIODO DEL MES  N7
+drop table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP; --este drop ya se realiza arriba
 create table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP as
 select a.num_telefonico as telefono,a.fecha_proceso, count(1) as conteo
 from db_cs_altas.OTC_T_BAJAS_INVOLUNTARIAS a
@@ -352,8 +350,8 @@ where a.proces_date between $fechaIniMes and '$FECHAEJE'
 and a.marca='TELEFONICA'
 group by a.num_telefonico,a.fecha_proceso;
 
---SE OBTIENEN EL PARQUE PREPAGO, DE ACUERDO A LA M?IMA FECHA DE CHURN MENOR A LA FECHA DE EJECUCI?
-drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_ori$ABREVIATURA_TEMP;
+--SE OBTIENEN EL PARQUE PREPAGO, DE ACUERDO A LA M?IMA FECHA DE CHURN MENOR A LA FECHA DE EJECUCI? N8
+
 create table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_ori$ABREVIATURA_TEMP as
 SELECT PHONE_ID num_telefonico,COUNTED_DAYS 
 FROM db_cs_altas.OTC_T_CHURN_SP2 a
@@ -362,7 +360,7 @@ on a.PROCES_DATE = b.PROCES_DATE
 where a.marca='TELEFONICA'
 group by PHONE_ID,COUNTED_DAYS;
 
---SE OBTIENE POR CUENTA DE FACTURACI? EN BANCO ATADO
+--SE OBTIENE POR CUENTA DE FACTURACI? EN BANCO ATADO --N9
 create table $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP$ABREVIATURA_TEMP as
 select x.CTA_FACTURACION,
 x.CLIENTE_FECHA_ALTA, 
@@ -377,12 +375,14 @@ from (SELECT
 		and to_date(b.active_from_dat)<='$fechaeje1') as x 
 where rownum=1;
 
+--n10
 create table $ESQUEMA_TEMP.tmp_360_baja_tmp$ABREVIATURA_TEMP as		
 select a.telefono,a.fecha_baja
 from db_cs_altas.otc_t_bajas_bi a	 
 where a.p_fecha_proceso = $fecha_proc
 and a.marca='TELEFONICA';
 
+--n11
 create table $ESQUEMA_TEMP.tmp_360_parque_inactivo$ABREVIATURA_TEMP as
 select telefono from $ESQUEMA_TEMP.tmp_360_baja_tmp$ABREVIATURA_TEMP
 union all
@@ -390,6 +390,7 @@ select telefono from $ESQUEMA_TEMP.tmp_360_transfer_in_pp_tmp$ABREVIATURA_TEMP
 union all
 select telefono from $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP;
 
+--n12
 create table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp1$ABREVIATURA_TEMP as
 SELECT PHONE_ID num_telefonico,COUNTED_DAYS 
 FROM db_cs_altas.OTC_T_CHURN_SP2 a 

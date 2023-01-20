@@ -37,6 +37,11 @@ HIVETABLE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' A
 RUTA_PYTHON=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RUTA_PYTHON';"` 
 VAL_ESQUEMA_TMP=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ESQUEMA_TMP';"` 
 vTAltasBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTAltasBi';"` 
+vTTransferOutBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTTransferOutBi';"` 
+vTTransferInBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTTransferInBi';"` 
+vTCPBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTCPBi';"` 
+vTBajasInv=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTBajasInv';"` 
+vTChurnSP2=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTChurnSP2';"` 
 VAL_ETP01_MASTER=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_MASTER';"`
 VAL_ETP01_DRIVER_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_DRIVER_MEMORY';"`
 VAL_ETP01_EXECUTOR_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_EXECUTOR_MEMORY';"`
@@ -64,6 +69,11 @@ if [ -z "$VAL_FECHA_PROCESO" ] ||
 	[ -z "$VAL_LOG_EJECUCION" ] ||
 	[ -z "$VAL_ESQUEMA_TMP" ] ||
 	[ -z "$vTAltasBi" ] ||
+	[ -z "$vTTransferOutBi" ] ||
+	[ -z "$vTTransferInBi" ] ||
+	[ -z "$vTCPBi" ] ||
+	[ -z "$vTBajasInv" ] ||
+	[ -z "$vTChurnSP2" ] ||
 	[ -z "$VAL_ETP01_MASTER" ] ||
 	[ -z "$VAL_ETP01_DRIVER_MEMORY" ] ||
 	[ -z "$VAL_ETP01_EXECUTOR_MEMORY" ] ||
@@ -171,9 +181,17 @@ $VAL_RUTA_SPARK \
 --executor-memory $VAL_ETP01_EXECUTOR_MEMORY \
 --num-executors $VAL_ETP01_NUM_EXECUTORS \
 --executor-cores $VAL_ETP01_NUM_EXECUTORS_CORES \
-$RUTA_PYTHON/OTC_T_360_PIVOT_PARQUE.py \
+$RUTA_PYTHON/otc_t_360_pivot_parque.py \
 --vSEntidad=$ENTIDAD \
 --vTAltasBi=$vTAltasBi \
+--vTTransferOutBi=$vTTransferOutBi \
+--vTTransferInBi=$vTTransferInBi \
+--vTCPBi=$vTCPBi \
+--vTBajasInv=$vTBajasInv \
+--vTChurnSP2=$vTChurnSP2 \
+--vTCFact=$vTCFact \
+--vTPRMANDATE=$vTPRMANDATE \
+--vTBajasBi=$vTBajasBi \
 --vSSchHiveMain=$HIVEDB \
 --vSSchHiveTmp=$VAL_ESQUEMA_TMP \
 --vSTblHiveMain=$HIVETABLE \
@@ -188,7 +206,7 @@ $RUTA_PYTHON/OTC_T_360_PIVOT_PARQUE.py \
 --fec_ini_mes=$fechaIniMes \
 --fec_inac_1=$fecha_inac_1 \
 --fechaeje1=$fechaeje1 \
---ABREVIATURA_TEMP=$ABREVIATURA_TEMP \
+--vAbrev=$ABREVIATURA_TEMP \
 --vIFechaProceso=$VAL_FECHA_PROCESO >> $VAL_LOG_EJECUCION
 
 	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0

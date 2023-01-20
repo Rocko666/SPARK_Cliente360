@@ -31,16 +31,33 @@ def nme_tbl_tmp_otc_t_360_pivot_parque_07(vSchema,vAbrev):
     return nme
 
 def nme_tbl_tmp_otc_t_360_pivot_parque_08(vSchema,vAbrev):
-    nme="""{}.tmp_360_otc_t_360_churn90_tmp{}""".format(vSchema,vAbrev)
+    nme="""{}.tmp_360_otc_t_360_churn90_ori{}""".format(vSchema,vAbrev)
     return nme
 
 def nme_tbl_tmp_otc_t_360_pivot_parque_09(vSchema,vAbrev):
-    nme="""{}.tmp_360_otc_t_parque_act{}""".format(vSchema,vAbrev)
+    nme="""{}.tmp_360_otc_t_temp_banco_cliente360_tmp{}""".format(vSchema,vAbrev)
     return nme
 
 def nme_tbl_tmp_otc_t_360_pivot_parque_10(vSchema,vAbrev):
     nme="""{}.tmp_360_baja_tmp{}""".format(vSchema,vAbrev)
     return nme
+
+
+
+
+
+
+
+
+
+
+
+
+def nme_tbl_tmp_otc_t_360_pivot_parque_09(vSchema,vAbrev):
+    nme="""{}.tmp_360_otc_t_parque_act{}""".format(vSchema,vAbrev)
+    return nme
+
+
 
 def nme_tbl_tmp_otc_t_360_pivot_parque_11(vSchema,vAbrev):
     nme="""{}.tmp_360_parque_inactivo{}""".format(vSchema,vAbrev)
@@ -58,9 +75,7 @@ def nme_tbl_tmp_otc_t_360_pivot_parque_14(vSchema,vAbrev):
     nme="""{}.tmp_360_otc_t_parque_inact{}""".format(vSchema,vAbrev)
     return nme
 
-def nme_tbl_tmp_otc_t_360_pivot_parque_15(vSchema,vAbrev):
-    nme="""{}.tmp_360_otc_t_temp_banco_cliente360_tmp{}""".format(vSchema,vAbrev)
-    return nme
+
 
 def nme_tbl_tmp_otc_t_360_pivot_parque_16(vSchema,vAbrev):
     nme="""{}.otc_t_360_parque_1_tmp_1{}""".format(vSchema,vAbrev)
@@ -76,4 +91,9 @@ def nme_tbl_tmp_otc_t_360_pivot_parque_18(vSchema,vAbrev):
 
 def nme_tbl_tmp_otc_t_360_pivot_parque_19(vSchema,vAbrev):
     nme="""{}.tmp_360_base_preactivos{}""".format(vSchema,vAbrev)
+    return nme
+
+
+def nme_tbl_tmp_otc_t_360_pivot_parque_00(vSchema,vAbrev):
+    nme="""{}.tmp_360_otc_t_360_churn90_tmp{}""".format(vSchema,vAbrev)
     return nme
