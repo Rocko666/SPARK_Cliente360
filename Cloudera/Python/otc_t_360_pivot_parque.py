@@ -479,27 +479,59 @@ except Exception as e:
 
 print(lne_dvs())
 
-VStp='Paso [4.11]: Se obtienen las bajas desde el inicio del mes hasta la fecha de proceso de la tabla {} '.format(vTBajasBi)
+VStp='Paso [4.11]: Se unen los telefonos del parque inactivo '
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
-    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_tmp_otc_t_360_pivot_parque_10(vSSchHiveTmp, vAbrev)))))
-    print(etq_sql(qyr_tmp_360_baja_tmp(vTBajasBi, vFechaProc)))
-    df10=spark.sql(qyr_tmp_360_baja_tmp(vTBajasBi, vFechaProc))
-    if df10.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df10'))))
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_tmp_otc_t_360_pivot_parque_11(vSSchHiveTmp, vAbrev)))))
+    print(etq_sql(qyr_tmp_360_parque_inactivo(str(nme_tbl_tmp_otc_t_360_pivot_parque_10(vSSchHiveTmp, vAbrev))
+                                              , str(nme_tbl_tmp_otc_t_360_pivot_parque_02(vSSchHiveTmp, vAbrev))
+                                              , str(nme_tbl_tmp_otc_t_360_pivot_parque_03(vSSchHiveTmp, vAbrev)))))
+    df11=spark.sql(qyr_tmp_360_parque_inactivo(str(nme_tbl_tmp_otc_t_360_pivot_parque_10(vSSchHiveTmp, vAbrev))
+                                               , str(nme_tbl_tmp_otc_t_360_pivot_parque_02(vSSchHiveTmp, vAbrev))
+                                               , str(nme_tbl_tmp_otc_t_360_pivot_parque_03(vSSchHiveTmp, vAbrev))))
+    if df11.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df11'))))
     else:
         try:
             ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_pivot_parque_10(vSSchHiveTmp, vAbrev)))))
-            df10.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_pivot_parque_10(vSSchHiveTmp, vAbrev)))
-            df10.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_pivot_parque_10(vSSchHiveTmp, vAbrev)),str(df10.count())))) 
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_pivot_parque_11(vSSchHiveTmp, vAbrev)))))
+            df11.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_pivot_parque_11(vSSchHiveTmp, vAbrev)))
+            df11.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_pivot_parque_11(vSSchHiveTmp, vAbrev)),str(df10.count())))) 
             te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_tmp_otc_t_360_pivot_parque_10(vSSchHiveTmp, vAbrev)),vle_duracion(ts_step_tbl,te_step_tbl))))
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_tmp_otc_t_360_pivot_parque_11(vSSchHiveTmp, vAbrev)),vle_duracion(ts_step_tbl,te_step_tbl))))
         except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_tmp_otc_t_360_pivot_parque_10(vSSchHiveTmp, vAbrev)),str(e))))
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_tmp_otc_t_360_pivot_parque_11(vSSchHiveTmp, vAbrev)),str(e))))
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+
+print(lne_dvs())
+
+VStp='Paso [4.12]: S..................... '
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_tmp_otc_t_360_pivot_parque_12(vSSchHiveTmp, vAbrev)))))
+    print(etq_sql(qyr_tmp_360_otc_t_360_churn90_tmp1(vTChurnSP2, fec_inac_1)))
+    df12=spark.sql(qyr_tmp_360_otc_t_360_churn90_tmp1(vTChurnSP2, fec_inac_1))
+    if df12.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df12'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_pivot_parque_12(vSSchHiveTmp, vAbrev)))))
+            df12.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_pivot_parque_12(vSSchHiveTmp, vAbrev)))
+            df12.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_pivot_parque_12(vSSchHiveTmp, vAbrev)),str(df12.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_tmp_otc_t_360_pivot_parque_12(vSSchHiveTmp, vAbrev)),vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_tmp_otc_t_360_pivot_parque_12(vSSchHiveTmp, vAbrev)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -508,10 +540,7 @@ except Exception as e:
 print(lne_dvs())
 
 
-
-
-
-
+--- to define...
 
 
 

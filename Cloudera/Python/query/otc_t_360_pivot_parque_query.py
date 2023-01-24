@@ -135,5 +135,34 @@ and a.marca='TELEFONICA'
     '''.format(vTBajasBi=vTBajasBi, vFechaProc=vFechaProc)
     return qry
 
+# N 11
+def qyr_tmp_360_parque_inactivo(vT1, vT2, vT3):
+    qry='''
+select 
+telefono 
+from {}
+union all
+select 
+telefono 
+from {}
+union all
+select 
+telefono 
+from {}
+    '''.format(vT1=vT1, vT2=vT2, vT3=vT3)
+    return qry
+
+# N 12
+def qyr_tmp_360_otc_t_360_churn90_tmp1(vTChurnSP2, fec_inac_1):
+    qry='''
+SELECT 
+PHONE_ID num_telefonico
+,COUNTED_DAYS 
+FROM {vTChurnSP2} a 
+where PROCES_DATE='{fec_inac_11}'
+and a.marca='TELEFONICA'
+group by PHONE_ID,COUNTED_DAYS 
+    '''.format(vTChurnSP2=vTChurnSP2, fec_inac_1=fec_inac_1)
+    return qry
 
 

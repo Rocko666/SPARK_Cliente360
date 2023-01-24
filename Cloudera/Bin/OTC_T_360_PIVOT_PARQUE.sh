@@ -226,12 +226,52 @@ fi
 
 if [ "$ETAPA" = "2" ]; then
 ###########################################################################################################################################################
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2: Ejecucion del segundo proceso spark " >> $VAL_LOG_EJECUCION
+###########################################################################################################################################################
+$VAL_RUTA_SPARK \
+--name $ENTIDAD \
+--master $VAL_ETP02_MASTER \
+--driver-memory $VAL_ETP02_DRIVER_MEMORY \
+--executor-memory $VAL_ETP02_EXECUTOR_MEMORY \
+--num-executors $VAL_ETP02_NUM_EXECUTORS \
+--executor-cores $VAL_ETP02_NUM_EXECUTORS_CORES \
+--jars $RUTA_LIB/$RUTA_LIB_ORACLE \
+$RUTA_PYTHON/export_oracle_otc_t_360_rtd.py \
+--vSEntidad=$ENTIDAD \
+--vTable=$HIVEDB.$HIVETABLE \
+--vFechaProceso=$VAL_FECHA_PROCESO \
+--vJdbcUrl=$JDBCURL1 \
+--vTDDb=$TDDB \
+--vTDHost=$TDHOST \
+--vTDPass=$TDPASS \
+--vTDUser=$TDUSER \
+--vTDTable=$TDTABLE \
+--vTDPort=$TDPORT \
+--vTDService=$TDSERVICE \
+--vTDClass=$TDCLASS_ORC >> $VAL_LOG_EJECUCION
+
+	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
+	VAL_ERRORES=`egrep 'NODATA:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
+	if [ $VAL_ERRORES -ne 0 ];then
+		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: ETAPA 2 --> Problemas en la carga de informacion a ORACLE " >> $VAL_LOG_EJECUCION
+		exit 1																																 
+	else
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2 --> La carga de informacion a ORACLE fue ejecutada de manera EXITOSA" >> $VAL_LOG_EJECUCION	
+		ETAPA=3
+		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params_des
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: $SHELL --> Se procesa la ETAPA 2 con EXITO " >> $VAL_LOG_EJECUCION
+		`mysql -N  <<<"update params_des set valor='3' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	fi
+fi
+
+if [ "$ETAPA" = "3" ]; then
+###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Finalizar el proceso " >> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 						   
-	#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
+	#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params_des
 	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El Proceso termina de manera exitosa " >> $VAL_LOG_EJECUCION
-	`mysql -N  <<<"update params set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	`mysql -N  <<<"update params_des set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 
-	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_PIVOT_PARQUE finaliza correctamente " >> $VAL_LOG_EJECUCION
+	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_RTD finaliza correctamente " >> $VAL_LOG_EJECUCION
 fi

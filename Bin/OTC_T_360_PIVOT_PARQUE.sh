@@ -375,7 +375,7 @@ from (SELECT
 		and to_date(b.active_from_dat)<='$fechaeje1') as x 
 where rownum=1;
 
---n10
+--n10 tabla bajas
 create table $ESQUEMA_TEMP.tmp_360_baja_tmp$ABREVIATURA_TEMP as		
 select a.telefono,a.fecha_baja
 from db_cs_altas.otc_t_bajas_bi a	 
