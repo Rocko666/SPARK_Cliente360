@@ -194,7 +194,7 @@ def fun_extraer_combos_bonos(fecha_inicial, fecha_final):
     return qry
 
 @cargar_consulta
-def fun_extraer_movi_parque(fecha_alta_inicial, fecha_alta_final, fecha_proc, fecha_eje_pv, condicion_abonado):
+def fun_extraer_movi_parque(fecha_alta_inicial, fecha_alta_final, fecha_proc, fecha_eje_pv, fecha_tmstmp condicion_abonado):
     qry = '''
         SELECT DISTINCT
             t.num_telefonico,
@@ -226,7 +226,7 @@ def fun_extraer_movi_parque(fecha_alta_inicial, fecha_alta_final, fecha_proc, fe
             	fecha_alta,
             	fecha_baja,
             	nvl(fecha_modif,fecha_alta) fecha_last_status,
-            	case when (fecha_baja is null or fecha_baja = '') then '2022-10-01 12:21:31.393' else fecha_baja end as fecha_baja_new,
+            	case when (fecha_baja is null or fecha_baja = '') then '{fecha_tmstmp}' else fecha_baja end as fecha_baja_new,
             	estado_abonado,
             	{fecha_eje_pv} fecha_proceso, 
             	numero_abonado,
@@ -241,7 +241,7 @@ def fun_extraer_movi_parque(fecha_alta_inicial, fecha_alta_final, fecha_proc, fe
             	correo_cliente_pr,
             	telefono_cliente_pr,
             	imei,
-            	row_number() over (partition by num_telefonico order by (case when (fecha_baja is null or fecha_baja = '') then '2022-10-01 12:21:31.393' else fecha_baja end) desc,fecha_alta desc,nvl(fecha_modif,fecha_alta) desc) as orden
+            	row_number() over (partition by num_telefonico order by (case when (fecha_baja is null or fecha_baja = '') then '{fecha_tmstmp}' else fecha_baja end) desc,fecha_alta desc,nvl(fecha_modif,fecha_alta) desc) as orden
             	FROM db_cs_altas.otc_t_nc_movi_parque_v1
             	WHERE fecha_proceso = {fecha_proc}
             ) t
@@ -250,7 +250,7 @@ def fun_extraer_movi_parque(fecha_alta_inicial, fecha_alta_final, fecha_proc, fe
             {condicion_abonado}
             --and t.estado_abonado not in ('BAA')
             and t.fecha_alta<'{fecha_alta_inicial}' and (t.fecha_baja>'{fecha_alta_final}' or t.fecha_baja is null)
-      '''.format(fecha_alta_inicial=fecha_alta_inicial, fecha_alta_final=fecha_alta_final, fecha_proc=fecha_proc, fecha_eje_pv=fecha_eje_pv, condicion_abonado=condicion_abonado)
+      '''.format(fecha_alta_inicial=fecha_alta_inicial, fecha_alta_final=fecha_alta_final, fecha_proc=fecha_proc, fecha_eje_pv=fecha_eje_pv, fecha_tmstmp=fecha_tmstmp, condicion_abonado=condicion_abonado)
     return qry
 
 

@@ -432,6 +432,7 @@ group by PHONE_ID,COUNTED_DAYS ;" 2>> $LOGS/$EJECUCION_LOG.log
 		set hive.vectorized.execution.reduce.enabled=false;
 		set tez.queue.name=$COLA_EJECUCION;
 
+--N15
 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_act$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.tmp_360_otc_t_parque_act$ABREVIATURA_TEMP as 
 select a.*,
@@ -469,6 +470,7 @@ on a.num_telefonico=g.telefono
 left join $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP as h
 on a.num_telefonico=h.telefono;
 
+--N16
 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact$ABREVIATURA_TEMP as 
 select a.*,
@@ -490,6 +492,7 @@ on a.num_telefonico=g.telefono
 left join $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP as h
 on a.num_telefonico=h.telefono;
 
+--N17
 --SE OBTIENEN LAS LINEAS PREACTIVAS		
 drop table $ESQUEMA_TEMP.tmp_360_base_preactivos$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.tmp_360_base_preactivos$ABREVIATURA_TEMP as
@@ -505,6 +508,7 @@ and PHONE_NUMBER_TYPE = 9144665319313429453 --   NORMAL
 and ASSOC_SIM_ICCID IS NOT NULL
 and modified_when<'$fecha_alt_ini';
 
+--N18
 drop table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all$ABREVIATURA_TEMP AS
 	SELECT 
@@ -637,7 +641,7 @@ create table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all$ABREVIATURA_TEMP AS
 			where d.num_telefonico not in (select o.num_telefonico from $ESQUEMA_TEMP.tmp_360_otc_t_parque_act$ABREVIATURA_TEMP o 
 											union all select p.num_telefonico from $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact$ABREVIATURA_TEMP p 
 											union all select q.telefono as num_telefonico from $ESQUEMA_TEMP.tmp_360_base_preactivos$ABREVIATURA_TEMP q);
-
+--N20  tmp_360_motivos_suspension
 			drop table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp;
 			create table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp as
 				select distinct

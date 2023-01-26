@@ -50,55 +50,57 @@ def nme_tbl_tmp_otc_t_360_pivot_parque_12(vSchema,vAbrev):
     nme="""{}.tmp_360_otc_t_360_churn90_tmp1{}""".format(vSchema,vAbrev)
     return nme
 
-
-
------to continue..
-
-
-
-
-
-
-
-
-
-def nme_tbl_tmp_otc_t_360_pivot_parque_09(vSchema,vAbrev):
-    nme="""{}.tmp_360_otc_t_parque_act{}""".format(vSchema,vAbrev)
-    return nme
-
-
-
-
-
-
-
 def nme_tbl_tmp_otc_t_360_pivot_parque_13(vSchema,vAbrev):
     nme="""{}.tmp_360_otc_t_parque_inac{}""".format(vSchema,vAbrev)
     return nme
 
 def nme_tbl_tmp_otc_t_360_pivot_parque_14(vSchema,vAbrev):
+    nme="""{}.tmp_360_otc_t_360_parque_2_tmp{}""".format(vSchema,vAbrev)
+    return nme
+
+def nme_tbl_tmp_otc_t_360_pivot_parque_15(vSchema,vAbrev):
+    nme="""{}.tmp_360_otc_t_parque_act{}""".format(vSchema,vAbrev)
+    return nme
+
+def nme_tbl_tmp_otc_t_360_pivot_parque_16(vSchema,vAbrev):
     nme="""{}.tmp_360_otc_t_parque_inact{}""".format(vSchema,vAbrev)
     return nme
 
-
-
-def nme_tbl_tmp_otc_t_360_pivot_parque_16(vSchema,vAbrev):
-    nme="""{}.otc_t_360_parque_1_tmp_1{}""".format(vSchema,vAbrev)
-    return nme
-
 def nme_tbl_tmp_otc_t_360_pivot_parque_17(vSchema,vAbrev):
-    nme="""{}.tmp_360_otc_t_360_parque_1_tmp{}""".format(vSchema,vAbrev)
-    return nme
-
-def nme_tbl_tmp_otc_t_360_pivot_parque_18(vSchema,vAbrev):
-    nme="""{}.tmp_360_motivos_suspension{}""".format(vSchema,vAbrev)
-    return nme
-
-def nme_tbl_tmp_otc_t_360_pivot_parque_19(vSchema,vAbrev):
     nme="""{}.tmp_360_base_preactivos{}""".format(vSchema,vAbrev)
     return nme
 
+def nme_tbl_tmp_otc_t_360_pivot_parque_18(vSchema,vAbrev):
+    nme="""{}.otc_t_360_parque_1_tmp_all{}""".format(vSchema,vAbrev)
+    return nme
 
-def nme_tbl_tmp_otc_t_360_pivot_parque_00(vSchema,vAbrev):
+def nme_tbl_tmp_otc_t_360_pivot_parque_19(vSchema,vAbrev):
+    nme="""{}.tmp_360_otc_t_360_churn_dia{}""".format(vSchema,vAbrev)
+    return nme
+
+def nme_tbl_tmp_otc_t_360_pivot_parque_20(vSchema):
+    nme="""{}.otc_t_360_parque_1_tmp""".format(vSchema)
+    return nme
+
+
+
+
+
+
+
+
+
+
+
+
+def nme_tbl_tmp_otc_t_360_pivot_parque_30(vSchema,vAbrev):
+    nme="""{}.otc_t_360_parque_1_tmp_1{}""".format(vSchema,vAbrev)
+    return nme
+
+def nme_tbl_tmp_otc_t_360_pivot_parque_31(vSchema,vAbrev):
+    nme="""{}.tmp_360_motivos_suspension{}""".format(vSchema,vAbrev)
+    return nme
+
+def nme_tbl_tmp_otc_t_360_pivot_parque_32(vSchema,vAbrev):
     nme="""{}.tmp_360_otc_t_360_churn90_tmp{}""".format(vSchema,vAbrev)
     return nme

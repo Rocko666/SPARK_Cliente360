@@ -137,8 +137,8 @@ primer_dia_dos_meses_ant=`date '+%Y%m%d' -d "$fecha_alt_dos_meses_ant_fin - 1 mo
 
 ultimo_dia_tres_meses_ant=`date -d "${primer_dia_dos_meses_ant} -1 day"  +"%Y-%m-%d"`
 fecha_alt_dos_meses_ant_ini=`date '+%Y-%m-%d' -d "$ultimo_dia_tres_meses_ant"`
-
-
+fecha_timestamp=`date '+%Y-%m-%d' -d "$fechaeje1+1 day"`
+fecha_tmstmp=$fecha_timestamp" 00:00:31.393"
 if [ -z "$ETAPA" ] || 
 	[ -z "$FECHA_EJECUCION" ] ||
 	[ -z "$fecha_alt_ini" ] ||
@@ -181,7 +181,7 @@ $VAL_RUTA_SPARK \
 --executor-memory $VAL_ETP01_EXECUTOR_MEMORY \
 --num-executors $VAL_ETP01_NUM_EXECUTORS \
 --executor-cores $VAL_ETP01_NUM_EXECUTORS_CORES \
-$RUTA_PYTHON/otc_t_360_pivot_parque.py \
+$RUTA_PYTHON/otc_t_360_pivot_parque_1.py \
 --vSEntidad=$ENTIDAD \
 --vTAltasBi=$vTAltasBi \
 --vTTransferOutBi=$vTTransferOutBi \
@@ -235,20 +235,21 @@ $VAL_RUTA_SPARK \
 --executor-memory $VAL_ETP02_EXECUTOR_MEMORY \
 --num-executors $VAL_ETP02_NUM_EXECUTORS \
 --executor-cores $VAL_ETP02_NUM_EXECUTORS_CORES \
---jars $RUTA_LIB/$RUTA_LIB_ORACLE \
-$RUTA_PYTHON/export_oracle_otc_t_360_rtd.py \
+$RUTA_PYTHON/otc_t_360_pivot_parque_2.py \
 --vSEntidad=$ENTIDAD \
 --vTable=$HIVEDB.$HIVETABLE \
 --vFechaProceso=$VAL_FECHA_PROCESO \
---vJdbcUrl=$JDBCURL1 \
---vTDDb=$TDDB \
---vTDHost=$TDHOST \
---vTDPass=$TDPASS \
---vTDUser=$TDUSER \
---vTDTable=$TDTABLE \
---vTDPort=$TDPORT \
---vTDService=$TDSERVICE \
---vTDClass=$TDCLASS_ORC >> $VAL_LOG_EJECUCION
+--fec_alt_ini=$fecha_alt_ini \
+--fec_alt_fin=$fecha_alt_fin \
+--fec_eje_pv=$VAL_FECHA_PROCESO \
+--fec_proc=$fecha_proc \
+--fec_menos_5=$fechamenos5 \
+--fec_mas_1=$fechamas1 \
+--fec_alt_dos_meses_ant_fin=$fecha_alt_dos_meses_ant_fin \
+--fec_alt_dos_meses_ant_ini=$fecha_alt_dos_meses_ant_ini \
+--fec_ini_mes=$fechaIniMes \
+--fec_inac_1=$fecha_inac_1 \
+--fec_tmstmp=$fecha_tmstmp  >> $VAL_LOG_EJECUCION
 
 	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
 	VAL_ERRORES=`egrep 'NODATA:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
@@ -260,6 +261,46 @@ $RUTA_PYTHON/export_oracle_otc_t_360_rtd.py \
 		ETAPA=3
 		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params_des
 		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: $SHELL --> Se procesa la ETAPA 2 con EXITO " >> $VAL_LOG_EJECUCION
+		`mysql -N  <<<"update params_des set valor='3' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	fi
+fi
+
+if [ "$ETAPA" = "3" ]; then
+###########################################################################################################################################################
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Ejecucion del tercer proceso spark " >> $VAL_LOG_EJECUCION
+###########################################################################################################################################################
+$VAL_RUTA_SPARK \
+--name $ENTIDAD \
+--master $VAL_ETP02_MASTER \
+--driver-memory $VAL_ETP02_DRIVER_MEMORY \
+--executor-memory $VAL_ETP02_EXECUTOR_MEMORY \
+--num-executors $VAL_ETP02_NUM_EXECUTORS \
+--executor-cores $VAL_ETP02_NUM_EXECUTORS_CORES \
+--jars $RUTA_LIB/$RUTA_LIB_ORACLE \
+$RUTA_PYTHON/export_oracle_otc_t_360_rtd.py \
+--vSEntidad=$ENTIDAD \
+--vTable=$HIVEDB.$HIVETABLE \
+--vFechaProceso=$VAL_FECHA_PROCESO \
+--vJdbcUrl=$JDBCURL1 \
+--vTDDb=$TDDB \
+--vTDHost=$TDHOST \
+--vTDPass=$TDPASS \
+--vTDUser=$TDUSER \
+--vTDTable=$TDTABLE \
+--vTRiMobPN=$vTRiMobPN \
+--fec_alt_ini=$fecha_alt_ini \
+--vTDClass=$TDCLASS_ORC >> $VAL_LOG_EJECUCION
+
+	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
+	VAL_ERRORES=`egrep 'NODATA:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
+	if [ $VAL_ERRORES -ne 0 ];then
+		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: ETAPA 3 --> Problemas en la carga de informacion a ORACLE " >> $VAL_LOG_EJECUCION
+		exit 1																																 
+	else
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3 --> La carga de informacion a ORACLE fue ejecutada de manera EXITOSA" >> $VAL_LOG_EJECUCION	
+		ETAPA=3
+		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params_des
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: $SHELL --> Se procesa la ETAPA 3 con EXITO " >> $VAL_LOG_EJECUCION
 		`mysql -N  <<<"update params_des set valor='3' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 	fi
 fi

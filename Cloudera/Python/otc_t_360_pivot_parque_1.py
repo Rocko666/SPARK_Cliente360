@@ -538,134 +538,6 @@ except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
-
-
---- to define...
-
-
-
-
-
-
-
-
-
-
-
-VStp='Paso [4.2]: Extraer mines de db_reportes.otc_t_rtd_categoria_ultimo_mes '
-try:
-    ts_step = datetime.now()
-    print(etq_info(VStp))
-    print(lne_dvs())
-    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_tmp_otc_t_360_rtd_02(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_otc_t_rtd_categoria_ultimo_mes(vIPtMes)))
-    df02=spark.sql(qyr_tmp_otc_t_rtd_categoria_ultimo_mes(vIPtMes))
-    if df02.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df02'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_rtd_02(vSSchHiveTmp)))))
-            df02.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_rtd_02(vSSchHiveTmp)))
-            df02.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_rtd_02(vSSchHiveTmp)),str(df02.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_tmp_otc_t_360_rtd_02(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_tmp_otc_t_360_rtd_02(vSSchHiveTmp)),str(e))))
-    te_step = datetime.now()
-    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
-except Exception as e:
-    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
-
-print(lne_dvs())
-
-VStp='Paso [4.3]: Extraer mines de db_altamira.otc_t_saldos '
-try:
-    ts_step = datetime.now()
-    print(etq_info(VStp))
-    print(lne_dvs())
-    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_tmp_otc_t_360_rtd_03(vSSchHiveTmp)))))
-    print(etq_sql(qry_tmp_saldos_diario(vIFechaEje_2)))
-    df03=spark.sql(qry_tmp_saldos_diario(vIFechaEje_2))
-    if df03.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df03'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_rtd_03(vSSchHiveTmp)))))
-            df03.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_rtd_03(vSSchHiveTmp)))
-            df03.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_rtd_03(vSSchHiveTmp)),str(df03.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_tmp_otc_t_360_rtd_03(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_tmp_otc_t_360_rtd_03(vSSchHiveTmp)),str(e))))
-    te_step = datetime.now()
-    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
-except Exception as e:
-    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
-
-print(lne_dvs())
-
-VStp='Paso [4.4]: Generando reglas para oferta sugerida '
-try:
-    ts_step = datetime.now()
-    print(etq_info(VStp))
-    print(lne_dvs())
-    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_tmp_otc_t_360_rtd_04(vSSchHiveTmp)))))
-    print(etq_sql(qry_tmp_otc_rtd_oferta_sugerida_prv(str(nme_tbl_tmp_otc_t_360_pivot_parque_01(vSSchHiveTmp)),str(nme_tbl_tmp_otc_t_360_rtd_02(vSSchHiveTmp)),str(nme_tbl_tmp_otc_t_360_rtd_03(vSSchHiveTmp)))))
-    df04=spark.sql(qry_tmp_otc_rtd_oferta_sugerida_prv(str(nme_tbl_tmp_otc_t_360_pivot_parque_01(vSSchHiveTmp)),str(nme_tbl_tmp_otc_t_360_rtd_02(vSSchHiveTmp)),str(nme_tbl_tmp_otc_t_360_rtd_03(vSSchHiveTmp))))
-    if df04.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df04'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_rtd_04(vSSchHiveTmp)))))
-            df04.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_rtd_04(vSSchHiveTmp)))
-            df04.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_rtd_04(vSSchHiveTmp)),str(df04.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_tmp_otc_t_360_rtd_04(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_tmp_otc_t_360_rtd_04(vSSchHiveTmp)),str(e))))
-    te_step = datetime.now()
-    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
-except Exception as e:
-    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
-
-print(lne_dvs())
-otc_t_rtd_oferta_sugerida=vSSchHiveMain+"."+vSTblHiveMain
-VStp='Paso [5]: Insertar registros del negocio en la tabla {}'.format(otc_t_rtd_oferta_sugerida)
-try:
-    ts_step = datetime.now()
-    print(etq_info(VStp))
-    print(lne_dvs())    
-    print(etq_sql(qry_tmp_otc_rtd_oferta_sugerida(vSComboDefecto,nme_tbl_tmp_otc_t_360_rtd_04(vSSchHiveTmp),vIFechaProceso)))
-    df05 = spark.sql(qry_tmp_otc_rtd_oferta_sugerida(vSComboDefecto,nme_tbl_tmp_otc_t_360_rtd_04(vSSchHiveTmp),vIFechaProceso))
-    if df05.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df05'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(otc_t_rtd_oferta_sugerida)))
-            query_truncate = "ALTER TABLE "+otc_t_rtd_oferta_sugerida+" DROP IF EXISTS PARTITION (fecha_proceso = "+str(vIFechaProceso)+") purge"
-            print(etq_info(query_truncate))
-            hc=HiveContext(spark)
-            hc.sql(query_truncate)
-            df05.repartition(1).write.mode('append').insertInto(otc_t_rtd_oferta_sugerida)
-            df05.printSchema()            
-            print(etq_info(msg_t_total_registros_hive(otc_t_rtd_oferta_sugerida,str(df05.count())))) #BORRAR
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(otc_t_rtd_oferta_sugerida,vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(otc_t_rtd_oferta_sugerida,str(e))))
-    te_step = datetime.now()
-    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
-except Exception as e:
-    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
-
-print(lne_dvs())
 vStpFin='Paso [Final]: Eliminando dataframes ..'
 print(lne_dvs())
 
@@ -676,6 +548,14 @@ try:
     del df03
     del df04
     del df05
+    del df06
+    del df07
+    del df08
+    del df09
+    del df10
+    del df11
+    del df12
+    
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(vStpFin,vle_duracion(ts_step,te_step))))
 except Exception as e:
