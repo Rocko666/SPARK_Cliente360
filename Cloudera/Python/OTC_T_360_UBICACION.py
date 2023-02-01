@@ -13,8 +13,8 @@ import time
 import sys
 import os
 # General cliente 360
-#from otc_t_360_ubicacion_config import *
-from query.otc_t_360_ubicacion_query import *
+sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/query')
+from otc_t_360_ubicacion_query import *
 # Genericos
 sys.path.insert(1,'/var/opt/tel_spark')
 from messages import *
@@ -65,8 +65,8 @@ try:
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
         .config("spark.yarn.queue", "default")\
-	.config("hive.enforce.bucketing", "false")\
-	.config("hive.enforce.sorting", "false")\
+	    .config("hive.enforce.bucketing", "false")\
+	    .config("hive.enforce.sorting", "false")\
         .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")

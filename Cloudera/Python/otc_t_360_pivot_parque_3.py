@@ -41,7 +41,6 @@ try:
     parser.add_argument('--vTChurnSP2', required=True, type=str)
     parser.add_argument('--vTCFact', required=True, type=str)
     parser.add_argument('--vTPRMANDATE', required=True, type=str)
-    
     parser.add_argument('--vSSchHiveMain', required=True, type=str)
     parser.add_argument('--vSSchHiveTmp', required=True, type=str)
     parser.add_argument('--vSTblHiveMain', required=True, type=str)
@@ -68,7 +67,6 @@ try:
     vTChurnSP2=parametros.vTChurnSP2
     vTCFact=parametros.vTCFact
     vTPRMANDATE=parametros.vTPRMANDATE
-    
     vSSchHiveMain=parametros.vSSchHiveMain
     vSSchHiveTmp=parametros.vSSchHiveTmp
     vSTblHiveMain=parametros.vSTblHiveMain
@@ -94,7 +92,6 @@ try:
     print(etq_info(log_p_parametros("vTChurnSP2",vTChurnSP2)))
     print(etq_info(log_p_parametros("vTCFact",vTCFact)))
     print(etq_info(log_p_parametros("vTPRMANDATE",vTPRMANDATE)))
-    
     print(etq_info(log_p_parametros("vSSchHiveMain",vSSchHiveMain)))
     print(etq_info(log_p_parametros("vSSchHiveTmp",vSSchHiveTmp)))
     print(etq_info(log_p_parametros("vSTblHiveMain",vSTblHiveMain)))

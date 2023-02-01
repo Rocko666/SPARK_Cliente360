@@ -1,17 +1,18 @@
 #########################################################################################################
 # NOMBRE: OTC_T_360_PIVOT_PARQUE.sh  		      												                        
 # DESCRIPCION:																							                                            
-# Shell que carga los datos desde hive y los exporta oracle		
+# Shell que carga la tabla temporal PIVOT PARQUE	
 # Las tildes han sido omitidas intencionalmente en el script  	                                                 											             
-# AUTOR: Cristian Ortiz - Softconsulting             														                          
-# FECHA CREACION: 2023-01-16																			                                      
+# AUTOR:  - Softconsulting             														                          
+# FECHA CREACION: 13-Jun-2018 (LC) Version 1.0   																			                                      
 # PARAMETROS DEL SHELL                            													                            
 # $1: Parametro de Fecha Inicial del proceso a ejecutar  								        		                    						                	
 #########################################################################################################
 # MODIFICACIONES																						                                            
 # FECHA  		AUTOR     		DESCRIPCION MOTIVO														                                
 # 2022-11-09	Ricardo Jerez (Softconsulting)	BIGD-833
-# 2022-11-17	Diego Cuasapaz (Softconsulting) BIGD-833 - Cambios en la shell parametrizando                                                                                                    
+# 2022-11-17	Diego Cuasapaz (Softconsulting) BIGD-833 - Cambios en la shell parametrizando  
+# 2023-01-16	Cristian Ortiz (Softconsulting) BIGD-677 - Reing Cliente360 (Migracion a Spark)                                                                                                 
 #########################################################################################################
 
 ##############
@@ -41,6 +42,7 @@ vTTransferOutBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTID
 vTTransferInBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTTransferInBi';"` 
 vTCPBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTCPBi';"` 
 vTBajasInv=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTBajasInv';"` 
+vTBajasBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTBajasBi';"` 
 vTChurnSP2=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTChurnSP2';"` 
 VAL_ETP01_MASTER=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_MASTER';"`
 VAL_ETP01_DRIVER_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_DRIVER_MEMORY';"`
@@ -73,6 +75,7 @@ if [ -z "$VAL_FECHA_PROCESO" ] ||
 	[ -z "$vTTransferInBi" ] ||
 	[ -z "$vTCPBi" ] ||
 	[ -z "$vTBajasInv" ] ||
+	[ -z "$vTBajasBi" ] ||
 	[ -z "$vTChurnSP2" ] ||
 	[ -z "$VAL_ETP01_MASTER" ] ||
 	[ -z "$VAL_ETP01_DRIVER_MEMORY" ] ||
@@ -276,36 +279,49 @@ $VAL_RUTA_SPARK \
 --executor-memory $VAL_ETP02_EXECUTOR_MEMORY \
 --num-executors $VAL_ETP02_NUM_EXECUTORS \
 --executor-cores $VAL_ETP02_NUM_EXECUTORS_CORES \
---jars $RUTA_LIB/$RUTA_LIB_ORACLE \
-$RUTA_PYTHON/export_oracle_otc_t_360_rtd.py \
+$RUTA_PYTHON/otc_t_360_pivot_parque_3.py \
 --vSEntidad=$ENTIDAD \
---vTable=$HIVEDB.$HIVETABLE \
---vFechaProceso=$VAL_FECHA_PROCESO \
---vJdbcUrl=$JDBCURL1 \
---vTDDb=$TDDB \
---vTDHost=$TDHOST \
---vTDPass=$TDPASS \
---vTDUser=$TDUSER \
---vTDTable=$TDTABLE \
---vTRiMobPN=$vTRiMobPN \
+--vTAltasBi=$vTAltasBi \
+--vTTransferOutBi=$vTTransferOutBi \
+--vTTransferInBi=$vTTransferInBi \
+--vTCPBi=$vTCPBi \
+--vTBajasInv=$vTBajasInv \
+--vTChurnSP2=$vTChurnSP2 \
+--vTCFact=$vTCFact \
+--vTPRMANDATE=$vTPRMANDATE \
+--vTBajasBi=$vTBajasBi \
+--vSSchHiveMain=$HIVEDB \
+--vSSchHiveTmp=$VAL_ESQUEMA_TMP \
+--vSTblHiveMain=$HIVETABLE \
 --fec_alt_ini=$fecha_alt_ini \
---vTDClass=$TDCLASS_ORC >> $VAL_LOG_EJECUCION
+--fec_alt_fin=$fecha_alt_fin \
+--fec_eje_pv=$VAL_FECHA_PROCESO \
+--fec_proc=$fecha_proc \
+--fec_menos_5=$fechamenos5 \
+--fec_mas_1=$fechamas1 \
+--fec_alt_dos_meses_ant_fin=$fecha_alt_dos_meses_ant_fin \
+--fec_alt_dos_meses_ant_ini=$fecha_alt_dos_meses_ant_ini \
+--fec_ini_mes=$fechaIniMes \
+--fec_inac_1=$fecha_inac_1 \
+--fechaeje1=$fechaeje1 \
+--vAbrev=$ABREVIATURA_TEMP \
+--vIFechaProceso=$VAL_FECHA_PROCESO >> $VAL_LOG_EJECUCION
 
 	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
 	VAL_ERRORES=`egrep 'NODATA:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
 	if [ $VAL_ERRORES -ne 0 ];then
-		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: ETAPA 3 --> Problemas en la carga de informacion a ORACLE " >> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: ETAPA 3 --> Problemas en la carga de informacion a HIVE " >> $VAL_LOG_EJECUCION
 		exit 1																																 
 	else
 		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3 --> La carga de informacion a ORACLE fue ejecutada de manera EXITOSA" >> $VAL_LOG_EJECUCION	
-		ETAPA=3
+		ETAPA=4
 		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params_des
 		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: $SHELL --> Se procesa la ETAPA 3 con EXITO " >> $VAL_LOG_EJECUCION
-		`mysql -N  <<<"update params_des set valor='3' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+		`mysql -N  <<<"update params_des set valor='4' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 	fi
 fi
 
-if [ "$ETAPA" = "3" ]; then
+if [ "$ETAPA" = "4" ]; then
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Finalizar el proceso " >> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
@@ -314,5 +330,5 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Finalizar el proceso " >> $VAL_
 	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El Proceso termina de manera exitosa " >> $VAL_LOG_EJECUCION
 	`mysql -N  <<<"update params_des set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 
-	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_RTD finaliza correctamente " >> $VAL_LOG_EJECUCION
+	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_PIVOT_PARQUE finaliza correctamente " >> $VAL_LOG_EJECUCION
 fi

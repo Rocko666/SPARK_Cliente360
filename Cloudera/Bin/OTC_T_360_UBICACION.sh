@@ -11,7 +11,8 @@
 # MODIFICACIONES																						                                            
 # FECHA  		AUTOR     		DESCRIPCION MOTIVO														                                
 # 2022-11-09	Ricardo Jerez (Softconsulting)	BIGD-833
-# 2022-11-17	Diego Cuasapaz (Softconsulting) BIGD-833 - Cambios en la shell parametrizando                                                                                                    
+# 2022-11-17	Diego Cuasapaz (Softconsulting) BIGD-833 - Cambios en la shell parametrizando       
+# 2023-01-10    Cristian Ortiz (Softconsulting) BIGD-677 - Reing Cliente360 (Migracion a Spark)                                                                                       
 #########################################################################################################
 
 ##############
@@ -19,7 +20,7 @@
 ##############
 
 ENTIDAD=OTC_T_360_UBICACION
-SPARK_GENERICO=D_SPARK_GENERICO
+SPARK_GENERICO=SPARK_GENERICO
 
 SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'SHELL';"`
 
