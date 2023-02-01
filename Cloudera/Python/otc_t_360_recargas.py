@@ -33,84 +33,41 @@ try:
     print(lne_dvs())
     parser = argparse.ArgumentParser()
     parser.add_argument('--vSEntidad', required=True, type=str)
-    parser.add_argument('--vTAltasBi', required=True, type=str)
-    parser.add_argument('--vTTransferOutBi', required=True, type=str)
-    parser.add_argument('--vTTransferInBi', required=True, type=str)
-    parser.add_argument('--vTCPBi', required=True, type=str)
-    parser.add_argument('--vTBajasInv', required=True, type=str)
-    parser.add_argument('--vTChurnSP2', required=True, type=str)
-    parser.add_argument('--vTCFact', required=True, type=str)
-    parser.add_argument('--vTPRMANDATE', required=True, type=str)
-    
-    parser.add_argument('--vSSchHiveMain', required=True, type=str)
+    parser.add_argument('--vTDetRecarg', required=True, type=str)
+    parser.add_argument('--vTCatBonosPdv', required=True, type=str)
+    parser.add_argument('--vTParOriRecarg', required=True, type=str)
+    parser.add_argument('--fechaIni_menos_3meses', required=True, type=str)
+    parser.add_argument('--fecha_eje2', required=True, type=str)
+    parser.add_argument('--fechaIni_menos_2meses', required=True, type=str)
+    parser.add_argument('--fecha_inico_mes_1_2', required=True, type=str)
+    parser.add_argument('--fecha_menos30', required=True, type=str)
     parser.add_argument('--vSSchHiveTmp', required=True, type=str)
     parser.add_argument('--vSTblHiveMain', required=True, type=str)
-    parser.add_argument('--fec_alt_ini', required=True, type=str)
-    parser.add_argument('--fec_alt_fin', required=True, type=str)
-    parser.add_argument('--fec_eje_pv', required=True, type=int)
-    parser.add_argument('--fec_proc', required=True, type=int)
-    parser.add_argument('--fec_menos_5', required=True, type=int)
-    parser.add_argument('--fec_mas_1', required=True, type=int)
-    parser.add_argument('--fec_alt_dos_meses_ant_fin', required=True, type=str)
-    parser.add_argument('--fec_alt_dos_meses_ant_ini', required=True, type=str)
-    parser.add_argument('--fec_ini_mes', required=True, type=int)
-    parser.add_argument('--fec_inac_1', required=True, type=int)
-    parser.add_argument('--fechaeje1', required=True, type=str)
-    parser.add_argument('--vAbrev', required=True, type=str)
-    parser.add_argument('--vIFechaProceso', required=True, type=str)
+    parser.add_argument('--fechaIni_menos_4meses', required=True, type=str)
     parametros = parser.parse_args()
     vSEntidad=parametros.vSEntidad
-    vTAltasBi=parametros.vTAltasBi
-    vTTransferOutBi=parametros.vTTransferOutBi
-    vTTransferInBi=parametros.vTTransferInBi
-    vTCPBi=parametros.vTCPBi
-    vTBajasInv=parametros.vTBajasInv
-    vTChurnSP2=parametros.vTChurnSP2
-    vTCFact=parametros.vTCFact
-    vTPRMANDATE=parametros.vTPRMANDATE
-    
-    vSSchHiveMain=parametros.vSSchHiveMain
+    vTDetRecarg=parametros.vTDetRecarg
+    vTCatBonosPdv=parametros.vTCatBonosPdv
+    vTParOriRecarg=parametros.vTParOriRecarg
+    fechaIni_menos_3meses=parametros.fechaIni_menos_3meses
+    fecha_eje2=parametros.fecha_eje2
+    fechaIni_menos_2meses=parametros.fechaIni_menos_2meses
+    fecha_inico_mes_1_2=parametros.fecha_inico_mes_1_2
+    fecha_menos30=parametros.fecha_menos30
     vSSchHiveTmp=parametros.vSSchHiveTmp
     vSTblHiveMain=parametros.vSTblHiveMain
-    fec_alt_ini=parametros.fec_alt_ini
-    fec_alt_fin=parametros.fec_alt_fin
-    fec_eje_pv=parametros.fec_eje_pv
-    fec_proc=parametros.fec_proc
-    fec_menos_5=parametros.fec_menos_5
-    fec_mas_1=parametros.fec_mas_1
-    fec_alt_dos_meses_ant_fin=parametros.fec_alt_dos_meses_ant_fin
-    fec_alt_dos_meses_ant_ini=parametros.fec_alt_dos_meses_ant_ini
-    fec_ini_mes=parametros.fec_ini_mes
-    fec_inac_1=parametros.fec_inac_1
-    fechaeje1=parametros.fechaeje1
-    vAbrev=parametros.vAbrev 
-    vIFechaProceso=parametros.vIFechaProceso 
+    fechaIni_menos_4meses=parametros.fechaIni_menos_4meses
     print(etq_info(log_p_parametros("vSEntidad",vSEntidad)))
-    print(etq_info(log_p_parametros("vTAltasBi",vTAltasBi)))
-    print(etq_info(log_p_parametros("vTTransferOutBi",vTTransferOutBi)))
-    print(etq_info(log_p_parametros("vTTransferInBi",vTTransferInBi)))
-    print(etq_info(log_p_parametros("vTCPBi",vTCPBi)))
-    print(etq_info(log_p_parametros("vTBajasInv",vTBajasInv)))
-    print(etq_info(log_p_parametros("vTChurnSP2",vTChurnSP2)))
-    print(etq_info(log_p_parametros("vTCFact",vTCFact)))
-    print(etq_info(log_p_parametros("vTPRMANDATE",vTPRMANDATE)))
-    
-    print(etq_info(log_p_parametros("vSSchHiveMain",vSSchHiveMain)))
+    print(etq_info(log_p_parametros("vTDetRecarg",vTDetRecarg)))
+    print(etq_info(log_p_parametros("vTCatBonosPdv",vTCatBonosPdv)))
+    print(etq_info(log_p_parametros("vTParOriRecarg",vTParOriRecarg)))
+    print(etq_info(log_p_parametros("fechaIni_menos_3meses",fechaIni_menos_3meses)))
+    print(etq_info(log_p_parametros("fecha_eje2",fecha_eje2)))
+    print(etq_info(log_p_parametros("fechaIni_menos_2meses",fechaIni_menos_2meses)))
+    print(etq_info(log_p_parametros("fecha_inico_mes_1_2",fecha_inico_mes_1_2)))
+    print(etq_info(log_p_parametros("fecha_menos30",fecha_menos30)))
     print(etq_info(log_p_parametros("vSSchHiveTmp",vSSchHiveTmp)))
-    print(etq_info(log_p_parametros("vSTblHiveMain",vSTblHiveMain)))
-    print(etq_info(log_p_parametros("fec_alt_ini",fec_alt_ini)))
-    print(etq_info(log_p_parametros("fec_alt_fin",fec_alt_fin)))
-    print(etq_info(log_p_parametros("fec_eje_pv",fec_eje_pv)))
-    print(etq_info(log_p_parametros("fec_proc",fec_proc)))
-    print(etq_info(log_p_parametros("fec_menos_5",fec_menos_5)))
-    print(etq_info(log_p_parametros("fec_mas_1",fec_mas_1)))
-    print(etq_info(log_p_parametros("fec_alt_dos_meses_ant_fin",fec_alt_dos_meses_ant_fin)))
-    print(etq_info(log_p_parametros("fec_alt_dos_meses_ant_ini",fec_alt_dos_meses_ant_ini)))
-    print(etq_info(log_p_parametros("fec_ini_mes",fec_ini_mes)))
-    print(etq_info(log_p_parametros("fec_inac_1",fec_inac_1)))
-    print(etq_info(log_p_parametros("fechaeje1",fechaeje1)))
-    print(etq_info(log_p_parametros("vAbrev",vAbrev)))
-    print(etq_info(log_p_parametros("vIFechaProceso",vIFechaProceso)))
+    print(etq_info(log_p_parametros("fechaIni_menos_4meses",fechaIni_menos_4meses)))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -132,7 +89,6 @@ try:
         .config("spark.yarn.queue", "default") \
         .config("hive.enforce.bucketing", "false")\
 	    .config("hive.enforce.sorting", "false")\
-
         .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -168,8 +124,6 @@ try:
     spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)))
     spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))
     spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_recargas_18(vSSchHiveTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_recargas_19(vSSchHiveTmp)))
     print(etq_info(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp))))
     print(etq_info(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp))))
     print(etq_info(str(nme_tbl_otc_t_360_recargas_03(vSSchHiveTmp))))
@@ -187,8 +141,6 @@ try:
     print(etq_info(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp))))
     print(etq_info(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp))))
     print(etq_info(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_recargas_18(vSSchHiveTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_recargas_19(vSSchHiveTmp))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -199,14 +151,14 @@ print(lne_dvs())
 VStp='Paso [4]: Generando logica de negocio '
 print(etq_info(VStp))
 print(lne_dvs())
-VStp='Paso [4.1]: Se obtienen las recargas dia periodo de la tabla  {} '.format( )
+VStp='Paso [4.1]: Se obtienen las recargas dia periodo de la tabla '
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_360_alta_tmp(vTAltasBi,vIFechaProceso)))
-    df01=spark.sql(qyr_tmp_360_alta_tmp(vTAltasBi,vIFechaProceso))
+    print(etq_sql(qry_tmp_360_otc_t_recargas_dia_periodo(vTDetRecarg, vTParOriRecarg, fechaIni_menos_3meses, fecha_eje2)))
+    df01=spark.sql(qry_tmp_360_otc_t_recargas_dia_periodo(vTDetRecarg, vTParOriRecarg, fechaIni_menos_3meses, fecha_eje2))
     if df01.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df01'))))
     else:
@@ -227,14 +179,14 @@ except Exception as e:
 
 print(lne_dvs())
 
-VStp='Paso [4.2]: Se obtienen las transferencias pos a pre desde el inicio del mes hasta la fecha de proceso de la tabla {} '.format(vTTransferOutBi)
+VStp='Paso [4.2]: Se modifica el rango de fecha para obtener bonos y combos de 2 meses atras '
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_360_transfer_in_pp_tmp(vTTransferOutBi,vIFechaProceso)))
-    df02=spark.sql(qyr_tmp_360_transfer_in_pp_tmp(vTTransferOutBi,vIFechaProceso))
+    print(etq_sql(qry_tmp_360_otc_t_paquetes_payment_acum(vTDetRecarg, vTCatBonosPdv, fechaIni_menos_2meses, fecha_eje2)))
+    df02=spark.sql(qry_tmp_360_otc_t_paquetes_payment_acum(vTDetRecarg, vTCatBonosPdv, fechaIni_menos_2meses, fecha_eje2))
     if df02.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df02'))))
     else:
@@ -255,14 +207,16 @@ except Exception as e:
 
 print(lne_dvs())
 
-VStp='Paso [4.3]: Se obtienen las transferencias pre a pos desde el inicio del mes hasta la fecha de proceso de la tabla {} '.format(vTTransferInBi)
+VStp='Paso [4.3]: Se obtiene el universo de recargas '
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_03(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_360_transfer_in_pos_tmp(vTTransferInBi,vIFechaProceso)))
-    df03=spark.sql(qyr_tmp_360_transfer_in_pos_tmp(vTTransferInBi,vIFechaProceso))
+    print(etq_sql(qry_tmp_360_otc_t_universo_recargas(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp))
+                                                     ,str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)))))
+    df03=spark.sql(qry_tmp_360_otc_t_universo_recargas(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp))
+                                                     ,str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp))))
     if df03.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df03'))))
     else:
@@ -283,14 +237,14 @@ except Exception as e:
 
 print(lne_dvs())
 
-VStp='Paso [4.4]: Se obtienen los cambios de plan de tipo upsell de la tabla {} '.format(vTCPBi)
+VStp='Paso [4.4]: Se obtiene el universo de recargas unicos '
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_04(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_360_upsell_tmp(vTCPBi,vIFechaProceso)))
-    df04=spark.sql(qyr_tmp_360_upsell_tmp(vTCPBi,vIFechaProceso))
+    print(etq_sql(qry_tmp_360_otc_t_universo_recargas_unicos(str(nme_tbl_otc_t_360_recargas_03(vSSchHiveTmp)))))
+    df04=spark.sql(qry_tmp_360_otc_t_universo_recargas_unicos(str(nme_tbl_otc_t_360_recargas_03(vSSchHiveTmp))))
     if df04.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df04'))))
     else:
@@ -311,14 +265,14 @@ except Exception as e:
 
 print(lne_dvs())
 
-VStp='Paso [4.5]: Se obtienen los cambios de plan de tipo downsell de la tabla {} '.format(vTCPBi)
+VStp='Paso [4.5]: Se obtienen las recargas acumuladas mes 0'
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_05(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_360_downsell_tmp(vTCPBi,vIFechaProceso)))
-    df05=spark.sql(qyr_tmp_360_downsell_tmp(vTCPBi,vIFechaProceso))
+    print(etq_sql(qry_tmp_360_otc_t_recargas_acum_0(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fecha_inico_mes_1_2, fecha_eje2)))
+    df05=spark.sql(qry_tmp_360_otc_t_recargas_acum_0(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fecha_inico_mes_1_2, fecha_eje2))
     if df05.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df05'))))
     else:
@@ -339,14 +293,14 @@ except Exception as e:
 
 print(lne_dvs())
 
-VStp='Paso [4.6]: Se obtienen los cambios de plan de tipo crossell de la tabla {} '.format(vTCPBi)
+VStp='Paso [4.6]: Se obtienen las recargas de un rango de 30 dias menos a la fecha de ejecucion '
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_06(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_360_misma_tarifa_tmp(vTCPBi,vIFechaProceso)))
-    df06=spark.sql(qyr_tmp_360_misma_tarifa_tmp(vTCPBi,vIFechaProceso))
+    print(etq_sql(qry_tmp_360_otc_t_recargas_acum_menos30(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fecha_menos30, fecha_eje2)))
+    df06=spark.sql(qry_tmp_360_otc_t_recargas_acum_menos30(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fecha_menos30, fecha_eje2))
     if df06.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df06'))))
     else:
@@ -367,14 +321,14 @@ except Exception as e:
 
 print(lne_dvs())
 
-VStp='Paso [4.7]: Se obtienen las bajas involuntarias, en el periodo del mes de la tabla {} '.format(vTBajasInv)
+VStp='Paso [4.7]: Se obtienen las recargas mes menos 1 '
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_07(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_360_bajas_invo(vTBajasInv, fec_ini_mes, vIFechaProceso)))
-    df07=spark.sql(qyr_tmp_360_bajas_invo(vTBajasInv, fec_ini_mes, vIFechaProceso))
+    print(etq_sql(qry_tmp_360_otc_t_recargas_acum_1(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fechaIni_menos_2meses, fecha_inico_mes_1_2)))
+    df07=spark.sql(qry_tmp_360_otc_t_recargas_acum_1(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fechaIni_menos_2meses, fecha_inico_mes_1_2))
     if df07.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df07'))))
     else:
@@ -395,14 +349,14 @@ except Exception as e:
 
 print(lne_dvs())
 
-VStp='Paso [4.8]: Se obtienen el parque prepago, de acuerdo a la minima fecha de churn menor a la fecha de ejecucion de la tabla {} '.format(vTChurnSP2)
+VStp='Paso [4.8]: Se obtienen las recargas mes menos 2'
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_360_otc_t_360_churn90_ori(vTChurnSP2, fec_menos_5, fec_mas_1)))
-    df08=spark.sql(qyr_tmp_360_otc_t_360_churn90_ori(vTChurnSP2, fec_menos_5, fec_mas_1))
+    print(etq_sql(qry_tmp_360_otc_t_recargas_acum_2(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fechaIni_menos_3meses, fechaIni_menos_2meses)))
+    df08=spark.sql(qry_tmp_360_otc_t_recargas_acum_2(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fechaIni_menos_3meses, fechaIni_menos_2meses))
     if df08.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df08'))))
     else:
@@ -423,14 +377,14 @@ except Exception as e:
 
 print(lne_dvs())
 
-VStp='Paso [4.9]: Se obtiene por cuenta de facturacion en banco atado '
+VStp='Paso [4.9]: Se obtienen las recargas mes menos 3'
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_360_otc_t_temp_banco_cliente360_tmp(vTCFact, vTPRMANDATE, fechaeje1)))
-    df09=spark.sql(qyr_tmp_360_otc_t_temp_banco_cliente360_tmp(vTCFact, vTPRMANDATE, fechaeje1))
+    print(etq_sql(qry_tmp_360_otc_t_recargas_acum_3(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fechaIni_menos_4meses, fechaIni_menos_3meses)))
+    df09=spark.sql(qry_tmp_360_otc_t_recargas_acum_3(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fechaIni_menos_4meses, fechaIni_menos_3meses))
     if df09.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df09'))))
     else:
@@ -450,15 +404,15 @@ except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
-
-VStp='Paso [4.10]: Se obtienen las bajas desde el inicio del mes hasta la fecha de proceso de la tabla {} '.format(vTBajasBi)
+vTR
+VStp='Paso [4.10]: dia ejecucion '
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_360_baja_tmp(vTBajasBi, vFechaProc)))
-    df10=spark.sql(qyr_tmp_360_baja_tmp(vTBajasBi, vFechaProc))
+    print(etq_sql(qry_tmp_360_otc_t_recargas_dia_periodo_1(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fecha_eje2)))
+    df10=spark.sql(qry_tmp_360_otc_t_recargas_dia_periodo_1(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fecha_eje2))
     if df10.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df10'))))
     else:
@@ -479,18 +433,14 @@ except Exception as e:
 
 print(lne_dvs())
 
-VStp='Paso [4.11]: Se unen los telefonos del parque inactivo '
+VStp='Paso [4.11]: Se obtienen los bonos acumulados del mes, se modifica el rango de fecha para obtener bonos y combos del mes '
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_360_parque_inactivo(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp))
-                                              , str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp))
-                                              , str(nme_tbl_otc_t_360_recargas_03(vSSchHiveTmp)))))
-    df11=spark.sql(qyr_tmp_360_parque_inactivo(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp))
-                                               , str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp))
-                                               , str(nme_tbl_otc_t_360_recargas_03(vSSchHiveTmp))))
+    print(etq_sql(qry_tmp_360_otc_t_paquetes_payment_acum_bono(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_inico_mes_1_2, fecha_eje2)))
+    df11=spark.sql(qry_tmp_360_otc_t_paquetes_payment_acum_bono(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_inico_mes_1_2, fecha_eje2))
     if df11.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df11'))))
     else:
@@ -511,14 +461,14 @@ except Exception as e:
 
 print(lne_dvs())
 
-VStp='Paso [4.12]: S..................... '
+VStp='Paso [4.12]: Se obtienen los bonos del dia'
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)))))
-    print(etq_sql(qyr_tmp_360_otc_t_360_churn90_tmp1(vTChurnSP2, fec_inac_1)))
-    df12=spark.sql(qyr_tmp_360_otc_t_360_churn90_tmp1(vTChurnSP2, fec_inac_1))
+    print(etq_sql(qry_tmp_360_otc_t_paquetes_payment_dia_bono(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_eje2)))
+    df12=spark.sql(qry_tmp_360_otc_t_paquetes_payment_dia_bono(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_eje2))
     if df12.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df12'))))
     else:
@@ -532,6 +482,146 @@ try:
             print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
         except Exception as e:       
             exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)),str(e))))
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+
+print(lne_dvs())
+
+VStp='Paso [4.13]: Se obtienen los BONOS menos 30 dias'
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)))))
+    print(etq_sql(qry_tmp_360_otc_t_paquetes_bono_menos30(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_menos30, fecha_eje2)))
+    df13=spark.sql(qry_tmp_360_otc_t_paquetes_bono_menos30(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_menos30, fecha_eje2))
+    if df13.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df13'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)))))
+            df13.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)))
+            df13.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)),str(df13.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)),str(e))))
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+
+print(lne_dvs())
+
+VStp='Paso [4.14]: Se modifica el rango de fecha para obtener bonos y combos del mes'
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)))))
+    print(etq_sql(qry_tmp_360_otc_t_paquetes_payment_acum_combo(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_inico_mes_1_2, fecha_eje2)))
+    df14=spark.sql(qry_tmp_360_otc_t_paquetes_payment_acum_combo(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_inico_mes_1_2, fecha_eje2))
+    if df14.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df14'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)))))
+            df14.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)))
+            df14.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)),str(df14.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)),str(e))))
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+
+print(lne_dvs())
+
+VStp='Paso [4.15]: Se obtienen los combos del dia'
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)))))
+    print(etq_sql(qry_tmp_360_otc_t_paquetes_payment_dia_combo(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_eje2)))
+    df15=spark.sql(qry_tmp_360_otc_t_paquetes_payment_dia_combo(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_eje2))
+    if df15.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df15'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)))))
+            df15.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)))
+            df15.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)),str(df15.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)),str(e))))
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+
+print(lne_dvs())
+
+VStp='Paso [4.16]: Se obtienen los combos de un rango de 30 dias menos a la fecha de ejecucion'
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))))
+    print(etq_sql(qry_tmp_360_otc_t_paquetes_payment_combo_menos30(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_menos30, fecha_eje2)))
+    df16=spark.sql(qry_tmp_360_otc_t_paquetes_payment_combo_menos30(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_menos30, fecha_eje2))
+    if df16.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df16'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))))
+            df16.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))
+            df16.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)),str(df16.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)),str(e))))
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+
+print(lne_dvs())
+
+VStp='Paso [4.17]: CONSOLIDACION DE TODOS LOS VALORES OBTENIDOS, modificacion se agregan los campos ingreso_recargas_30,cantidad_recargas_30, ingreso_bonos_30,cantidad_bonos_30, ingreso_combos_30,cantidad_combos_30 para obtener PARQUE_RECARGADOR_30_DIAS'
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)))))
+    print(etq_sql(qry_tmp_otc_t_360_recargas(str(nme_tbl_otc_t_360_recargas_04(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_05(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_07(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_06(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))))
+    df17=spark.sql(qry_tmp_otc_t_360_recargas(str(nme_tbl_otc_t_360_recargas_04(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_05(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_07(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_06(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp))))
+    if df17.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df17'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)))))
+            df17.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)))
+            df17.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)),str(df17.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -555,6 +645,11 @@ try:
     del df10
     del df11
     del df12
+    del df13
+    del df14
+    del df15
+    del df16
+    del df17
     
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(vStpFin,vle_duracion(ts_step,te_step))))

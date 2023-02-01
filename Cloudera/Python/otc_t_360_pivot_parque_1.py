@@ -132,7 +132,6 @@ try:
         .config("spark.yarn.queue", "default") \
         .config("hive.enforce.bucketing", "false")\
 	    .config("hive.enforce.sorting", "false")\
-
         .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")
