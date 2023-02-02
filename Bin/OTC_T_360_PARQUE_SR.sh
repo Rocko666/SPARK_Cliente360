@@ -7,7 +7,10 @@
 # Modificado por: Nathalie Herrera (nae105844)                           #
 # Fecha de modificacion:   2021/06/24                                    #
 # Motivo DescripciÃ²n:   ExclusiÃ³n de los clientes con planes             #
-#                       y del subsegmento movistar libre          #
+#                       y del subsegmento movistar libre                 #
+# Modificado por: Ricardo Jerez (nae102689)                              #
+# Fecha de modificacion:   2022/10/14                                    #
+# Motivo DescripciÃ²n:   ExclusiÃ³n de los clientes con bonos activos      #
 #------------------------------------------------------------------------#
 
 ##########################################################################
@@ -24,34 +27,29 @@
 	COLA_EJECUCION=default;
 	#COLA_EJECUCION=capa_semantica;
 	
-		
-#*****************************************************************************************************#
-#                                            Â¡Â¡ ATENCION !!                                           #
-#                                                                                                     #
-# Configurar las siguientes  consultas de acuerdo al orden de la tabla params de la# base de datos URM #
-# en el servidor 10.112.152.183                                                                       #
-#*****************************************************************************************************#
-
-	isnum() { awk -v a="$1" 'BEGIN {print (a == a + 0)}'; }
+	VAL_COLA_EJECUCION=`mysql -N  <<<"select valor from params where ENTIDAD = 'PARAM_BEELINE' AND parametro = 'VAL_COLA_EJECUCION';"`
+	VAL_CADENA_JDBC=`mysql -N  <<<"select valor from params where ENTIDAD = 'PARAM_BEELINE' AND parametro = 'VAL_CADENA_JDBC';"`
+	VAL_USER=`mysql -NÂ Â <<<"select valor from params where ENTIDAD = 'PARAM_BEELINE' AND parametro = 'VAL_USER';"`	
+	fecha_inicio=$(date --date="${FECHAEJE} -20 day" +%Y%m%d)
+	RUTA_SPARK=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RUTA_SPARK';"`	
+	RUTA_PYTHON=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RUTA_PYTHON';"`
+	VAL_MASTER=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_MASTER';"`
+	VAL_DRIVER_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_DRIVER_MEMORY';"`
+	VAL_EXECUTOR_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_EXECUTOR_MEMORY';"`
+	VAL_NUM_EXECUTORS=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_NUM_EXECUTORS';"`
+	VAL_NUM_EXECUTORS_CORES=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_NUM_EXECUTORS_CORES';"`
+	VAL_TIPO_CARGA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_TIPO_CARGA';"`
+	VAL_NOM_JAR_ORC_19=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_NOM_JAR_ORC_19';"`
+	HIVEDB=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'HIVEDB';"`
+	HIVETABLE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'HIVETABLE';"`
 	
-	function isParamListNum() #parametro es el grupo de valores separados por ;
-    {
-        local value
-		local isnumPar
-        for value in `echo "$1" | sed -e 's/;/\n/g'`
-        do
-		    isnumPar=`isnum "$value"`
-            if [  "$isnumPar" ==  "0" ]; then
-                ((rc=999))
-                echo " `date +%a" "%d"/"%m"/"%Y" "%X` [ERROR] $rc Parametro $value $2 no son numericos"
-                exit $rc
-			fi
-        done	     
+if [ -z "$ENTIDAD" ] || [ -z "$RUTA_SPARK" ] || [ -z "$RUTA_PYTHON" ] || [ -z "$VAL_MASTER" ] || [ -z "$VAL_DRIVER_MEMORY" ] || [ -z "$VAL_EXECUTOR_MEMORY" ] ||
+[ -z "$VAL_NUM_EXECUTORS" ] || [ -z "$VAL_NUM_EXECUTORS_CORES" ] || [ -z "$VAL_TIPO_CARGA" ] || [ -z "$VAL_NOM_JAR_ORC_19" ] || [ -z "$HIVEDB" ] || 
+[ -z "$HIVETABLE" ]; then
+echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros iniciales esta vacio o nulo"
+exit 1
+fi
 	
-	}  
-
-	RUTA="" # RUTA es la carpeta del File System (URM-3.5.1) donde se va a trabajar 
-
 	
 	#Verificar que la configuraciÃ³n de la entidad exista
 	if [ "$AMBIENTE" = "1" ]; then
@@ -228,17 +226,39 @@ fini=$(date "+%Y-%m-%d 23:59:59" --date "-1 days $fecha_inicio")
         
         #Consulta a ejecutar
  
-	/usr/bin/hive -e "sql 1    " 2>> $LOGS/$EJECUCION_LOG.log
+VAL_LOG=$RUTA_LOG/Log/OTC_T_360_PARQUE_SR_SPARK_$DIA$HORA.log
+####################################################
+$RUTA_SPARK \
+--master $VAL_MASTER \
+--name $ENTIDAD \
+--driver-memory $VAL_DRIVER_MEMORY \
+--executor-memory $VAL_EXECUTOR_MEMORY \
+--num-executors $VAL_NUM_EXECUTORS \
+--executor-cores $VAL_NUM_EXECUTORS_CORES \
+$RUTA_PYTHON/otc_t_bonos_activos1.py \
+--FECHAEJE $FECHAEJE \
+--fecha_inicio $fecha_inicio \
+--HIVEDB $HIVEDB \
+--HIVETABLE $HIVETABLE &>> $VAL_LOG
+#VALIDA EJECUCION DEL ARCHIVO SPARK
+error_spark=`egrep 'Error:|ERROR:|NODATA:|requirement failed|Py4JJavaError|An error occurred|Caused by:|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $VAL_LOG | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion proceso es EXITOSO ===="`date '+%H%M%S'` >> $VAL_LOG
+		else
+		echo "==== ERROR: - En la ejecucion proceso .py ====" >> $VAL_LOG
+		exit 1
+	fi
 
-sql=$(hive -S -e "select count(1) from db_temporales.OTC_T_PARQUE_SIN_RECARGA;")
+	
+		sql=$( beeline -u "$VAL_CADENA_JDBC" -n rgenerator  --outputformat=csv2 --silent=true --showHeader=false  -e "set tez.queue.name=$VAL_COLA_EJECUCION ;select count(1) from db_temporales.OTC_T_PARQUE_SIN_RECARGA;")
 
-if [ "$sql" -gt 0 ]; then
-echo "La tabla temporal tiene "$sql" registros"
-sh ${RUTA_SQOOP}/OTC_T_360_PARQUE_SR_sqoop.sh $FECHAEJE $ENTIDAD 2>> $LOGS/$EJECUCION_LOG.log 
-else
-echo "No Existen registros en la fuente"
-exit 40
-fi
+		if [ $sql -gt 0 ]; then
+		echo "La tabla temporal tiene "$sql" registros"
+		sh ${RUTA_SQOOP}/OTC_T_360_PARQUE_SR_sqoop.sh $FECHAEJE $ENTIDAD 2>> $LOGS/$EJECUCION_LOG.log 
+		else
+		echo "No Existen registros en la fuente"
+		exit 40
+		fi
 
 				# Verificacion de creacion tabla external
 		if [ $? -eq 0 ]; then

@@ -92,7 +92,16 @@ VAL_LOG_EJECUCION_2=$dir_proceso'Log/OTC_T_NSE_SALIDA_'$EJECUCION_LOG.log
   
 # Se inserta el resultado en una tabla particionada
   
- /usr/bin/hive -e "sql 1" 1>> $VAL_LOG_EJECUCION_2
+ /usr/bin/hive -e "set hive.cli.print.header=false;
+		set hive.vectorized.execution.enabled=false;
+		set hive.vectorized.execution.reduce.enabled=false;
+		
+		insert overwrite table db_reportes.otc_t_360_nse partition(fecha_proceso)
+		select 
+		numero_telefono,
+		nse,
+		$FECHAEJE as fecha_proceso
+		from db_reportes.otc_t_nse_salida;" 1>> $VAL_LOG_EJECUCION_2
 			# Verificacion de creacion de archivo
 			if [ $? -eq 0 ]; then
 				log i "HIVE" $rc  " Fin del insert en hive - otc_t_360_nse" $PASO
