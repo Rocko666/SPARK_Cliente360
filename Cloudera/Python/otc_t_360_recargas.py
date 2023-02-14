@@ -357,19 +357,19 @@ try:
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)))))
     print(etq_sql(qry_tmp_360_otc_t_recargas_acum_2(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fechaIni_menos_3meses, fechaIni_menos_2meses)))
     df08=spark.sql(qry_tmp_360_otc_t_recargas_acum_2(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fechaIni_menos_3meses, fechaIni_menos_2meses))
-    if df08.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df08'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)))))
-            df08.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)))
-            df08.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)),str(df08.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)),str(e))))
+    ##if df08.rdd.isEmpty():
+        ##exit(etq_nodata(msg_e_df_nodata(str('df08'))))
+    ##else:
+    try:
+        ts_step_tbl = datetime.now()
+        print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)))))
+        df08.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)))
+        df08.printSchema()
+        print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)),str(df08.count())))) 
+        te_step_tbl = datetime.now()
+        print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+    except Exception as e:       
+        exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -385,26 +385,26 @@ try:
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)))))
     print(etq_sql(qry_tmp_360_otc_t_recargas_acum_3(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fechaIni_menos_4meses, fechaIni_menos_3meses)))
     df09=spark.sql(qry_tmp_360_otc_t_recargas_acum_3(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fechaIni_menos_4meses, fechaIni_menos_3meses))
-    if df09.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df09'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)))))
-            df09.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)))
-            df09.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)),str(df09.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)),str(e))))
+    ##if df09.rdd.isEmpty():
+        ##exit(etq_nodata(msg_e_df_nodata(str('df09'))))
+    ##else:
+    try:
+        ts_step_tbl = datetime.now()
+        print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)))))
+        df09.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)))
+        df09.printSchema()
+        print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)),str(df09.count())))) 
+        te_step_tbl = datetime.now()
+        print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+    except Exception as e:       
+        exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
-vTR
+
 VStp='Paso [4.10]: dia ejecucion '
 try:
     ts_step = datetime.now()
@@ -413,19 +413,19 @@ try:
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)))))
     print(etq_sql(qry_tmp_360_otc_t_recargas_dia_periodo_1(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fecha_eje2)))
     df10=spark.sql(qry_tmp_360_otc_t_recargas_dia_periodo_1(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)), fecha_eje2))
-    if df10.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df10'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)))))
-            df10.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)))
-            df10.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)),str(df10.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)),str(e))))
+    ##if df10.rdd.isEmpty():
+      ##  exit(etq_nodata(msg_e_df_nodata(str('df10'))))
+    ##else:
+    try:
+        ts_step_tbl = datetime.now()
+        print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)))))
+        df10.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)))
+        df10.printSchema()
+        print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)),str(df10.count())))) 
+        te_step_tbl = datetime.now()
+        print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+    except Exception as e:       
+        exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -441,19 +441,19 @@ try:
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)))))
     print(etq_sql(qry_tmp_360_otc_t_paquetes_payment_acum_bono(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_inico_mes_1_2, fecha_eje2)))
     df11=spark.sql(qry_tmp_360_otc_t_paquetes_payment_acum_bono(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_inico_mes_1_2, fecha_eje2))
-    if df11.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df11'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)))))
-            df11.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)))
-            df11.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)),str(df10.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)),str(e))))
+    ##if df11.rdd.isEmpty():
+        ##exit(etq_nodata(msg_e_df_nodata(str('df11'))))
+    ##else:
+    try:
+        ts_step_tbl = datetime.now()
+        print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)))))
+        df11.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)))
+        df11.printSchema()
+        print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)),str(df10.count())))) 
+        te_step_tbl = datetime.now()
+        print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+    except Exception as e:       
+        exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -469,19 +469,19 @@ try:
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)))))
     print(etq_sql(qry_tmp_360_otc_t_paquetes_payment_dia_bono(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_eje2)))
     df12=spark.sql(qry_tmp_360_otc_t_paquetes_payment_dia_bono(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_eje2))
-    if df12.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df12'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)))))
-            df12.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)))
-            df12.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)),str(df12.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)),str(e))))
+    ##if df12.rdd.isEmpty():
+      ##  exit(etq_nodata(msg_e_df_nodata(str('df12'))))
+    ##else:
+    try:
+        ts_step_tbl = datetime.now()
+        print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)))))
+        df12.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)))
+        df12.printSchema()
+        print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)),str(df12.count())))) 
+        te_step_tbl = datetime.now()
+        print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+    except Exception as e:       
+        exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -497,19 +497,19 @@ try:
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)))))
     print(etq_sql(qry_tmp_360_otc_t_paquetes_bono_menos30(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_menos30, fecha_eje2)))
     df13=spark.sql(qry_tmp_360_otc_t_paquetes_bono_menos30(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_menos30, fecha_eje2))
-    if df13.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df13'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)))))
-            df13.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)))
-            df13.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)),str(df13.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)),str(e))))
+    ##if df13.rdd.isEmpty():
+        ##exit(etq_nodata(msg_e_df_nodata(str('df13'))))
+    ##else:
+    try:
+        ts_step_tbl = datetime.now()
+        print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)))))
+        df13.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)))
+        df13.printSchema()
+        print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)),str(df13.count())))) 
+        te_step_tbl = datetime.now()
+        print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+    except Exception as e:       
+        exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -525,19 +525,19 @@ try:
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)))))
     print(etq_sql(qry_tmp_360_otc_t_paquetes_payment_acum_combo(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_inico_mes_1_2, fecha_eje2)))
     df14=spark.sql(qry_tmp_360_otc_t_paquetes_payment_acum_combo(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_inico_mes_1_2, fecha_eje2))
-    if df14.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df14'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)))))
-            df14.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)))
-            df14.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)),str(df14.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)),str(e))))
+    ##if df14.rdd.isEmpty():
+       ## exit(etq_nodata(msg_e_df_nodata(str('df14'))))
+    ##else:
+    try:
+        ts_step_tbl = datetime.now()
+        print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)))))
+        df14.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)))
+        df14.printSchema()
+        print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)),str(df14.count())))) 
+        te_step_tbl = datetime.now()
+        print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+    except Exception as e:       
+        exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -553,19 +553,19 @@ try:
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)))))
     print(etq_sql(qry_tmp_360_otc_t_paquetes_payment_dia_combo(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_eje2)))
     df15=spark.sql(qry_tmp_360_otc_t_paquetes_payment_dia_combo(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_eje2))
-    if df15.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df15'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)))))
-            df15.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)))
-            df15.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)),str(df15.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)),str(e))))
+    ##if df15.rdd.isEmpty():
+      ##  exit(etq_nodata(msg_e_df_nodata(str('df15'))))
+    ##else:
+    try:
+        ts_step_tbl = datetime.now()
+        print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)))))
+        df15.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)))
+        df15.printSchema()
+        print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)),str(df15.count())))) 
+        te_step_tbl = datetime.now()
+        print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+    except Exception as e:       
+        exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -581,19 +581,19 @@ try:
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))))
     print(etq_sql(qry_tmp_360_otc_t_paquetes_payment_combo_menos30(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_menos30, fecha_eje2)))
     df16=spark.sql(qry_tmp_360_otc_t_paquetes_payment_combo_menos30(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)), fecha_menos30, fecha_eje2))
-    if df16.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df16'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))))
-            df16.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))
-            df16.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)),str(df16.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)),str(e))))
+    ##if df16.rdd.isEmpty():
+      ##  exit(etq_nodata(msg_e_df_nodata(str('df16'))))
+    ##else:
+    try:
+        ts_step_tbl = datetime.now()
+        print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))))
+        df16.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))
+        df16.printSchema()
+        print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)),str(df16.count())))) 
+        te_step_tbl = datetime.now()
+        print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+    except Exception as e:       
+        exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -609,19 +609,19 @@ try:
     print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)))))
     print(etq_sql(qry_tmp_otc_t_360_recargas(str(nme_tbl_otc_t_360_recargas_04(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_05(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_07(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_06(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))))
     df17=spark.sql(qry_tmp_otc_t_360_recargas(str(nme_tbl_otc_t_360_recargas_04(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_05(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_07(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_06(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)), str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp))))
-    if df17.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df17'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)))))
-            df17.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)))
-            df17.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)),str(df17.count())))) 
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)),str(e))))
+    ##if df17.rdd.isEmpty():
+        ##exit(etq_nodata(msg_e_df_nodata(str('df17'))))
+    ##else:
+    try:
+        ts_step_tbl = datetime.now()
+        print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)))))
+        df17.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)))
+        df17.printSchema()
+        print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)),str(df17.count())))) 
+        te_step_tbl = datetime.now()
+        print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+    except Exception as e:       
+        exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:

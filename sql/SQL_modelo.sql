@@ -1,5 +1,3 @@
--- script desde archivo carga_otc_t_360_modelo.sql
-
 -- NOMBRE: carga_otc_t_360_modelo.sql
 -- DESCRIPCION:
 --   HQL que ejecuta el proceso ETL para tomar la informacion de modelo

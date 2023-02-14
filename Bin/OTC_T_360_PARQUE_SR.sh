@@ -50,6 +50,33 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros iniciales esta va
 exit 1
 fi
 	
+#*****************************************************************************************************#
+#                                            Â¡Â¡ ATENCION !!                                           #
+#                                                                                                     #
+# Configurar las siguientes  consultas de acuerdo al orden de la tabla params de la# base de datos URM #
+# en el servidor 10.112.152.183                                                                       #
+#*****************************************************************************************************#
+
+	isnum() { awk -v a="$1" 'BEGIN {print (a == a + 0)}'; }
+	
+	function isParamListNum() #parametro es el grupo de valores separados por ;
+    {
+        local value
+		local isnumPar
+        for value in `echo "$1" | sed -e 's/;/\n/g'`
+        do
+		    isnumPar=`isnum "$value"`
+            if [  "$isnumPar" ==  "0" ]; then
+                ((rc=999))
+                echo " `date +%a" "%d"/"%m"/"%Y" "%X` [ERROR] $rc Parametro $value $2 no son numericos"
+                exit $rc
+			fi
+        done	     
+	
+	}  
+
+	RUTA="" # RUTA es la carpeta del File System (URM-3.5.1) donde se va a trabajar 
+
 	
 	#Verificar que la configuraciÃ³n de la entidad exista
 	if [ "$AMBIENTE" = "1" ]; then
@@ -137,6 +164,55 @@ fi
 	#LOGPATH ruta base donde se guardan los logs
     LOGPATH=$RUTA_LOG/Log
 
+#------------------------------------------------------
+# DEFINICION DE FUNCIONES
+#------------------------------------------------------
+
+    # Guarda los resultados en los archivos de correspondientes y registra las entradas en la base de datos de control    
+    function log() #funcion 4 argumentos (tipo, tarea, salida, mensaje)
+    {
+        if [ "$#" -lt 4 ]; then
+            echo "Faltan argumentosen el llamado a la funcion"
+            return 1 # Numero de argumentos no completo
+        else
+            if [ "$1" = 'e' -o "$1" = 'E' ]; then
+                TIPOLOG=ERROR
+            else
+                TIPOLOG=INFO
+            fi
+                TAREA="$2"
+		            MEN="$4"
+				PASO_EJEC="$5"
+                FECHA=`date +%Y"-"%m"-"%d`
+                HORAS=`date +%H":"%M":"%S`
+                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
+                MSJ=$(echo " $TIME [$TIPOLOG] Tarea: $TAREA - $MEN ")
+                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
+                mysql -e "insert into logs values ('$ENTIDAD','$EJECUCION','$TIPOLOG','$FECHA','$HORAS','$TAREA',$3,'$MEN','$PASO_EJEC','$NAME_SHELL')"
+                echo $MSJ
+                return 0
+        fi
+    }
+	
+	
+    function stat() #funcion 4 argumentos (Tarea, duracion, fuente, destino)
+    {
+        if [ "$#" -lt 4 ]; then
+            echo "Faltan argumentosen el llamado a la funcion"
+            return 1 # Numero de argumentos no completo
+        else
+                TAREA="$1"
+		        DURACION="$2"
+                FECHA=`date +%Y"-"%m"-"%d`
+                HORAS=`date +%H":"%M":"%S`
+                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
+                MSJ=$(echo " $TIME [INFO] Tarea: $TAREA - Duracion : $DURACION ")
+                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
+                mysql -e "insert into stats values ('$ENTIDAD','$EJECUCION','$TAREA','$FECHA $HORAS','$DURACION',$3,'$4')"
+                echo $MSJ
+                return 0
+        fi
+    }
 #------------------------------------------------------
 # VERIFICACION INICIAL 
 #------------------------------------------------------

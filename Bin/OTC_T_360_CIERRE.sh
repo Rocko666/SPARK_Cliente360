@@ -6,7 +6,7 @@
 #------------------------------------------------------------------------#
 
 
-version=1.2.1000.2.6.4.0-91
+version=1.2.1000.2.6.5.0-292
 HADOOP_CLASSPATH=$(hcat -classpath) export HADOOP_CLASSPATH
 
 HIVE_HOME=/usr/hdp/current/hive-client

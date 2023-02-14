@@ -12,6 +12,15 @@
 # 2021-04-26    Katherine Del Valle (KV 303551)       Para obtener el PARQUE_RECARGADOR_DIARIO_UNICO y PARQUE_RECARGADOR_30_DIAS
 ###########################################################################
 
+version=1.2.1000.2.6.5.0-292
+HADOOP_CLASSPATH=$(hcat -classpath) export HADOOP_CLASSPATH
+
+HIVE_HOME=/usr/hdp/current/hive-client
+HCAT_HOME=/usr/hdp/current/hive-webhcat
+SQOOP_HOME=/usr/hdp/current/sqoop-client
+
+export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HIVE_HOME}/lib/hive-metastore-${version}.jar,$HIVE_HOME/lib/libthrift-0.9.3.jar,$HIVE_HOME/lib/hive-exec-${version}.jar,$HIVE_HOME/lib/libfb303-0.9.3.jar,$HIVE_HOME/lib/jdo-api-3.0.1.jar,$SQOOP_HOME/lib/slf4j-api-1.7.7.jar,$HIVE_HOME/lib/hive-cli-${version}.jar
+
 
 ##########################################################################
 #------------------------------------------------------
@@ -25,8 +34,34 @@
     # Variable de control de que paso ejecutar
 	PASO=$2
 		
+#*****************************************************************************************************#
+#                                            ?? ATENCION !!                                           #
+#                                                                                                     #
+# Configurar las siguientes  consultas de acuerdo al orden de la tabla params de la base de datos URM #
+# en el servidor 10.112.152.183                                                                       #
+#*****************************************************************************************************#
 
+	isnum() { awk -v a="$1" 'BEGIN {print (a == a + 0)}'; }
+	
+	function isParamListNum() #parametro es el grupo de valores separados por ;
+    {
+        local value
+		local isnumPar
+        for value in `echo "$1" | sed -e 's/;/\n/g'`
+        do
+		    isnumPar=`isnum "$value"`
+            if [  "$isnumPar" ==  "0" ]; then
+                ((rc=999))
+                echo " `date +%a" "%d"/"%m"/"%Y" "%X` [ERROR] $rc Parametro $value $2 no son numericos"
+                exit $rc
+			fi
+        done	     
+	
+	}  
 
+	RUTA="" # RUTA es la carpeta del File System (URM-3.5.1) donde se va a trabajar 
+
+	
 	#Verificar que la configuraci?n de la entidad exista
 	if [ "$AMBIENTE" = "1" ]; then
 		ExisteEntidad=`mysql -N  <<<"select count(*) from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"');"` 
@@ -111,6 +146,55 @@
 	#LOGPATH ruta base donde se guardan los logs
     LOGPATH=$RUTA_LOG/Log
 
+#------------------------------------------------------
+# DEFINICION DE FUNCIONES
+#------------------------------------------------------
+
+    # Guarda los resultados en los archivos de correspondientes y registra las entradas en la base de datos de control    
+    function log() #funcion 4 argumentos (tipo, tarea, salida, mensaje)
+    {
+        if [ "$#" -lt 4 ]; then
+            echo "Faltan argumentosen el llamado a la funcion"
+            return 1 # Numero de argumentos no completo
+        else
+            if [ "$1" = 'e' -o "$1" = 'E' ]; then
+                TIPOLOG=ERROR
+            else
+                TIPOLOG=INFO
+            fi
+                TAREA="$2"
+		            MEN="$4"
+				PASO_EJEC="$5"
+                FECHA=`date +%Y"-"%m"-"%d`
+                HORAS=`date +%H":"%M":"%S`
+                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
+                MSJ=$(echo " $TIME [$TIPOLOG] Tarea: $TAREA - $MEN ")
+                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
+                mysql -e "insert into logs values ('$ENTIDAD','$EJECUCION','$TIPOLOG','$FECHA','$HORAS','$TAREA',$3,'$MEN','$PASO_EJEC','$NAME_SHELL')"
+                echo $MSJ
+                return 0
+        fi
+    }
+	
+	
+    function stat() #funcion 4 argumentos (Tarea, duracion, fuente, destino)
+    {
+        if [ "$#" -lt 4 ]; then
+            echo "Faltan argumentosen el llamado a la funcion"
+            return 1 # Numero de argumentos no completo
+        else
+                TAREA="$1"
+		        DURACION="$2"
+                FECHA=`date +%Y"-"%m"-"%d`
+                HORAS=`date +%H":"%M":"%S`
+                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
+                MSJ=$(echo " $TIME [INFO] Tarea: $TAREA - Duracion : $DURACION ")
+                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
+                mysql -e "insert into stats values ('$ENTIDAD','$EJECUCION','$TAREA','$FECHA $HORAS','$DURACION',$3,'$4')"
+                echo $MSJ
+                return 0
+        fi
+    }
 #------------------------------------------------------
 # VERIFICACION INICIAL 
 #------------------------------------------------------
@@ -265,241 +349,179 @@ hive -e "drop table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM;
         INICIO=$(date +%s)
         
         #Consulta a ejecutar
-		/usr/bin/hive -e "
-        
-        --- N01
-        drop table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO;
+		/usr/bin/hive -e "drop table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO;
 
-create table $ESQUEMA_TEMP.tmp_360_otc_t_recargas_dia_periodo as
-SELECT
-	numero_telefono
-	, CASE
-		WHEN operadora = 'MOVISTAR'
-		OR operadora IS NULL
-		OR operadora = '' THEN 'TELEFONICA'
-		ELSE operadora
-	END marca	-- si 'MOVISTAR O NULLA O BLANCO' ENTONCES 'TELEFONICA', SINO PONER LA OPERADORA
-	, fecha_proceso	--cada dia  del rango
-	, sum(valor_recarga_base)/ 1.12 valor_recargas	--retitar el IVA
-	, count(1) cantidad_recargas
-FROM
-	db_cs_recargas.otc_t_cs_detalle_recargas a
-INNER JOIN db_altamira.par_origen_recarga ori	-- usar el cat?logo de recargas v?lidas
-ON
-	ori.ORIGENRECARGAID = a.origen_recarga_aa
-WHERE
-	(fecha_proceso >= $fechaIni_menos_3meses
-		AND fecha_proceso <= $fecha_eje2)
-	AND operadora IN ('MOVISTAR')
-	AND TIPO_TRANSACCION = 'ACTIVA'	--transacciones validas
-	AND ESTADO_RECARGA = 'RECARGA'	--asegurar que son recargas
-	AND rec_pkt = 'REC'
-GROUP BY
-	numero_telefono
-	, CASE
-		WHEN operadora = 'MOVISTAR'
-		OR operadora IS NULL
-		OR operadora = '' THEN 'TELEFONICA'
-		ELSE operadora
-	END	-- si 'MOVISTAR O NULLA O BLANCO' ENTONCES 'TELEFONICA', SINO PONER LA OPERADORA
-	, fecha_proceso;
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO as
+select numero_telefono
+, case when operadora='MOVISTAR' or operadora is null or operadora ='' then 'TELEFONICA' else operadora end marca -- si 'MOVISTAR O NULLA O BLANCO' ENTONCES 'TELEFONICA', SINO PONER LA OPERADORA
+, fecha_proceso --cada dia  del rango
+, sum(valor_recarga_base)/1.12 valor_recargas --retitar el IVA
+, count(1) cantidad_recargas
+from db_cs_recargas.otc_t_cs_detalle_recargas a
+inner join db_altamira.par_origen_recarga ori  -- usar el cat?logo de recargas v?lidas
+on ori.ORIGENRECARGAID= a.origen_recarga_aa
+where (fecha_proceso >= $fechaIni_menos_3meses AND fecha_proceso <= $fecha_eje2)
+AND operadora in ('MOVISTAR')
+AND TIPO_TRANSACCION = 'ACTIVA' --transacciones validas
+AND ESTADO_RECARGA = 'RECARGA' --asegurar que son recargas
+AND rec_pkt ='REC' group by numero_telefono
+, case when operadora='MOVISTAR' or operadora is null or operadora ='' then 'TELEFONICA' else operadora end   -- si 'MOVISTAR O NULLA O BLANCO' ENTONCES 'TELEFONICA', SINO PONER LA OPERADORA
+, fecha_proceso;
 
-
-
---- N02
 --bonos y combos
 -------------------------------------------------
 --(KV 303551) se modifica el rango de fecha para obtener bonos y combos de 2 meses atras
 -------------------------------------------------
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_paquetes_payment_acum as
-SELECT
-	fecha_proceso
-	, r.numero_telefono AS num_telefono
-	,
-CASE
-		WHEN r.operadora = 'MOVISTAR' THEN 'TELEFONICA'
-		ELSE r.operadora
-	END AS marca
-	, b.tipo AS combo_bono
-	, SUM(r.valor_recarga_base)/ 1.12 coste	--Para quitar el valor del impuesto
-	, count(*) cantidad	--combos o bonos segun el tipo de la tabla db_reportes.cat_bonos_pdv , hacer el case correspondiente
-	, $fecha_eje2 AS fecha_proc	------- parametro del ultimo dia del rango
-FROM
-	db_cs_recargas.otc_T_cs_detalle_recargas r
-INNER JOIN (
-	SELECT
-		DISTINCT codigo_pm
-		, tipo
-	FROM
-		db_reportes.cat_bonos_pdv ) b	--INNER join db_reportes.cat_bonos_pdv b
-ON
-	(b.codigo_pm = r.codigo_paquete
-		AND (r.codigo_paquete <> ''
-			AND r.codigo_paquete IS NOT NULL))	-- solo los que se venden en PDV
-WHERE
-	fecha_proceso >= $fechaIni_menos_2meses
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM as
+select  fecha_proceso,r.numero_telefono as num_telefono,
+case when r.operadora='MOVISTAR' then 'TELEFONICA' else r.operadora end as marca
+,b.tipo as combo_bono
+,SUM(r.valor_recarga_base)/1.12 coste--Para quitar el valor del impuesto
+,count(*) cantidad --combos o bonos seg?n el tipo de la tabla db_reportes.cat_bonos_pdv , hacer el case correspondiente
+,$fecha_eje2 as fecha_proc ------- parametro del ultimo dia del rango
+from db_cs_recargas.otc_T_cs_detalle_recargas r
+inner join (select distinct codigo_pm, tipo from db_reportes.cat_bonos_pdv ) b --INNER join db_reportes.cat_bonos_pdv b
+on (b.codigo_pm=r.codigo_paquete
+and (r.codigo_paquete<>''
+and r.codigo_paquete is not null))
+-- solo los que se venden en PDV
+where fecha_proceso>=$fechaIni_menos_2meses --
 and fecha_proceso<=$fecha_eje2  --(di  a n)
-	AND r.rec_pkt = 'PKT'	-- solo los que se venden en PDV
-	AND plataforma IN ('PM')
-	AND TIPO_TRANSACCION = 'ACTIVA'
-	AND ESTADO_RECARGA = 'RECARGA'
-	AND r.operadora = 'MOVISTAR'
-	GROUP BY fecha_proceso
-	, r.numero_telefono
-	, CASE
-		WHEN r.operadora = 'MOVISTAR' THEN 'TELEFONICA'
-		ELSE r.operadora
-	END
-	, b.tipo;
+and r.rec_pkt='PKT' -- solo los que se venden en PDV
+and plataforma in ('PM')
+AND TIPO_TRANSACCION = 'ACTIVA'
+AND ESTADO_RECARGA = 'RECARGA'
+AND r.operadora='MOVISTAR'group by fecha_proceso, r.numero_telefono
+,case when r.operadora='MOVISTAR' then 'TELEFONICA' else r.operadora end
+,b.tipo;
 
 
-
-
---- N03
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_universo_recargas AS
-SELECT
-	b.numero_telefono
-FROM
-	$ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO b
-UNION ALL 
-SELECT
-	c.num_telefono
-FROM
-	$ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM c;
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS AS
+select b.numero_telefono
+from $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO b 
+union all 
+select c.num_telefono
+from $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM c;
 
-
---- N04
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_UNICOS;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_universo_recargas_unicos as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_UNICOS as
 select numero_telefono, 
 count(1) as cant_t 
 from $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS 
 group by numero_telefono;
 
---- N05
 --mes 0
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_0;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_recargas_acum_0 as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_0 as
 select numero_telefono, sum(valor_recargas) costo_recargas_acum, sum(cantidad_recargas) cant_recargas_acum 
 from $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO 
 where fecha_proceso>= $fecha_inico_mes_1_2 and fecha_proceso <= $fecha_eje2
 group by numero_telefono;
 
---- N06
 --RECARGAS menos 30 dias
 -------------------------------------------------
 --(KV 303551) se obtienen las recargas de un rango de 30 dias menos a la fecha de ejecucion
 -------------------------------------------------
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_MENOS30;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_recargas_acum_menos30 as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_MENOS30 as
 select numero_telefono, sum(valor_recargas) costo_recargas_acum, sum(cantidad_recargas) cant_recargas_acum 
 from $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO 
 where fecha_proceso>= $fecha_menos30 and fecha_proceso < $fecha_eje2
 group by numero_telefono;
 
 
---- N07
 --mes menos 1
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_1;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_recargas_acum_1 as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_1 as
 select numero_telefono, sum(valor_recargas) costo_recargas_acum, sum(cantidad_recargas) cant_recargas_acum 
 from $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO 
 where fecha_proceso>= $fechaIni_menos_2meses and fecha_proceso < $fecha_inico_mes_1_2
 group by numero_telefono;
 
---- N08
 --mes menos 2
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_2;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_recargas_acum_2 as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_2 as
 select numero_telefono, sum(valor_recargas) costo_recargas_acum, sum(cantidad_recargas) cant_recargas_acum 
 from $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO 
 where fecha_proceso>= $fechaIni_menos_3meses and fecha_proceso < $fechaIni_menos_2meses
 group by numero_telefono;
 
---- N09
 --mes menos 3
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_3;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_recargas_acum_3 as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_3 as
 select numero_telefono, sum(valor_recargas) costo_recargas_acum, sum(cantidad_recargas) cant_recargas_acum 
 from $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO 
 where fecha_proceso>= $fechaIni_menos_4meses and fecha_proceso < $fechaIni_menos_3meses
 group by numero_telefono;
 
---- N10
 --dia ejecucion
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_1;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_recargas_dia_periodo_1 as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_1 as
 select numero_telefono, sum(valor_recargas) costo_recargas_dia, sum(cantidad_recargas) cant_recargas_dia
 from $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO 
 where fecha_proceso= $fecha_eje2
 group by numero_telefono;
 
---- N11
 --BONOS ACUMULADOS DEL MES
 -------------------------------------------------
 --(KV 303551) se modifica el rango de fecha para obtener bonos y combos del mes
 -------------------------------------------------
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_BONO;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_paquetes_payment_acum_bono as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_BONO as
 select num_telefono, sum(coste) coste_paym_periodo, sum(cantidad) cant_paym_periodo 
 from $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM 
 WHERE combo_bono='BONO' and fecha_proceso>= $fecha_inico_mes_1_2 and fecha_proceso <= $fecha_eje2
 group by num_telefono;
 
---- N12
 --BONOS DEL DIA
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_BONO;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_paquetes_payment_dia_bono as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_BONO as
 select num_telefono, sum(coste) coste_paym_periodo, sum(cantidad) cant_paym_periodo 
 from $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM 
 WHERE combo_bono='BONO' AND fecha_proceso=$fecha_eje2
 group by num_telefono;
 
 
---- N13
 --BONOS menos 30 dias
 -------------------------------------------------
 --(KV 303551) se obtienen los bonos de un rango de 30 dias menos a la fecha de ejecucion
 -------------------------------------------------
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_BONO_MENOS30;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_paquetes_bono_menos30 as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_BONO_MENOS30 as
 select num_telefono, sum(coste) coste_paym_periodo, sum(cantidad) cant_paym_periodo 
 from $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM 
 WHERE combo_bono='BONO' AND fecha_proceso>= $fecha_menos30 and fecha_proceso < $fecha_eje2
 group by num_telefono;
 
 
---- N14
 --COMBOS ACUMULADOS DEL MES
 -------------------------------------------------
 --(KV 303551) se modifica el rango de fecha para obtener bonos y combos del mes
 -------------------------------------------------
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_COMBO;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_paquetes_payment_acum_combo as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_COMBO as
 select num_telefono, sum(coste) coste_paym_periodo, sum(cantidad) cant_paym_periodo 
 from $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM 
 WHERE combo_bono='COMBO' and fecha_proceso>= $fecha_inico_mes_1_2 and fecha_proceso <= $fecha_eje2
 group by num_telefono;
 
---- N15
 --COMBOS DEL DIA
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_COMBO;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_paquetes_payment_dia_combo as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_COMBO as
 select num_telefono, sum(coste) coste_paym_periodo, sum(cantidad) cant_paym_periodo 
 from $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM 
 WHERE combo_bono='COMBO' AND fecha_proceso=$fecha_eje2
 group by num_telefono;
 
 
---- N16
 --COMBOS menos 30 dias
 -------------------------------------------------
 --(KV 303551) se obtienen los combos de un rango de 30 dias menos a la fecha de ejecucion
 -------------------------------------------------
 drop table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_COMBO_MENOS30;
-create table $ESQUEMA_TEMP.tmp_360_otc_t_paquetes_payment_combo_menos30 as
+create table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_COMBO_MENOS30 as
 select num_telefono, sum(coste) coste_paym_periodo, sum(cantidad) cant_paym_periodo 
 from $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM 
 WHERE combo_bono='COMBO' AND fecha_proceso>= $fecha_menos30 and fecha_proceso < $fecha_eje2
@@ -507,7 +529,6 @@ group by num_telefono;
 
 
 
---- N17
 --CONSOLIDACION DE TODOS LOS VALORES OBTENIDOS
 -------------------------------------------------
 --(KV 303551) modificacion se agregan los campos ingreso_recargas_30,cantidad_recargas_30, ingreso_bonos_30,cantidad_bonos_30,
@@ -515,7 +536,7 @@ group by num_telefono;
 -------------------------------------------------
 
 drop table $ESQUEMA_TEMP.TMP_OTC_T_360_RECARGAS;
-create table $ESQUEMA_TEMP.tmp_otc_t_360_recargas as
+create table $ESQUEMA_TEMP.TMP_OTC_T_360_RECARGAS as
 select a.numero_telefono
 ,coalesce(c.costo_recargas_dia,0) ingreso_recargas_dia
 ,coalesce(c.cant_recargas_dia,0) cantidad_recarga_dia

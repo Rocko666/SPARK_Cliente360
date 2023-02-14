@@ -5,6 +5,17 @@
 # Las tildes hansido omitidas intencionalmente en el script              #
 #------------------------------------------------------------------------#
 
+
+version=1.2.1000.2.6.5.0-292
+HADOOP_CLASSPATH=$(hcat -classpath) export HADOOP_CLASSPATH
+
+HIVE_HOME=/usr/hdp/current/hive-client
+HCAT_HOME=/usr/hdp/current/hive-webhcat
+SQOOP_HOME=/usr/hdp/current/sqoop-client
+
+export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HIVE_HOME}/lib/hive-metastore-${version}.jar,$HIVE_HOME/lib/libthrift-0.9.3.jar,$HIVE_HOME/lib/hive-exec-${version}.jar,$HIVE_HOME/lib/libfb303-0.9.3.jar,$HIVE_HOME/lib/jdo-api-3.0.1.jar,$SQOOP_HOME/lib/slf4j-api-1.7.7.jar,$HIVE_HOME/lib/hive-cli-${version}.jar
+
+
 ##########################################################################
 #------------------------------------------------------
 # VARIABLES CONFIGURABLES POR PROCESO (MODIFICAR)
@@ -19,7 +30,32 @@
 	COLA_EJECUCION=capa_semantica;
 	ABREVIATURA_TEMP=_prod
 
+		
+#*****************************************************************************************************#
+#                                            Â¡Â¡ ATENCION !!                                           #
+#                                                                                                     #
+# Configurar las siguientes  consultas de acuerdo al orden de la tabla params de la base de datos URM #
+# en el servidor 10.112.152.183                                                                       #
+#*****************************************************************************************************#
+
+	isnum() { awk -v a="$1" 'BEGIN {print (a == a + 0)}'; }
 	
+	function isParamListNum() #parametro es el grupo de valores separados por ;
+    {
+        local value
+		local isnumPar
+        for value in `echo "$1" | sed -e 's/;/\n/g'`
+        do
+		    isnumPar=`isnum "$value"`
+            if [  "$isnumPar" ==  "0" ]; then
+                ((rc=999))
+                echo " `date +%a" "%d"/"%m"/"%Y" "%X` [ERROR] $rc Parametro $value $2 no son numericos"
+                exit $rc
+			fi
+        done	     
+	
+	}  
+
 	RUTA="" # RUTA es la carpeta del File System (URM-3.5.1) donde se va a trabajar 
 	
 		#Verificar TABLA DE PARAMETROS A USAR
@@ -121,6 +157,55 @@
 	  #LOGPATH ruta base donde se guardan los logs
     LOGPATH=$RUTA_LOG/Log
 
+#------------------------------------------------------
+# DEFINICION DE FUNCIONES
+#------------------------------------------------------
+
+    # Guarda los resultados en los archivos de correspondientes y registra las entradas en la base de datos de control    
+    function log() #funcion 4 argumentos (tipo, tarea, salida, mensaje)
+    {
+        if [ "$#" -lt 4 ]; then
+            echo "Faltan argumentosen el llamado a la funcion"
+            return 1 # Numero de argumentos no completo
+        else
+            if [ "$1" = 'e' -o "$1" = 'E' ]; then
+                TIPOLOG=ERROR
+            else
+                TIPOLOG=INFO
+            fi
+                TAREA="$2"
+		            MEN="$4"
+				PASO_EJEC="$5"
+                FECHA=`date +%Y"-"%m"-"%d`
+                HORAS=`date +%H":"%M":"%S`
+                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
+                MSJ=$(echo " $TIME [$TIPOLOG] Tarea: $TAREA - $MEN ")
+                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
+                mysql -e "insert into logs values ('$ENTIDAD','$EJECUCION','$TIPOLOG','$FECHA','$HORAS','$TAREA',$3,'$MEN','$PASO_EJEC','$NAME_SHELL')"
+                echo $MSJ
+                return 0
+        fi
+    }
+	
+	
+    function stat() #funcion 4 argumentos (Tarea, duracion, fuente, destino)
+    {
+        if [ "$#" -lt 4 ]; then
+            echo "Faltan argumentosen el llamado a la funcion"
+            return 1 # Numero de argumentos no completo
+        else
+                TAREA="$1"
+		        DURACION="$2"
+                FECHA=`date +%Y"-"%m"-"%d`
+                HORAS=`date +%H":"%M":"%S`
+                TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
+                MSJ=$(echo " $TIME [INFO] Tarea: $TAREA - Duracion : $DURACION ")
+                echo $MSJ >> $LOGS/$EJECUCION_LOG.log
+                mysql -e "insert into stats values ('$ENTIDAD','$EJECUCION','$TAREA','$FECHA $HORAS','$DURACION',$3,'$4')"
+                echo $MSJ
+                return 0
+        fi
+    }
 #------------------------------------------------------
 # VERIFICACION INICIAL 
 #------------------------------------------------------
@@ -275,24 +360,21 @@ fecha_alt_dos_meses_ant_ini=`date '+%Y-%m-%d' -d "$ultimo_dia_tres_meses_ant"`
 		set hive.vectorized.execution.reduce.enabled=false;
 		set tez.queue.name=$COLA_EJECUCION;
 
-		drop table $ESQUEMA_TEMP.tmp_360_alta_tmp$ABREVIATURA_TEMP;    --n1
-		 drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pp_tmp$ABREVIATURA_TEMP;  --n2
-		 drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP;  --n3
-		 drop table $ESQUEMA_TEMP.tmp_360_upsell_tmp$ABREVIATURA_TEMP;   --n4
-		 drop table $ESQUEMA_TEMP.tmp_360_downsell_tmp$ABREVIATURA_TEMP;  --n5
-		 drop table $ESQUEMA_TEMP.tmp_360_misma_tarifa_tmp$ABREVIATURA_TEMP;  --n6
-		 drop table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP;   --n7
-		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_ori$ABREVIATURA_TEMP; --n8  -- este drop se lo paso a la parte de arriba en migracion standares cloudera
-		 drop table $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP$ABREVIATURA_TEMP; --N9
-		 drop table $ESQUEMA_TEMP.tmp_360_baja_tmp$ABREVIATURA_TEMP;  --n10
-		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp$ABREVIATURA_TEMP; --n
-		 
+		drop table $ESQUEMA_TEMP.tmp_360_alta_tmp$ABREVIATURA_TEMP;
+		 drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pp_tmp$ABREVIATURA_TEMP;
+		 drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP;
+		 drop table $ESQUEMA_TEMP.tmp_360_upsell_tmp$ABREVIATURA_TEMP;
+		 drop table $ESQUEMA_TEMP.tmp_360_downsell_tmp$ABREVIATURA_TEMP;
+		 drop table $ESQUEMA_TEMP.tmp_360_misma_tarifa_tmp$ABREVIATURA_TEMP;
+		 drop table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP;
+		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp$ABREVIATURA_TEMP;
 		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_act$ABREVIATURA_TEMP;
-		 
+		 drop table $ESQUEMA_TEMP.tmp_360_baja_tmp$ABREVIATURA_TEMP;
 		 drop table $ESQUEMA_TEMP.tmp_360_parque_inactivo$ABREVIATURA_TEMP;
 		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp1$ABREVIATURA_TEMP;
 		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inac$ABREVIATURA_TEMP;
 		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact$ABREVIATURA_TEMP;
+		 drop table $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP$ABREVIATURA_TEMP;
 		 drop table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_1$ABREVIATURA_TEMP;
 		 drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_parque_1_tmp$ABREVIATURA_TEMP;
 		drop table $ESQUEMA_TEMP.tmp_360_motivos_suspension$ABREVIATURA_TEMP;
@@ -300,49 +382,48 @@ fecha_alt_dos_meses_ant_ini=`date '+%Y-%m-%d' -d "$ultimo_dia_tres_meses_ant"`
 		
 	
 
---SE OBTIENEN LAS ALTAS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO	N1
+--SE OBTIENEN LAS ALTAS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO	
 create table $ESQUEMA_TEMP.tmp_360_alta_tmp$ABREVIATURA_TEMP as		
 select a.telefono,a.numero_abonado,a.fecha_alta
 from db_cs_altas.otc_t_altas_bi a	 
 where a.p_fecha_proceso = $fecha_proc
 and a.marca='TELEFONICA';
 
---SE OBTIENEN LAS TRANSFERENCIAS POS A PRE DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO  N2
+--SE OBTIENEN LAS TRANSFERENCIAS POS A PRE DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO
 create table $ESQUEMA_TEMP.tmp_360_transfer_in_pp_tmp$ABREVIATURA_TEMP as		
 select a.telefono,a.fecha_transferencia
 from db_cs_altas.otc_t_transfer_out_bi a
 where a.p_fecha_proceso = $fecha_proc;
 
---SE OBTIENEN LAS TRANSFERENCIAS PRE A POS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO  N3
+--SE OBTIENEN LAS TRANSFERENCIAS PRE A POS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO
 create table $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP as		
 select a.telefono,a.fecha_transferencia
 from db_cs_altas.otc_t_transfer_in_bi a	 
 where a.p_fecha_proceso = $fecha_proc;
 
---SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO UPSELL  n4
+--SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO UPSELL
 create table $ESQUEMA_TEMP.tmp_360_upsell_tmp$ABREVIATURA_TEMP as
 select a.telefono,a.fecha_cambio_plan 
 from db_cs_altas.otc_t_cambio_plan_bi a
 where UPPER(A.tipo_movimiento)='UPSELL' AND 
 a.p_fecha_proceso = $fecha_proc;
 
---SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO DOWNSELL  N5
+--SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO DOWNSELL
 create table $ESQUEMA_TEMP.tmp_360_downsell_tmp$ABREVIATURA_TEMP as
 select a.telefono,a.fecha_cambio_plan
 from db_cs_altas.otc_t_cambio_plan_bi a
 where UPPER(A.tipo_movimiento)='DOWNSELL' AND
 a.p_fecha_proceso = $fecha_proc;
 
---SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO CROSSELL  N6
+--SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO CROSSELL
 create table $ESQUEMA_TEMP.tmp_360_misma_tarifa_tmp$ABREVIATURA_TEMP as
 select a.telefono,a.fecha_cambio_plan 
 from db_cs_altas.otc_t_cambio_plan_bi a
 where UPPER(A.tipo_movimiento)='MISMA_TARIFA' AND 
 a.p_fecha_proceso = $fecha_proc;
 
-
---SE OBTIENEN LAS BAJAS INVOLUNTARIAS, EN EL PERIODO DEL MES  N7
-drop table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP; --este drop ya se realiza arriba
+--SE OBTIENEN LAS BAJAS INVOLUNTARIAS, EN EL PERIODO DEL MES
+drop table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP as
 select a.num_telefonico as telefono,a.fecha_proceso, count(1) as conteo
 from db_cs_altas.OTC_T_BAJAS_INVOLUNTARIAS a
@@ -350,8 +431,8 @@ where a.proces_date between $fechaIniMes and '$FECHAEJE'
 and a.marca='TELEFONICA'
 group by a.num_telefonico,a.fecha_proceso;
 
---SE OBTIENEN EL PARQUE PREPAGO, DE ACUERDO A LA M?IMA FECHA DE CHURN MENOR A LA FECHA DE EJECUCI? N8
-
+--SE OBTIENEN EL PARQUE PREPAGO, DE ACUERDO A LA M?IMA FECHA DE CHURN MENOR A LA FECHA DE EJECUCI?
+drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_ori$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_ori$ABREVIATURA_TEMP as
 SELECT PHONE_ID num_telefonico,COUNTED_DAYS 
 FROM db_cs_altas.OTC_T_CHURN_SP2 a
@@ -360,7 +441,7 @@ on a.PROCES_DATE = b.PROCES_DATE
 where a.marca='TELEFONICA'
 group by PHONE_ID,COUNTED_DAYS;
 
---SE OBTIENE POR CUENTA DE FACTURACI? EN BANCO ATADO --N9
+--SE OBTIENE POR CUENTA DE FACTURACI? EN BANCO ATADO
 create table $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP$ABREVIATURA_TEMP as
 select x.CTA_FACTURACION,
 x.CLIENTE_FECHA_ALTA, 
@@ -375,14 +456,12 @@ from (SELECT
 		and to_date(b.active_from_dat)<='$fechaeje1') as x 
 where rownum=1;
 
---n10 tabla bajas
 create table $ESQUEMA_TEMP.tmp_360_baja_tmp$ABREVIATURA_TEMP as		
 select a.telefono,a.fecha_baja
 from db_cs_altas.otc_t_bajas_bi a	 
 where a.p_fecha_proceso = $fecha_proc
 and a.marca='TELEFONICA';
 
---n11
 create table $ESQUEMA_TEMP.tmp_360_parque_inactivo$ABREVIATURA_TEMP as
 select telefono from $ESQUEMA_TEMP.tmp_360_baja_tmp$ABREVIATURA_TEMP
 union all
@@ -390,7 +469,6 @@ select telefono from $ESQUEMA_TEMP.tmp_360_transfer_in_pp_tmp$ABREVIATURA_TEMP
 union all
 select telefono from $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP;
 
---n12
 create table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp1$ABREVIATURA_TEMP as
 SELECT PHONE_ID num_telefonico,COUNTED_DAYS 
 FROM db_cs_altas.OTC_T_CHURN_SP2 a 
@@ -432,7 +510,6 @@ group by PHONE_ID,COUNTED_DAYS ;" 2>> $LOGS/$EJECUCION_LOG.log
 		set hive.vectorized.execution.reduce.enabled=false;
 		set tez.queue.name=$COLA_EJECUCION;
 
---N15
 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_act$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.tmp_360_otc_t_parque_act$ABREVIATURA_TEMP as 
 select a.*,
@@ -470,7 +547,6 @@ on a.num_telefonico=g.telefono
 left join $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP as h
 on a.num_telefonico=h.telefono;
 
---N16
 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact$ABREVIATURA_TEMP as 
 select a.*,
@@ -492,7 +568,6 @@ on a.num_telefonico=g.telefono
 left join $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP as h
 on a.num_telefonico=h.telefono;
 
---N17
 --SE OBTIENEN LAS LINEAS PREACTIVAS		
 drop table $ESQUEMA_TEMP.tmp_360_base_preactivos$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.tmp_360_base_preactivos$ABREVIATURA_TEMP as
@@ -508,7 +583,6 @@ and PHONE_NUMBER_TYPE = 9144665319313429453 --   NORMAL
 and ASSOC_SIM_ICCID IS NOT NULL
 and modified_when<'$fecha_alt_ini';
 
---N18
 drop table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all$ABREVIATURA_TEMP AS
 	SELECT 
@@ -641,7 +715,7 @@ create table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all$ABREVIATURA_TEMP AS
 			where d.num_telefonico not in (select o.num_telefonico from $ESQUEMA_TEMP.tmp_360_otc_t_parque_act$ABREVIATURA_TEMP o 
 											union all select p.num_telefonico from $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact$ABREVIATURA_TEMP p 
 											union all select q.telefono as num_telefonico from $ESQUEMA_TEMP.tmp_360_base_preactivos$ABREVIATURA_TEMP q);
---N20  tmp_360_motivos_suspension
+
 			drop table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp;
 			create table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp as
 				select distinct

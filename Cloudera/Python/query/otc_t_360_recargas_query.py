@@ -304,8 +304,8 @@ FROM
 	{vTR02}
 WHERE
 	combo_bono = 'COMBO'
-	AND fecha_proceso >= ${fecha_inico_mes_1_2}
-	AND fecha_proceso <= ${fecha_eje2}
+	AND fecha_proceso >= {fecha_inico_mes_1_2}
+	AND fecha_proceso <= {fecha_eje2}
 GROUP BY
 	num_telefono
     '''.format(vTR02=vTR02, fecha_inico_mes_1_2=fecha_inico_mes_1_2, fecha_eje2=fecha_eje2)
