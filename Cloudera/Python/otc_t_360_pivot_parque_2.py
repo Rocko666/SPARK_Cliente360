@@ -31,6 +31,7 @@ if __name__ == '__main__':
     parser.add_argument("-fec_alt_dos_meses_ant_ini", help="@Fecha_Alta_Menos_2_meses_Ini", dest='fecha_alt_dos_meses_ant_ini', type=str)
     parser.add_argument("-fec_ini_mes", help="@Fecha_Inicio_Mes", dest='fecha_ini_mes', type=int)
     parser.add_argument("-fec_inac_1", help="@Fecha_Inactivo", dest='fecha_inac_1', type=int)
+    parser.add_argument("-fec_tmstmp", help="@Fecha_Timestamp", dest='fecha_tmstmp', type=str)
     args = parser.parse_args()
     configuracion = SparkConf().setAppName('PySparkShell-360_PIVOTE_PARQUE'). \
         setAll(
@@ -58,6 +59,7 @@ if __name__ == '__main__':
     val_fecha_alt_dos_meses_ant_ini = args.fecha_alt_dos_meses_ant_ini
     val_fecha_ini_mes = args.fecha_ini_mes
     val_fecha_inac_1 = args.fecha_inac_1
+    val_fecha_tmstmp = args.fecha_tmstmp
 
     try:
 

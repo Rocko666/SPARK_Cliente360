@@ -1,3 +1,4 @@
+
 #########################################################################################################
 # NOMBRE: OTC_T_360_MOVIMIENTOS_PARQUE.sh  		      												                        
 # DESCRIPCION:																							                                            
@@ -157,6 +158,13 @@ if [ "$ETAPA" = "1" ]; then
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1: Extraer datos desde hive " >> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 $VAL_RUTA_SPARK \
+--queue default \
+--jars /opt/cloudera/parcels/CDH/lib/hive_warehouse_connector/hive-warehouse-connector-assembly-1.0.0.7.1.7.1000-141.jar \
+--conf spark.sql.hive.hwc.execution.mode=spark \
+--conf  spark.datasource.hive.warehouse.read.mode=JDBC_CLUSTER \
+--conf spark.sql.hive.hiveserver2.jdbc.url="jdbc:hive2://quisrvbigdata1.otecel.com.ec:2181,quisrvbigdata2.otecel.com.ec:2181,quisrvbigdata10.otecel.com.ec:2181,quisrvbigdata11.otecel.com.ec:2181/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=hiveserver2" \
+--conf spark.datasource.hive.warehouse.user.name="rgenerator" \
+--py-files /opt/cloudera/parcels/CDH/lib/hive_warehouse_connector/pyspark_hwc-1.0.0.7.1.7.1000-141.zip \
 --name $ENTIDAD \
 --master $VAL_ETP01_MASTER \
 --driver-memory $VAL_ETP01_DRIVER_MEMORY \
@@ -216,3 +224,9 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Finalizar el proceso " >> $VAL_
 
 	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_MOVIMIENTOS_PARQUE finaliza correctamente " >> $VAL_LOG_EJECUCION
 fi
+
+
+
+
+
+

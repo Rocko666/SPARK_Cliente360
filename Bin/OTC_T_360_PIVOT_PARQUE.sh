@@ -509,7 +509,7 @@ group by PHONE_ID,COUNTED_DAYS ;" 2>> $LOGS/$EJECUCION_LOG.log
 		set hive.vectorized.execution.enabled=false;
 		set hive.vectorized.execution.reduce.enabled=false;
 		set tez.queue.name=$COLA_EJECUCION;
-
+--n15
 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_act$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.tmp_360_otc_t_parque_act$ABREVIATURA_TEMP as 
 select a.*,
@@ -531,22 +531,23 @@ WHEN g.telefono is not null then g.fecha_transferencia
 WHEN h.telefono is not null then h.fecha_transferencia
 ELSE  null
 end as fecha_movimiento_mes 
-from $ESQUEMA_TEMP.tmp_360_otc_t_360_parque_2_tmp$ABREVIATURA_TEMP as a
+from $ESQUEMA_TEMP.tmp_360_otc_t_360_parque_2_tmp$ABREVIATURA_TEMP as a --N14
 left join $ESQUEMA_TEMP.tmp_360_alta_tmp$ABREVIATURA_TEMP as b
-on a.num_telefonico=b.telefono
+on a.num_telefonico=b.telefono --N01
 left join $ESQUEMA_TEMP.tmp_360_upsell_tmp$ABREVIATURA_TEMP as c
-on a.num_telefonico=c.telefono
+on a.num_telefonico=c.telefono --n04
 left join $ESQUEMA_TEMP.tmp_360_downsell_tmp$ABREVIATURA_TEMP as d
-on a.num_telefonico=d.telefono
-left join $ESQUEMA_TEMP.tmp_360_misma_tarifa_tmp$ABREVIATURA_TEMP as e
+on a.num_telefonico=d.telefono --n05
+left join $ESQUEMA_TEMP.tmp_360_misma_tarifa_tmp$ABREVIATURA_TEMP as e --N06
 on a.num_telefonico=e.telefono
 left join $ESQUEMA_TEMP.tmp_360_bajas_invo$ABREVIATURA_TEMP as f
-on a.num_telefonico=f.telefono
+on a.num_telefonico=f.telefono --N07
 left join $ESQUEMA_TEMP.tmp_360_transfer_in_pp_tmp$ABREVIATURA_TEMP as g
-on a.num_telefonico=g.telefono
-left join $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP as h
+on a.num_telefonico=g.telefono --N02
+left join $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP as h --N03
 on a.num_telefonico=h.telefono;
 
+--N16
 drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact$ABREVIATURA_TEMP as 
 select a.*,
@@ -568,6 +569,8 @@ on a.num_telefonico=g.telefono
 left join $ESQUEMA_TEMP.tmp_360_transfer_in_pos_tmp$ABREVIATURA_TEMP as h
 on a.num_telefonico=h.telefono;
 
+
+-N17
 --SE OBTIENEN LAS LINEAS PREACTIVAS		
 drop table $ESQUEMA_TEMP.tmp_360_base_preactivos$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.tmp_360_base_preactivos$ABREVIATURA_TEMP as
@@ -583,6 +586,8 @@ and PHONE_NUMBER_TYPE = 9144665319313429453 --   NORMAL
 and ASSOC_SIM_ICCID IS NOT NULL
 and modified_when<'$fecha_alt_ini';
 
+
+-N18
 drop table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all$ABREVIATURA_TEMP;
 create table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all$ABREVIATURA_TEMP AS
 	SELECT 

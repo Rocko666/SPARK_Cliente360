@@ -295,7 +295,6 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 		  echo "**********INICIO DE EJECUCION PYSPARK********" >> $LOGS/$EJECUCION.log
 		  
 		  $VAL_RUTA_SPARK --master yarn --executor-memory 2G --num-executors 80 --executor-cores 5 --driver-memory 2G $RUTA/Python/$VAL_NOMBRE_PROCESO.py -fec_menos_1_mes $fechamenos1mes -fec_menos_2_mes $fechamenos2mes -fec_eje $FECHAEJE -fec_ini_mes $fechaIniMes >> $LOGS/$EJECUCION.log		  
-
 		  # Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
 		  VAL_ERRORES=`grep 'Error PySpark:\|error:' $LOGS/$EJECUCION.log | wc -l`
 		  if [ $VAL_ERRORES -ne 0 ];then

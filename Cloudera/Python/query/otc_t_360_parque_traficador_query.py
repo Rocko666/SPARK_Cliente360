@@ -15,13 +15,13 @@ def qyr_otc_t_voz_dias_tmp(vTPPCSLlamadas, f_inicio, FECHAEJE, vTDevCatPlan):
     WHERE
         fecha >= {f_inicio}
         AND fecha <= {FECHAEJE}
-        AND tip_prepago IN (
-        SELECT
-            DISTINCT codigo
-        FROM
-            {vTDevCatPlan}
-        WHERE
-            marca = 'Movistar')
+        --AND tip_prepago IN (
+        --SELECT
+        --    DISTINCT codigo
+        --FROM
+        --    {vTDevCatPlan}
+        --WHERE
+        --    marca = 'Movistar')
     '''.format(vTPPCSLlamadas=vTPPCSLlamadas, f_inicio=f_inicio, FECHAEJE=FECHAEJE, vTDevCatPlan=vTDevCatPlan)
     return qry
 
@@ -38,13 +38,13 @@ def qyr_otc_t_datos_dias_tmp(vTPPCSDiameter, f_inicio, FECHAEJE, vTDevCatPlan):
     WHERE
         feh_llamada >= '{f_inicio}'
         AND feh_llamada <= '{FECHAEJE}'
-        AND tip_prepago IN (
-        SELECT
-            DISTINCT codigo
-        FROM
-            {vTDevCatPlan}
-        WHERE
-            marca = 'Movistar')
+        --AND tip_prepago IN (
+        --SELECT
+        --    DISTINCT codigo
+        --FROM
+        --    {vTDevCatPlan}
+        --WHERE
+        --    marca = 'Movistar')
     '''.format(vTPPCSDiameter=vTPPCSDiameter, f_inicio=f_inicio, FECHAEJE=FECHAEJE, vTDevCatPlan=vTDevCatPlan)
     return qry
 
@@ -61,13 +61,13 @@ def qyr_otc_t_sms_dias_tmp(vTPPCSMecooring, f_inicio, FECHAEJE, vTDevCatPlan):
     WHERE
         fecha >= {f_inicio}
         AND fecha <= {FECHAEJE}
-        AND tip_prepago IN (
-        SELECT
-            DISTINCT codigo
-        FROM
-            {vTDevCatPlan}
-        WHERE
-            marca = 'Movistar')
+        --AND tip_prepago IN (
+        --SELECT
+        --    DISTINCT codigo
+        --FROM
+        --    {vTDevCatPlan}
+        --WHERE
+        --    marca = 'Movistar')
     '''.format(vTPPCSMecooring=vTPPCSMecooring, f_inicio=f_inicio, FECHAEJE=FECHAEJE, vTDevCatPlan=vTDevCatPlan)
     return qry
 
@@ -84,13 +84,13 @@ def qyr_otc_t_cont_dias_tmp(vTPPCSContent, f_inicio, FECHAEJE, vTDevCatPlan):
     WHERE
         fecha >= {f_inicio}
         AND fecha <= {FECHAEJE}
-        AND tip_prepago IN (
-        SELECT
-            DISTINCT codigo
-        FROM
-            {vTDevCatPlan}
-        WHERE
-            marca = 'Movistar')
+        --AND tip_prepago IN (
+        --SELECT
+        --    DISTINCT codigo
+        --FROM
+        --    {vTDevCatPlan}
+        --WHERE
+        --    marca = 'Movistar')
     '''.format(vTPPCSContent=vTPPCSContent, f_inicio=f_inicio, FECHAEJE=FECHAEJE, vTDevCatPlan=vTDevCatPlan)
     return qry
 

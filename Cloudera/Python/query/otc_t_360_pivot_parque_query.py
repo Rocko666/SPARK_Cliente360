@@ -15,6 +15,8 @@ where a.p_fecha_proceso = {vFechaProc}
 and a.marca='TELEFONICA'
     '''.format(vTAltasBi=vTAltasBi, vFechaProc=vFechaProc)
     return qry
+
+
 # N 2
 def qyr_tmp_360_transfer_in_pp_tmp(vTTransferOutBi, vFechaProc):
     qry='''
@@ -25,6 +27,8 @@ from {vTTransferOutBi} a
 where a.p_fecha_proceso = {vFechaProc}
     '''.format(vTTransferOutBi=vTTransferOutBi, vFechaProc=vFechaProc)
     return qry
+
+
 # N 3
 def qyr_tmp_360_transfer_in_pos_tmp(vTTransferInBi, vFechaProc):
     qry='''
@@ -35,6 +39,8 @@ from {vTTransferInBi} a
 where a.p_fecha_proceso = {vFechaProc}
     '''.format(vTTransferInBi=vTTransferInBi, vFechaProc=vFechaProc)
     return qry
+
+
 # N 4
 def qyr_tmp_360_upsell_tmp(vTCPBi, vFechaProc):
     qry='''
@@ -46,6 +52,8 @@ where UPPER(A.tipo_movimiento)='UPSELL' AND
 a.p_fecha_proceso = {vFechaProc}
     '''.format(vTCPBi=vTCPBi, vFechaProc=vFechaProc)
     return qry
+
+
 # N 5
 def qyr_tmp_360_downsell_tmp(vTCPBi, vFechaProc):
     qry='''
@@ -57,6 +65,7 @@ where UPPER(A.tipo_movimiento)='DOWNSELL' AND
 a.p_fecha_proceso = {vFechaProc}
     '''.format(vTCPBi=vTCPBi, vFechaProc=vFechaProc)
     return qry
+
 # N 6
 def qyr_tmp_360_misma_tarifa_tmp(vTCPBi, vFechaProc):
     qry='''
@@ -68,6 +77,7 @@ where UPPER(A.tipo_movimiento)='MISMA_TARIFA' AND
 a.p_fecha_proceso = {vFechaProc}
     '''.format(vTCPBi=vTCPBi, vFechaProc=vFechaProc)
     return qry
+
 # N 7
 def qyr_tmp_360_bajas_invo(vTBajasInv, fec_ini_mes, vIFechaProceso):
     qry='''
@@ -81,6 +91,8 @@ and a.marca='TELEFONICA'
 group by a.num_telefonico,a.fecha_proceso
     '''.format(vTBajasInv=vTBajasInv, fec_ini_mes=fec_ini_mes, vIFechaProceso=vIFechaProceso)
     return qry
+
+
 # N 8
 def qyr_tmp_360_otc_t_360_churn90_ori(vTChurnSP2, fec_menos_5, fec_mas_1):
     qry='''
@@ -99,6 +111,7 @@ where a.marca='TELEFONICA'
 group by PHONE_ID,COUNTED_DAYS
     '''.format(vTChurnSP2=vTChurnSP2, fec_menos_5=fec_menos_5, fec_mas_1=fec_mas_1)
     return qry
+
 
 # N 9
 def qyr_tmp_360_otc_t_temp_banco_cliente360_tmp(vTCFact, vTPRMANDATE, fechaeje1):
@@ -140,15 +153,15 @@ def qyr_tmp_360_parque_inactivo(vT1, vT2, vT3):
     qry='''
 select 
 telefono 
-from {}
+from {vT1}
 union all
 select 
 telefono 
-from {}
+from {vT2}
 union all
 select 
 telefono 
-from {}
+from {vT3}
     '''.format(vT1=vT1, vT2=vT2, vT3=vT3)
     return qry
 
@@ -159,14 +172,14 @@ SELECT
 PHONE_ID num_telefonico
 ,COUNTED_DAYS 
 FROM {vTChurnSP2} a 
-where PROCES_DATE='{fec_inac_11}'
+where PROCES_DATE='{fec_inac_1}'
 and a.marca='TELEFONICA'
 group by PHONE_ID,COUNTED_DAYS 
     '''.format(vTChurnSP2=vTChurnSP2, fec_inac_1=fec_inac_1)
     return qry
 
 # N15
-def qyr_tmp_360_otc_t_parque_act(vTParq2, vTPP01, vTPP04, vTPP05, vTPP06, vTPP07, vTPP02, vTPP03):
+def qyr_tmp_360_otc_t_parque_act(vTPP14, vTPP01, vTPP04, vTPP05, vTPP06, vTPP07, vTPP02, vTPP03):
     qry='''
 SELECT
 	a.*
@@ -193,7 +206,7 @@ CASE
 		ELSE NULL
 	END AS fecha_movimiento_mes
 FROM
-	{vTParq2} AS a --N14
+	{vTPP14} AS a --N14
 LEFT JOIN 
     {vTPP01} AS b
     ON
@@ -222,7 +235,7 @@ LEFT JOIN
     {vTPP03} AS h
     ON
 	a.num_telefonico = h.telefono
-    '''.format(vTParq2, vTPP01, vTPP04, vTPP05, vTPP06, vTPP07, vTPP02, vTPP03)
+    '''.format(vTPP14=vTPP14, vTPP01=vTPP01, vTPP04=vTPP04, vTPP05=vTPP05, vTPP06=vTPP06, vTPP07=vTPP07, vTPP02=vTPP02, vTPP03=vTPP03)
     return qry
 
 # N16
@@ -281,10 +294,10 @@ and modified_when<'{fec_alt_ini}'
     return qry
 
 # N18
-def qyr_otc_t_360_parque_1_tmp_all(vTPP15, vTPP16, vTPP17, vTPP19, vIFechaProceso):
+def qyr_otc_t_360_parque_1_tmp_all(vTPP15, vTPP16):
     qry='''
 SELECT 
-			b.num_telefonico
+	b.num_telefonico
 	, b.codigo_plan
 	, b.fecha_alta
 	, b.fecha_last_status
@@ -357,9 +370,17 @@ UNION ALL
 	END AS ES_PARQUE
 FROM
 	{vTPP15} a
-UNION ALL
-		SELECT 
-			c.telefono num_telefonico
+    '''.format(vTPP15=vTPP15, vTPP16=vTPP16)
+    return qry
+
+## union all  qyr_otc_t_360_parque_1_tmp_all WITH qyr_otc_t_360_parque_1_tmp_all_1
+
+
+#N18a
+def qyr_otc_t_360_parque_1_tmp_all_1(vTPP17, vIFechaProceso):
+    qry='''
+SELECT 
+	c.telefono num_telefonico
 	, CAST(NULL AS string) codigo_plan
 	, c.fecha_alta
 	, CAST(NULL AS timestamp) fecha_last_status
@@ -389,9 +410,13 @@ UNION ALL
 	, 'NO' ES_PARQUE
 FROM
 	{vTPP17} c
-WHERE 
-			c.telefono NOT IN (
-	SELECT
+    '''.format(vTPP17=vTPP17, vIFechaProceso=vIFechaProceso)
+    return qry
+    
+#N18l1
+def qyr_not_in_list_1(vTPP15, vTPP16):
+    qry='''
+SELECT
 		x.num_telefonico
 	FROM
 		{vTPP15} x
@@ -399,10 +424,17 @@ UNION ALL
 	SELECT
 		y.num_telefonico
 	FROM
-		{vTPP16} y)
-UNION ALL
-			SELECT 
-			d.num_telefonico num_telefonico
+		{vTPP16} y
+	'''.format(vTPP15=vTPP15, vTPP16=vTPP16)
+    return qry
+
+#N18b
+## union all  qyr_otc_t_360_parque_1_tmp_all WITH qyr_otc_t_360_parque_1_tmp_all_1
+## 	WITH qyr_otc_t_360_parque_1_tmp_all_2
+def qyr_otc_t_360_parque_1_tmp_all_2(vTPP19, vIFechaProceso):
+    qry='''
+SELECT 
+	d.num_telefonico num_telefonico
 	, CAST(NULL AS string) codigo_plan
 	, CAST(NULL AS timestamp) fecha_alta
 	, CAST(NULL AS timestamp) fecha_last_status
@@ -432,9 +464,13 @@ UNION ALL
 	, 'NO' ES_PARQUE
 FROM
 	{vTPP19} d
-WHERE
-	d.num_telefonico NOT IN (
-	SELECT
+    '''.format(vTPP19=vTPP19, vIFechaProceso=vIFechaProceso)
+    return qry
+    
+#N18l2
+def qyr_not_in_list_2(vTPP15, vTPP16, vTPP17):
+    qry='''
+SELECT
 		o.num_telefonico
 	FROM
 		{vTPP15} o
@@ -447,8 +483,8 @@ UNION ALL
 	SELECT
 		q.telefono AS num_telefonico
 	FROM
-		{vTPP17} q)
-    '''.format(vTPP15=vTPP15, vTPP16=vTPP16, vTPP17=vTPP17, vTPP19=vTPP19, vIFechaProceso=vIFechaProceso)
+		{vTPP17} q
+	'''.format(vTPP15=vTPP15, vTPP16=vTPP16, vTPP17=vTPP17)
     return qry
 
 

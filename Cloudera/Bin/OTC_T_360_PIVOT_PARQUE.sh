@@ -42,13 +42,21 @@ vTTransferOutBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTID
 vTTransferInBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTTransferInBi';"` 
 vTCPBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTCPBi';"` 
 vTBajasInv=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTBajasInv';"` 
-vTBajasBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTBajasBi';"` 
 vTChurnSP2=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTChurnSP2';"` 
+vTCFact=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTCFact';"` 
+vTPRMANDATE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTPRMANDATE';"` 
+vTBajasBi=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTBajasBi';"` 
+vTRiMobPN=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'vTRiMobPN';"` 
 VAL_ETP01_MASTER=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_MASTER';"`
 VAL_ETP01_DRIVER_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_DRIVER_MEMORY';"`
 VAL_ETP01_EXECUTOR_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_EXECUTOR_MEMORY';"`
 VAL_ETP01_NUM_EXECUTORS=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_NUM_EXECUTORS';"`
 VAL_ETP01_NUM_EXECUTORS_CORES=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_NUM_EXECUTORS_CORES';"`
+VAL_ETP02_MASTER=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP02_MASTER';"`
+VAL_ETP02_DRIVER_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP02_DRIVER_MEMORY';"`
+VAL_ETP02_EXECUTOR_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP02_EXECUTOR_MEMORY';"`
+VAL_ETP02_NUM_EXECUTORS=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP02_NUM_EXECUTORS';"`
+VAL_ETP02_NUM_EXECUTORS_CORES=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP02_NUM_EXECUTORS_CORES';"`
 VAL_RUTA_SPARK=`mysql -N  <<<"select valor from params where ENTIDAD = '"$SPARK_GENERICO"' AND parametro = 'VAL_RUTA_SPARK';"`
 VAL_KINIT=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENERICO' AND parametro = 'VAL_KINIT';"`
 $VAL_KINIT
@@ -75,13 +83,21 @@ if [ -z "$VAL_FECHA_PROCESO" ] ||
 	[ -z "$vTTransferInBi" ] ||
 	[ -z "$vTCPBi" ] ||
 	[ -z "$vTBajasInv" ] ||
-	[ -z "$vTBajasBi" ] ||
 	[ -z "$vTChurnSP2" ] ||
+	[ -z "$vTCFact" ] ||
+	[ -z "$vTPRMANDATE" ] ||
+	[ -z "$vTBajasBi" ] ||
+	[ -z "$vTRiMobPN" ] ||
 	[ -z "$VAL_ETP01_MASTER" ] ||
 	[ -z "$VAL_ETP01_DRIVER_MEMORY" ] ||
 	[ -z "$VAL_ETP01_EXECUTOR_MEMORY" ] ||
 	[ -z "$VAL_ETP01_NUM_EXECUTORS" ] ||
 	[ -z "$VAL_ETP01_NUM_EXECUTORS_CORES" ] ||
+	[ -z "$VAL_ETP02_MASTER" ] ||
+	[ -z "$VAL_ETP02_DRIVER_MEMORY" ] ||
+	[ -z "$VAL_ETP02_EXECUTOR_MEMORY" ] ||
+	[ -z "$VAL_ETP02_NUM_EXECUTORS" ] ||
+	[ -z "$VAL_ETP02_NUM_EXECUTORS_CORES" ] ||
 	[ -z "$ABREVIATURA_TEMP" ] ||
 	[ -z "$VAL_RUTA_SPARK" ]; then
   echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: $TIME [ERROR] $rc unos de los parametros esta vacio o es nulo" >> $VAL_LOG_EJECUCION
@@ -170,8 +186,6 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fechaIniMes => " $fechaIniMes
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fecha_inac_1 => " $fecha_inac_1
 
 ###########################################################################################################################################################
-
-
 if [ "$ETAPA" = "1" ]; then
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1: Extraer datos desde hive " >> $VAL_LOG_EJECUCION
@@ -231,6 +245,7 @@ if [ "$ETAPA" = "2" ]; then
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2: Ejecucion del segundo proceso spark " >> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
+
 $VAL_RUTA_SPARK \
 --name $ENTIDAD \
 --master $VAL_ETP02_MASTER \
@@ -239,20 +254,17 @@ $VAL_RUTA_SPARK \
 --num-executors $VAL_ETP02_NUM_EXECUTORS \
 --executor-cores $VAL_ETP02_NUM_EXECUTORS_CORES \
 $RUTA_PYTHON/otc_t_360_pivot_parque_2.py \
---vSEntidad=$ENTIDAD \
---vTable=$HIVEDB.$HIVETABLE \
---vFechaProceso=$VAL_FECHA_PROCESO \
---fec_alt_ini=$fecha_alt_ini \
---fec_alt_fin=$fecha_alt_fin \
---fec_eje_pv=$VAL_FECHA_PROCESO \
---fec_proc=$fecha_proc \
---fec_menos_5=$fechamenos5 \
---fec_mas_1=$fechamas1 \
---fec_alt_dos_meses_ant_fin=$fecha_alt_dos_meses_ant_fin \
---fec_alt_dos_meses_ant_ini=$fecha_alt_dos_meses_ant_ini \
---fec_ini_mes=$fechaIniMes \
---fec_inac_1=$fecha_inac_1 \
---fec_tmstmp=$fecha_tmstmp  >> $VAL_LOG_EJECUCION
+-fec_alt_ini $fecha_alt_ini \
+-fec_alt_fin $fecha_alt_fin \
+-fec_eje_pv $VAL_FECHA_PROCESO \
+-fec_proc $fecha_proc \
+-fec_menos_5 $fechamenos5 \
+-fec_mas_1 $fechamas1 \
+-fec_alt_dos_meses_ant_fin $fecha_alt_dos_meses_ant_fin \
+-fec_alt_dos_meses_ant_ini $fecha_alt_dos_meses_ant_ini \
+-fec_ini_mes $fechaIniMes \
+-fec_inac_1 $fecha_inac_1 \
+-fec_tmstmp '$fecha_tmstmp' >> $VAL_LOG_EJECUCION
 
 	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
 	VAL_ERRORES=`egrep 'NODATA:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
@@ -281,29 +293,9 @@ $VAL_RUTA_SPARK \
 --executor-cores $VAL_ETP02_NUM_EXECUTORS_CORES \
 $RUTA_PYTHON/otc_t_360_pivot_parque_3.py \
 --vSEntidad=$ENTIDAD \
---vTAltasBi=$vTAltasBi \
---vTTransferOutBi=$vTTransferOutBi \
---vTTransferInBi=$vTTransferInBi \
---vTCPBi=$vTCPBi \
---vTBajasInv=$vTBajasInv \
---vTChurnSP2=$vTChurnSP2 \
---vTCFact=$vTCFact \
---vTPRMANDATE=$vTPRMANDATE \
---vTBajasBi=$vTBajasBi \
---vSSchHiveMain=$HIVEDB \
 --vSSchHiveTmp=$VAL_ESQUEMA_TMP \
---vSTblHiveMain=$HIVETABLE \
+--vTRiMobPN=$vTRiMobPN \
 --fec_alt_ini=$fecha_alt_ini \
---fec_alt_fin=$fecha_alt_fin \
---fec_eje_pv=$VAL_FECHA_PROCESO \
---fec_proc=$fecha_proc \
---fec_menos_5=$fechamenos5 \
---fec_mas_1=$fechamas1 \
---fec_alt_dos_meses_ant_fin=$fecha_alt_dos_meses_ant_fin \
---fec_alt_dos_meses_ant_ini=$fecha_alt_dos_meses_ant_ini \
---fec_ini_mes=$fechaIniMes \
---fec_inac_1=$fecha_inac_1 \
---fechaeje1=$fechaeje1 \
 --vAbrev=$ABREVIATURA_TEMP \
 --vIFechaProceso=$VAL_FECHA_PROCESO >> $VAL_LOG_EJECUCION
 

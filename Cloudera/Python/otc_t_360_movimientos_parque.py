@@ -7,15 +7,16 @@ from pyspark.sql.functions import lit
 from pyspark.sql.functions import col
 from pyspark.sql.functions import concat
 from pyspark.sql.functions import to_date
+from pyspark_llap.sql.session import HiveWarehouseSession
 from pyspark import SQLContext
 import argparse
 import time
 import sys
 import os
 # General cliente 360
-sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/config')
+sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Configuraciones')
 from otc_t_360_movimientos_parque_config import *
-sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/query')
+sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Querys')
 from otc_t_360_movimientos_parque_query import *
 # Genericos otc_t_360_movimientos_parque
 sys.path.insert(1,'/var/opt/tel_spark')
@@ -57,7 +58,6 @@ try:
     parser.add_argument('--f_inicio_abr', required=True, type=str)
     parser.add_argument('--f_fin_abr', required=True, type=str)
     parser.add_argument('--f_efectiva', required=True, type=str)
-    
     parametros = parser.parse_args()
     vSEntidad=parametros.vSEntidad
     vSchTmp=parametros.vSchTmp
@@ -84,7 +84,6 @@ try:
     f_inicio_abr=parametros.f_inicio_abr
     f_fin_abr=parametros.f_fin_abr
     f_efectiva=parametros.f_efectiva
-    
     print(etq_info(log_p_parametros("vSEntidad",vSEntidad)))
     print(etq_info(log_p_parametros("vSchTmp",vSchTmp)))
     print(etq_info(log_p_parametros("vSchTmp",vSchRep)))
@@ -134,6 +133,7 @@ try:
         .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")
+    #hive_hws = HiveWarehouseSession.session(spark).build()
     app_id = spark._sc.applicationId
     print(etq_info("INFO: Mostrar application_id => {}".format(str(app_id))))
     te_step = datetime.now()
@@ -149,38 +149,24 @@ try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())  
+    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_06(vSchTmp)))
+    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_07(vSchTmp)))
+    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_08(vSchTmp)))
+    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_09(vSchTmp)))
+    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_10(vSchTmp)))
+    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_11(vSchTmp)))
+    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_12(vSchTmp)))
     spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_13(vSchTmp)))
     spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_14(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_17(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_18(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_19(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_20(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_21(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_22(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_23(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_24(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_25(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_26(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_27(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_28(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_29(vSchTmp)))
-    spark.sql("DROP TABLE IF EXISTS " + str(nme_tbl_otc_t_360_movimientos_parque_30(vSchTmp)))
+    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_06(vSchTmp))))
+    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_07(vSchTmp))))
+    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_08(vSchTmp))))
+    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_09(vSchTmp))))
+    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_10(vSchTmp))))
+    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_11(vSchTmp))))
+    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_12(vSchTmp))))
     print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_13(vSchTmp))))
     print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_14(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_17(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_18(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_19(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_20(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_21(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_22(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_23(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_24(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_25(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_26(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_27(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_28(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_29(vSchTmp))))
-    print(etq_info(str(nme_tbl_otc_t_360_movimientos_parque_30(vSchTmp))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -191,26 +177,31 @@ print(lne_dvs())
 VStp='Paso [4]: Generando logica de negocio '
 print(etq_info(VStp))
 print(lne_dvs())
-VStp='Paso [4.1]: Se obtienen las altas del mes en la tabla {} '.format(vTAltBajHist)
+VStp='Paso [4.1]: Se inserta las altas del mes de la tabla {} en la tabla {} '.format(vTAltBI, vTAltBajHist)
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
-    print(etq_info(msg_i_delete_table(vTAltBajHist)))
-    print(etq_sql(qry_dlt_otc_t_alta_baja_hist_alta(vTAltBajHist, f_inicio, fecha_proceso)))
-    spark.sql(qry_dlt_otc_t_alta_baja_hist_alta(vTAltBajHist, f_inicio, fecha_proceso))
+    print(etq_info(msg_i_select_query(vTAltBajHist)))
+    print(etq_sql(qry_ori_otc_t_alta_baja_hist(vTAltBajHist)))
+    df_altas_hist_original=spark.sql(qry_ori_otc_t_alta_baja_hist(vTAltBajHist))
+    df_altas_hist_original.printSchema()
+    rows_to_delete=df_altas_hist_original.filter((F.upper(col('TIPO'))=='ALTA') & (col('FECHA').between(f_inicio,fecha_proceso)))
+    df_altas_hist_original=df_altas_hist_original.join(rows_to_delete, on=['TIPO','FECHA'], how='left_anti')
     print(etq_info(msg_i_insert_hive(vTAltBajHist)))
     print(etq_sql(qry_insrt_otc_t_alta_baja_hist_alta(vTAltBI, fecha_movimientos_cp)))
-    df01=spark.sql(qry_insrt_otc_t_alta_baja_hist_alta(vTAltBI, fecha_movimientos_cp))
-    if df01.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df01'))))
+    df01Insert=spark.sql(qry_insrt_otc_t_alta_baja_hist_alta(vTAltBI, fecha_movimientos_cp))
+    df01Insert.printSchema()
+    df_altas_hist=df_altas_hist_original.union(df01Insert)
+    if df_altas_hist.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df_altas_hist'))))
     else:
         try:
             ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(vTAltBajHist)))
-            df01.repartition(1).write.mode('append').saveAsTable(vTAltBajHist)
-            df01.printSchema()
-            print(etq_info(msg_t_total_registros_hive(vTAltBajHist,str(df01.count())))) 
+            print(etq_info(msg_i_create_hive_tmp(vTAltBajHist)))
+            df_altas_hist.repartition(1).write.mode('overwrite').saveAsTable(vTAltBajHist)
+            df_altas_hist.printSchema()
+            print(etq_info(msg_t_total_registros_hive(vTAltBajHist,str(df_altas_hist.count())))) 
             te_step_tbl = datetime.now()
             print(etq_info(msg_d_duracion_hive(vTAltBajHist,vle_duracion(ts_step_tbl,te_step_tbl))))
         except Exception as e:       
@@ -221,27 +212,31 @@ except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
-
-VStp='Paso [4.2]: Se inserta las bajas del mes en la tabla {} '.format(vTAltBajHist)
+VStp='Paso [4.2]: Se inserta las bajas del mes de la tabla {} en la tabla {} '.format(vTBajBI, vTAltBajHist)
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
-    print(etq_info(msg_i_delete_table(vTAltBajHist)))
-    print(etq_sql(qry_dlt_otc_t_alta_baja_hist_baja(vTAltBajHist, f_inicio, fecha_proceso)))
-    spark.sql(qry_dlt_otc_t_alta_baja_hist_baja(vTAltBajHist, f_inicio, fecha_proceso))
+    print(etq_info(msg_i_select_query(vTAltBajHist)))
+    print(etq_sql(qry_ori_otc_t_alta_baja_hist(vTAltBajHist)))
+    df_bajas_hist_original=spark.sql(qry_ori_otc_t_alta_baja_hist(vTAltBajHist))
+    df_bajas_hist_original.printSchema()
+    rows_to_delete=df_bajas_hist_original.filter((F.upper(col('TIPO'))=='BAJA') & (col('FECHA').between(f_inicio, fecha_proceso)))
+    df_bajas_hist_original=df_bajas_hist_original.join(rows_to_delete, on=['TIPO','FECHA'], how='left_anti')
     print(etq_info(msg_i_insert_hive(vTAltBajHist)))
     print(etq_sql(qry_insrt_otc_t_alta_baja_hist_baja(vTBajBI, fecha_movimientos_cp)))
-    df02=spark.sql(qry_insrt_otc_t_alta_baja_hist_baja(vTBajBI, fecha_movimientos_cp))
-    if df02.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df02'))))
+    df02Insert=spark.sql(qry_insrt_otc_t_alta_baja_hist_baja(vTBajBI, fecha_movimientos_cp))
+    df02Insert.printSchema()
+    df_bajas_hist=df_bajas_hist_original.union(df02Insert)
+    if df_bajas_hist.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df_bajas_hist'))))
     else:
         try:
             ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(vTAltBajHist)))
-            df02.repartition(1).write.mode('append').saveAsTable(vTAltBajHist)
-            df02.printSchema()
-            print(etq_info(msg_t_total_registros_hive(vTAltBajHist,str(df02.count())))) 
+            print(etq_info(msg_i_create_hive_tmp(vTAltBajHist)))
+            df_bajas_hist.repartition(1).write.mode('overwrite').saveAsTable(vTAltBajHist)
+            df_bajas_hist.printSchema()
+            print(etq_info(msg_t_total_registros_hive(vTAltBajHist,str(df_bajas_hist.count())))) 
             te_step_tbl = datetime.now()
             print(etq_info(msg_d_duracion_hive(vTAltBajHist,vle_duracion(ts_step_tbl,te_step_tbl))))
         except Exception as e:       
@@ -252,316 +247,306 @@ except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
-VStp='Paso [4.5]: Se eliminan los transfer_in pre existentes del mes que se procesa de la tabla {} '.format(vTTransfHist)
+VStp='Paso [4.3]: Se inserta los transfer_in del mes de la tabla {} en la tabla {} '.format(vTTrInBI, vTTransfHist)
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_select_query(vTTransfHist)))
-    print(etq_sql(qry_dlt_otc_t_transfer_hist_pre_pos(vTTransfHist, f_inicio, fecha_proceso)))
-    try:
-        ts_step_tbl = datetime.now()
-        spark.sql(qry_dlt_otc_t_transfer_hist_pre_pos(vTTransfHist, f_inicio, fecha_proceso))
-        print(etq_info(msg_i_delete_table(vTTransfHist))) 
-        te_step_tbl = datetime.now()
-        print(etq_info(msg_d_duracion_hive(vTTransfHist,vle_duracion(ts_step_tbl,te_step_tbl))))
-    except Exception as e:       
-        exit(etq_error(msg_e_ejecucion(vTTransfHist,str(e))))
-    te_step = datetime.now()
-    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
-except Exception as e:
-    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
-
-print(lne_dvs())
-
-VStp='Paso [4.6]: Se insertan las los transfer_in del mes en la tabla {} '.format(vTTransfHist)
-try:
-    ts_step = datetime.now()
-    print(etq_info(VStp))
-    print(lne_dvs())
+    print(etq_sql(qry_ori_otc_t_transfer_hist(vTTransfHist)))
+    df_ti_hist_original=spark.sql(qry_ori_otc_t_transfer_hist(vTTransfHist))
+    df_ti_hist_original.printSchema()
+    rows_to_delete=df_ti_hist_original.filter((F.upper(col('TIPO'))=='PRE_POS') & (col('FECHA').between(f_inicio, fecha_proceso)))
+    df_ti_hist_original=df_ti_hist_original.join(rows_to_delete, on=['TIPO','FECHA'], how='left_anti')
     print(etq_info(msg_i_insert_hive(vTTransfHist)))
-    print(etq_sql(qry_insrt_otc_t_transfer_hist_pre_pos(vTTransfHist, vTTrInBI, fecha_movimientos_cp)))
-    try:
-        ts_step_tbl = datetime.now()
-        spark.sql(qry_insrt_otc_t_transfer_hist_pre_pos(vTTransfHist, vTTrInBI, fecha_movimientos_cp))
-        te_step_tbl = datetime.now()
-        print(etq_info(msg_d_duracion_hive(vTTransfHist,vle_duracion(ts_step_tbl,te_step_tbl))))
-    except Exception as e:       
-        exit(etq_error(msg_e_insert_hive(vTTransfHist,str(e))))
+    print(etq_sql(qry_insrt_otc_t_transfer_hist_pre_pos(vTTrInBI, fecha_movimientos_cp)))
+    df03Insert=spark.sql(qry_insrt_otc_t_transfer_hist_pre_pos(vTTrInBI, fecha_movimientos_cp))
+    df03Insert.printSchema()
+    df_ti_hist=df_ti_hist_original.union(df03Insert)
+    if df_ti_hist.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df_ti_hist'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_create_hive_tmp(vTTransfHist)))
+            df_ti_hist.repartition(1).write.mode('overwrite').saveAsTable(vTTransfHist)
+            df_ti_hist.printSchema()
+            print(etq_info(msg_t_total_registros_hive(vTTransfHist,str(df_ti_hist.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(vTTransfHist,vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(vTTransfHist,str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
-VStp='Paso [4.7]: Se eliminan los transfer_out pre existentes del mes que se procesa de la tabla {} '.format(vTTransfHist)
+VStp='Paso [4.4]: Se inserta los transfer_out del mes de la tabla {} en la tabla {} '.format(vTTrOutBI, vTTransfHist)
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_select_query(vTTransfHist)))
-    print(etq_sql(qry_dlt_otc_t_transfer_hist_pos_pre(vTTransfHist, f_inicio, fecha_proceso)))
-    try:
-        ts_step_tbl = datetime.now()
-        spark.sql(qry_dlt_otc_t_transfer_hist_pos_pre(vTTransfHist, f_inicio, fecha_proceso))
-        print(etq_info(msg_i_delete_table(vTTransfHist))) 
-        te_step_tbl = datetime.now()
-        print(etq_info(msg_d_duracion_hive(vTTransfHist,vle_duracion(ts_step_tbl,te_step_tbl))))
-    except Exception as e:       
-        exit(etq_error(msg_e_ejecucion(vTTransfHist,str(e))))
-    te_step = datetime.now()
-    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
-except Exception as e:
-    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
-
-print(lne_dvs())
-
-VStp='Paso [4.8]: Se insertan las los transfer_out del mes en la tabla {} '.format(vTTransfHist)
-try:
-    ts_step = datetime.now()
-    print(etq_info(VStp))
-    print(lne_dvs())
+    print(etq_sql(qry_ori_otc_t_transfer_hist(vTTransfHist)))
+    df_to_hist_original=spark.sql(qry_ori_otc_t_transfer_hist(vTTransfHist))
+    df_to_hist_original.printSchema()
+    rows_to_delete=df_to_hist_original.filter((F.upper(col('TIPO'))=='POS_PRE') & (col('FECHA').between(f_inicio, fecha_proceso)))
+    df_to_hist_original=df_to_hist_original.join(rows_to_delete, on=['TIPO','FECHA'], how='left_anti')
     print(etq_info(msg_i_insert_hive(vTTransfHist)))
-    print(etq_sql(qry_insrt_otc_t_transfer_hist_pos_pre(vTTransfHist, vTTrOutBI, fecha_movimientos_cp)))
-    try:
-        ts_step_tbl = datetime.now()
-        spark.sql(qry_insrt_otc_t_transfer_hist_pos_pre(vTTransfHist, vTTrOutBI, fecha_movimientos_cp))
-        te_step_tbl = datetime.now()
-        print(etq_info(msg_d_duracion_hive(vTTransfHist,vle_duracion(ts_step_tbl,te_step_tbl))))
-    except Exception as e:       
-        exit(etq_error(msg_e_insert_hive(vTTransfHist,str(e))))
+    print(etq_sql(qry_insrt_otc_t_transfer_hist_pos_pre(vTTrOutBI, fecha_movimientos_cp)))
+    df04Insert=spark.sql(qry_insrt_otc_t_transfer_hist_pos_pre(vTTrOutBI, fecha_movimientos_cp))
+    df04Insert.printSchema()
+    df_to_hist=df_to_hist_original.union(df04Insert)
+    if df_to_hist.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df_to_hist'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_create_hive_tmp(vTTransfHist)))
+            df_to_hist.repartition(1).write.mode('overwrite').saveAsTable(vTTransfHist)
+            df_to_hist.printSchema()
+            print(etq_info(msg_t_total_registros_hive(vTTransfHist,str(df_to_hist.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(vTTransfHist,vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(vTTransfHist,str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
-VStp='Paso [4.9]: Se eliminan los cambios de plan pre existentes del mes que se procesa de la tabla {} '.format(vTCPHist)
+VStp='Paso [4.5]: Se inserta los cambios de plan del mes de la tabla {} en la tabla {} '.format(vTCPBI, vTCPHist)
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_select_query(vTCPHist)))
-    print(etq_sql(qry_dlt_otc_t_cambio_plan_hist(vTCPHist, f_inicio, fecha_proceso)))
-    try:
-        ts_step_tbl = datetime.now()
-        spark.sql(qry_dlt_otc_t_cambio_plan_hist(vTCPHist, f_inicio, fecha_proceso))
-        print(etq_info(msg_i_delete_table(vTCPHist))) 
-        te_step_tbl = datetime.now()
-        print(etq_info(msg_d_duracion_hive(vTCPHist,vle_duracion(ts_step_tbl,te_step_tbl))))
-    except Exception as e:       
-        exit(etq_error(msg_e_ejecucion(vTCPHist,str(e))))
-    te_step = datetime.now()
-    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
-except Exception as e:
-    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
-
-print(lne_dvs())
-
-VStp='Paso [4.10]: Se insertan las los cambios de plan del mes en la tabla {} '.format(vTCPHist)
-try:
-    ts_step = datetime.now()
-    print(etq_info(VStp))
-    print(lne_dvs())
+    print(etq_sql(qry_ori_otc_t_cambio_plan_hist(vTCPHist)))
+    df_cp_hist_original=spark.sql(qry_ori_otc_t_cambio_plan_hist(vTCPHist))
+    df_cp_hist_original.printSchema()
+    rows_to_delete=df_cp_hist_original.filter(col('FECHA').between(f_inicio, fecha_proceso))
+    df_cp_hist_original=df_cp_hist_original.join(rows_to_delete, on=['FECHA'], how='left_anti')
     print(etq_info(msg_i_insert_hive(vTCPHist)))
-    print(etq_sql(qry_insrt_otc_t_cambio_plan_hist(vTCPHist, vTCPBI, fecha_movimientos_cp)))
-    try:
-        ts_step_tbl = datetime.now()
-        spark.sql(qry_insrt_otc_t_cambio_plan_hist(vTCPHist, vTCPBI, fecha_movimientos_cp))
-        te_step_tbl = datetime.now()
-        print(etq_info(msg_d_duracion_hive(vTCPHist,vle_duracion(ts_step_tbl,te_step_tbl))))
-    except Exception as e:       
-        exit(etq_error(msg_e_insert_hive(vTCPHist,str(e))))
-    te_step = datetime.now()
-    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
-except Exception as e:
-    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
-
-print(lne_dvs())
-VStp='Paso [4.11]: Se eliminan los no_reciclables pre existentes del mes que se procesa de la tabla {} '.format(vTNRHist)
-try:
-    ts_step = datetime.now()
-    print(etq_info(VStp))
-    print(lne_dvs())
-    print(etq_info(msg_i_select_query(vTNRHist)))
-    print(etq_sql(qry_dlt_otc_t_no_reciclable_hist(vTNRHist, fecha_movimientos)))
-    try:
-        ts_step_tbl = datetime.now()
-        spark.sql(qry_dlt_otc_t_no_reciclable_hist(vTNRHist, fecha_movimientos))
-        print(etq_info(msg_i_delete_table(vTNRHist))) 
-        te_step_tbl = datetime.now()
-        print(etq_info(msg_d_duracion_hive(vTNRHist,vle_duracion(ts_step_tbl,te_step_tbl))))
-    except Exception as e:       
-        exit(etq_error(msg_e_ejecucion(vTNRHist,str(e))))
-    te_step = datetime.now()
-    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
-except Exception as e:
-    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
-
-print(lne_dvs())
-
-VStp='Paso [4.12]: Se insertan las los no_reciclables del mes en la tabla {} '.format(vTNRHist)
-try:
-    ts_step = datetime.now()
-    print(etq_info(VStp))
-    print(lne_dvs())
-    print(etq_info(msg_i_insert_hive(vTNRHist)))
-    print(etq_sql(qry_insrt_otc_t_no_reciclable_hist(vTNRHist, vTNRCSA, fecha_movimientos)))
-    try:
-        ts_step_tbl = datetime.now()
-        spark.sql(qry_insrt_otc_t_no_reciclable_hist(vTNRHist, vTNRCSA, fecha_movimientos))
-        te_step_tbl = datetime.now()
-        print(etq_info(msg_d_duracion_hive(vTNRHist,vle_duracion(ts_step_tbl,te_step_tbl))))
-    except Exception as e:       
-        exit(etq_error(msg_e_insert_hive(vTNRHist,str(e))))
-    te_step = datetime.now()
-    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
-except Exception as e:
-    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
-
-print(lne_dvs())
-
-VStp='Paso [4.13]: Se almacena las altas de todos los dias (particiones) para el mes de analisis '
-try:
-    ts_step = datetime.now()
-    print(etq_info(VStp))
-    print(lne_dvs())
-    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_movimientos_parque_13(vSchTmp)))))
-    print(etq_sql(qry_tmp_altas_ttls_mes(vTAltBI, f_inicio_abr, f_fin_abr)))
-    df13=spark.sql(qry_tmp_altas_ttls_mes(vTAltBI, f_inicio_abr, f_fin_abr))
-    if df13.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df13'))))
+    print(etq_sql(qry_insrt_otc_t_cambio_plan_hist(vTCPBI, fecha_movimientos_cp)))
+    df05Insert=spark.sql(qry_insrt_otc_t_cambio_plan_hist(vTCPBI, fecha_movimientos_cp))
+    df05Insert.printSchema()
+    df_cp_hist=df_cp_hist_original.union(df05Insert)
+    if df_cp_hist.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df_cp_hist'))))
     else:
         try:
             ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_13(vSchTmp)))))
-            df13.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_movimientos_parque_13(vSchTmp)))
-            df13.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_movimientos_parque_13(vSchTmp)),str(df13.count())))) 
+            print(etq_info(msg_i_create_hive_tmp(vTCPHist)))
+            df_cp_hist.repartition(1).write.mode('overwrite').saveAsTable(vTCPHist)
+            df_cp_hist.printSchema()
+            print(etq_info(msg_t_total_registros_hive(vTCPHist,str(df_cp_hist.count())))) 
             te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_movimientos_parque_13(vSchTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+            print(etq_info(msg_d_duracion_hive(vTCPHist,vle_duracion(ts_step_tbl,te_step_tbl))))
         except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_13(vSchTmp)),str(e))))
+            exit(etq_error(msg_e_insert_hive(vTCPHist,str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
-
-VStp='Paso [4.14]: Se almacenan los atributos de los movimientos:altas, transfer in, transfer out, cambios de plan,\n'+
-'se tendra una informacion real a mes caido ej: yyyymm01, en la tabla {}'.format(str(nme_tbl_otc_t_360_movimientos_parque_14(vSchTmp)))
+VStp='Paso [4.06]: Se obtiene el ultimo evento del alta en toda la historia hasta la fecha de proceso'
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
-    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_movimientos_parque_14(vSchTmp)))))
-    print(etq_sql(qry_tmp_movs_efctvs(vTAltBI, vTTrInBI, vTTrOutBI, vTCPBI, fecha_movimientos_cp)))
-    df14=spark.sql(qry_tmp_movs_efctvs(vTAltBI, vTTrInBI, vTTrOutBI, vTCPBI, fecha_movimientos_cp))
-    if df14.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df14'))))
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_movimientos_parque_06(vSchRep)))))
+    print(etq_sql(qry_otc_t_alta_hist_unic(vTAltBajHist, fecha_movimientos)))
+    df06=spark.sql(qry_otc_t_alta_hist_unic(vTAltBajHist, fecha_movimientos))
+    if df06.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df06'))))
     else:
         try:
             ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_14(vSchTmp)))))
-            df14.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_movimientos_parque_14(vSchTmp)))
-            df14.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_movimientos_parque_14(vSchTmp)),str(df14.count())))) 
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_06(vSchRep)))))
+            df06.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_movimientos_parque_06(vSchRep)))
+            df06.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_movimientos_parque_06(vSchRep)),str(df06.count())))) 
             te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_movimientos_parque_14(vSchTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_movimientos_parque_06(vSchRep)),vle_duracion(ts_step_tbl,te_step_tbl))))
         except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_14(vSchTmp)),str(e))))
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_06(vSchRep)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
-
-VStp='Paso [4.15]: Se obtienen las ALTAS BAJAS REPROCESO '
+VStp='Paso [4.07]: Se obtiene el ultimo evento de las bajas en toda la historia hasta la fecha de proceso'
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
-    print(etq_info(msg_i_delete_table(vTABRHist)))
-    print(etq_sql(qry_dlt_otc_t_alta_baja_reproceso_hist(vTABRHist, f_inicio, fecha_proceso)))
-    spark.sql(qry_dlt_otc_t_alta_baja_reproceso_hist(vTABRHist, f_inicio, fecha_proceso))
-    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)))))
-    print(etq_sql(qry_insrt_otc_t_alta_baja_reproceso_hist(vTAltBI, f_inicio_abr, f_fin_abr)))
-    df16=spark.sql(qry_insrt_otc_t_alta_baja_reproceso_hist(vTAltBI, f_inicio_abr, f_fin_abr))
-    if df16.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df16'))))
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_movimientos_parque_07(vSchRep)))))
+    print(etq_sql(qry_otc_t_baja_hist_unic(vTAltBajHist, fecha_movimientos)))
+    df07=spark.sql(qry_otc_t_baja_hist_unic(vTAltBajHist, fecha_movimientos))
+    if df07.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df07'))))
     else:
         try:
             ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)))))
-            df16.repartition(1).write.mode('append').saveAsTable(str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)))
-            df16.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)),str(df16.count())))) 
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_07(vSchRep)))))
+            df07.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_movimientos_parque_07(vSchRep)))
+            df07.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_movimientos_parque_07(vSchRep)),str(df07.count())))) 
             te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_movimientos_parque_07(vSchRep)),vle_duracion(ts_step_tbl,te_step_tbl))))
         except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)),str(e))))
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_07(vSchRep)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
-
+    
 print(lne_dvs())
-
-VStp='Paso [4.16]: Se obtienen los combos de un rango de 30 dias menos a la fecha de ejecucion'
+VStp='Paso [4.08]: Se obtiene el ultimo evento de las transferencias out en toda la historia hasta la fecha de proceso'
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
-    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)))))
-    print(etq_sql(qry_tmp_360_otc_t_paquetes_payment_combo_menos30(vTAltBI, f_inicio_abr, f_fin_abr)))
-    df16=spark.sql(qry_tmp_360_otc_t_paquetes_payment_combo_menos30(vTAltBI, f_inicio_abr, f_fin_abr))
-    if df16.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df16'))))
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_movimientos_parque_08(vSchRep)))))
+    print(etq_sql(qry_otc_t_pos_pre_hist_unic(vTTransfHist, fecha_movimientos)))
+    df08=spark.sql(qry_otc_t_pos_pre_hist_unic(vTTransfHist, fecha_movimientos))
+    if df08.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df08'))))
     else:
         try:
             ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)))))
-            df16.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)))
-            df16.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)),str(df16.count())))) 
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_08(vSchRep)))))
+            df08.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_movimientos_parque_08(vSchRep)))
+            df08.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_movimientos_parque_08(vSchRep)),str(df08.count())))) 
             te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_movimientos_parque_08(vSchRep)),vle_duracion(ts_step_tbl,te_step_tbl))))
         except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)),str(e))))
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_08(vSchRep)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
-
+    
 print(lne_dvs())
-
-VStp='Paso [4.17]: CONSOLIDACION DE TODOS LOS VALORES OBTENIDOS, modificacion se agregan los campos ingreso_recargas_30,cantidad_recargas_30, ingreso_bonos_30,cantidad_bonos_30, ingreso_combos_30,cantidad_combos_30 para obtener PARQUE_RECARGADOR_30_DIAS'
+VStp='Paso [4.09]: Se obtiene el ultimo evento de las transferencias in  en toda la historia hasta la fecha de proceso'
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
-    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_movimientos_parque_17(vSchTmp)))))
-    print(etq_sql(qry_tmp_otc_t_360_movimientos_parque(str(nme_tbl_otc_t_360_movimientos_parque_04(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_10(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_05(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_07(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_08(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_09(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_11(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_14(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_12(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_15(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_06(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_13(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp)))))
-    df17=spark.sql(qry_tmp_otc_t_360_movimientos_parque(str(nme_tbl_otc_t_360_movimientos_parque_04(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_10(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_05(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_07(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_08(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_09(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_11(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_14(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_12(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_15(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_06(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_13(vSchTmp)), str(nme_tbl_otc_t_360_movimientos_parque_16(vSchTmp))))
-    if df17.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df17'))))
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_movimientos_parque_09(vSchRep)))))
+    print(etq_sql(qry_otc_t_pre_pos_hist_unic(vTTransfHist, fecha_movimientos)))
+    df09=spark.sql(qry_otc_t_pre_pos_hist_unic(vTTransfHist, fecha_movimientos))
+    if df09.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df09'))))
     else:
         try:
             ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_17(vSchTmp)))))
-            df17.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_movimientos_parque_17(vSchTmp)))
-            df17.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_movimientos_parque_17(vSchTmp)),str(df17.count())))) 
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_09(vSchRep)))))
+            df09.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_movimientos_parque_09(vSchRep)))
+            df09.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_movimientos_parque_09(vSchRep)),str(df09.count())))) 
             te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_movimientos_parque_17(vSchTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_movimientos_parque_09(vSchRep)),vle_duracion(ts_step_tbl,te_step_tbl))))
         except Exception as e:       
-            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_17(vSchTmp)),str(e))))
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_09(vSchRep)),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+    
+print(lne_dvs())
+VStp='Paso [4.10]: Se obtiene el ultimo evento de los cambios de plan en toda la historia hasta la fecha de proceso'
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_movimientos_parque_10(vSchRep)))))
+    print(etq_sql(qry_otc_t_cambio_plan_hist_unic(vTCPHist, fecha_movimientos)))
+    df10=spark.sql(qry_otc_t_cambio_plan_hist_unic(vTCPHist, fecha_movimientos))
+    if df10.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df10'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_10(vSchRep)))))
+            df10.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_movimientos_parque_10(vSchRep)))
+            df10.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_movimientos_parque_10(vSchRep)),str(df10.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_movimientos_parque_10(vSchRep)),vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_10(vSchRep)),str(e))))
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+    
+print(lne_dvs())
+VStp='Paso [4.11]: Se realiza el cruce con cada tabla usando {} (tabla resultante de pivot_parque) y agregando los campos de cada tabla renombrandolos de acuerdo al movimiento que corresponda'.format(vTPivotParq)
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_movimientos_parque_11(vSchTmp)))))
+    print(etq_sql(qry_otc_t_360_parque_1_tmp_t_mov(vTPivotParq, str(nme_tbl_otc_t_360_movimientos_parque_06(vSchRep)), str(nme_tbl_otc_t_360_movimientos_parque_08(vSchRep)), str(nme_tbl_otc_t_360_movimientos_parque_09(vSchRep)), str(nme_tbl_otc_t_360_movimientos_parque_10(vSchRep)))))
+    df11=spark.sql(qry_otc_t_360_parque_1_tmp_t_mov(vTPivotParq, str(nme_tbl_otc_t_360_movimientos_parque_06(vSchRep)), str(nme_tbl_otc_t_360_movimientos_parque_08(vSchRep)), str(nme_tbl_otc_t_360_movimientos_parque_09(vSchRep)), str(nme_tbl_otc_t_360_movimientos_parque_10(vSchRep))))
+    if df11.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df11'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_11(vSchTmp)))))
+            df11.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_movimientos_parque_11(vSchTmp)))
+            df11.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_movimientos_parque_11(vSchTmp)),str(df11.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_movimientos_parque_11(vSchTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_11(vSchTmp)),str(e))))
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+    
+print(lne_dvs())
+VStp='Paso [4.12]: Se crea la tabla temp union para obtener ultimo movimiento del mes por num_telefono'
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(str(nme_tbl_otc_t_360_movimientos_parque_12(vSchTmp)))))
+    print(etq_sql(qry_otc_t_360_parque_1_mov_mes_tmp(f_inicio, fecha_proceso, vTMP06, vTMP07, vTMP08, vTMP09, vTMP10)))
+    df12=spark.sql(qry_otc_t_360_parque_1_mov_mes_tmp(f_inicio, fecha_proceso, vTMP06, vTMP07, vTMP08, vTMP09, vTMP10))
+    if df12.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df12'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_12(vSchTmp)))))
+            df12.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_movimientos_parque_12(vSchTmp)))
+            df12.printSchema()
+            print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_movimientos_parque_12(vSchTmp)),str(df12.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(str(nme_tbl_otc_t_360_movimientos_parque_12(vSchTmp)),vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(str(nme_tbl_otc_t_360_movimientos_parque_12(vSchTmp)),str(e))))
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+    
+
+
+
+
+
+    
+
 
 print(lne_dvs())
 vStpFin='Paso [Final]: Eliminando dataframes ..'

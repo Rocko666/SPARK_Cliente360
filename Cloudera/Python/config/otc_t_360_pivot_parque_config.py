@@ -83,24 +83,3 @@ def nme_tbl_tmp_otc_t_360_pivot_parque_20(vSchema):
     return nme
 
 
-
-
-
-
-
-
-
-
-
-
-def nme_tbl_tmp_otc_t_360_pivot_parque_30(vSchema,vAbrev):
-    nme="""{}.otc_t_360_parque_1_tmp_1{}""".format(vSchema,vAbrev)
-    return nme
-
-def nme_tbl_tmp_otc_t_360_pivot_parque_31(vSchema,vAbrev):
-    nme="""{}.tmp_360_motivos_suspension{}""".format(vSchema,vAbrev)
-    return nme
-
-def nme_tbl_tmp_otc_t_360_pivot_parque_32(vSchema,vAbrev):
-    nme="""{}.tmp_360_otc_t_360_churn90_tmp{}""".format(vSchema,vAbrev)
-    return nme
