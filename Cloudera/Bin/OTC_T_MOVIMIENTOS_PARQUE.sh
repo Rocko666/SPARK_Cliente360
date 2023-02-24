@@ -4,7 +4,6 @@
 # DESCRIPCION:																							                                            
 # Shell que carga los datos desde hive y crea las tablas necesarias para 360_general		
 # Las tildes han sido omitidas intencionalmente en el script  	                                                 											             
-# AUTOR: Cristian Ortiz - Softconsulting             														                          
 # FECHA CREACION: 13-Jun-2018 (LC) Version 1.0  																			                                      
 # PARAMETROS DEL SHELL                            													                            
 # $1: Parametro de Fecha Inicial del proceso a ejecutar  								        		                    						                	
@@ -52,8 +51,8 @@ VAL_ETP01_NUM_EXECUTORS_CORES=`mysql -N  <<<"select valor from params where ENTI
 
 ################### VARIABLES DEL SPARK GENERICO
 VAL_RUTA_SPARK=`mysql -N  <<<"select valor from params where ENTIDAD = '"$SPARK_GENERICO"' AND parametro = 'VAL_RUTA_SPARK';"`
-VAL_KINIT=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENERICO' AND parametro = 'VAL_KINIT';"`
-$VAL_KINIT
+#VAL_KINIT=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENERICO' AND parametro = 'VAL_KINIT';"`
+#$VAL_KINIT
 
 VAL_LOG_EJECUCION=$VAL_RUTA_LOG/$ENTIDAD"_"$VAL_HORA.log
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando registro en el log.." >> $VAL_LOG_EJECUCION
@@ -158,13 +157,17 @@ if [ "$ETAPA" = "1" ]; then
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1: Extraer datos desde hive " >> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 $VAL_RUTA_SPARK \
---queue default \
---jars /opt/cloudera/parcels/CDH/lib/hive_warehouse_connector/hive-warehouse-connector-assembly-1.0.0.7.1.7.1000-141.jar \
+--queue capa_semantica \
+--jars /opt/cloudera/parcels/CDH/jars/hive-warehouse-connector-assembly-*.jar \
+--conf spark.sql.extensions=com.hortonworks.spark.sql.rule.Extensions \
+--conf spark.security.credentials.hiveserver2.enabled=false \
 --conf spark.sql.hive.hwc.execution.mode=spark \
---conf  spark.datasource.hive.warehouse.read.mode=JDBC_CLUSTER \
---conf spark.sql.hive.hiveserver2.jdbc.url="jdbc:hive2://quisrvbigdata1.otecel.com.ec:2181,quisrvbigdata2.otecel.com.ec:2181,quisrvbigdata10.otecel.com.ec:2181,quisrvbigdata11.otecel.com.ec:2181/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=hiveserver2" \
+--conf spark.datasource.hive.warehouse.read.via.llap=false \
+--conf spark.datasource.hive.warehouse.load.staging.dir=/tmp \
+--conf spark.datasource.hive.warehouse.read.jdbc.mode=cluster \
 --conf spark.datasource.hive.warehouse.user.name="rgenerator" \
 --py-files /opt/cloudera/parcels/CDH/lib/hive_warehouse_connector/pyspark_hwc-1.0.0.7.1.7.1000-141.zip \
+--conf spark.sql.hive.hiveserver2.jdbc.url="jdbc:hive2://quisrvbigdata1.otecel.com.ec:2181,quisrvbigdata2.otecel.com.ec:2181,quisrvbigdata10.otecel.com.ec:2181,quisrvbigdata11.otecel.com.ec:2181/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=hiveserver2" \
 --name $ENTIDAD \
 --master $VAL_ETP01_MASTER \
 --driver-memory $VAL_ETP01_DRIVER_MEMORY \

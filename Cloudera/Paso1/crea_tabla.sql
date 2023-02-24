@@ -85,8 +85,10 @@ STORED as ORC tblproperties ('transactional'='false','orc.compress' = 'SNAPPY');
 ---MOVIMIENTOS PARQUE
 
 ----db_reportes.otc_t_alta_baja_hist
-drop table db_reportes.otc_t_alta_baja_hist;
-CREATE TABLE db_reportes.otc_t_alta_baja_hist(
+drop table if exists db_desarrollo2021.otc_t_alta_baja_hist_cloudera;
+CREATE TABLE db_desarrollo2021.otc_t_alta_baja_hist_cloudera(
+--drop table if exist db_reportes.otc_t_alta_baja_hist;
+--CREATE TABLE db_reportes.otc_t_alta_baja_hist(
   `tipo` varchar(20), 
   `telefono` varchar(9), 
   `fecha` date, 
@@ -99,10 +101,12 @@ CREATE TABLE db_reportes.otc_t_alta_baja_hist(
   `motivo` varchar(50), 
   `distribuidor` varchar(50), 
   `oficina` varchar(50))
-STORED AS PARQUET TBLPROPERTIES ("transactional"="false",'parquet.compression' = 'SNAPPY');
+--STORED AS PARQUET TBLPROPERTIES ("transactional"="false",'parquet.compression' = 'SNAPPY');
+STORED AS ORC TBLPROPERTIES ("transactional"="true");
 
 ----db_reportes.otc_t_transfer_hist
-CREATE TABLE db_reportes.otc_t_transfer_hist(
+CREATE TABLE db_desarrollo2021.otc_t_transfer_hist_cloudera(
+--CREATE TABLE db_reportes.otc_t_transfer_hist(
   `tipo` varchar(20), 
   `telefono` varchar(9), 
   `fecha` date, 
@@ -111,10 +115,12 @@ CREATE TABLE db_reportes.otc_t_transfer_hist(
   `nuevo_sub_canal` varchar(50), 
   `distribuidor` varchar(50), 
   `oficina` varchar(50))
-STORED AS ORC TBLPROPERTIES ("transactional"="false",'ORC.COMPRESS' = 'SNAPPY');
+CLUSTERED BY (telefono) INTO 4 BUCKETS
+STORED AS ORC TBLPROPERTIES ("transactional"="true");
 
 ----db_reportes.otc_t_cambio_plan_hist
-CREATE TABLE db_reportes.otc_t_cambio_plan_hist(
+CREATE TABLE db_desarrollo2021.otc_t_cambio_plan_hist_cloudera(
+--CREATE TABLE db_reportes.otc_t_cambio_plan_hist(
   `tipo` varchar(20), 
   `telefono` varchar(9), 
   `fecha` date, 
@@ -128,7 +134,8 @@ CREATE TABLE db_reportes.otc_t_cambio_plan_hist(
   `tb_descuento` double, 
   `tb_override` double, 
   `delta` double)
-STORED AS ORC TBLPROPERTIES ("transactional"="false",'ORC.COMPRESS' = 'SNAPPY');
+CLUSTERED BY (telefono) INTO 4 BUCKETS
+STORED AS ORC TBLPROPERTIES ("transactional"="true");
 
 ----db_reportes.otc_t_cambio_plan_hist
 

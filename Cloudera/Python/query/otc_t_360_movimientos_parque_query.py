@@ -4,28 +4,22 @@
 # S: String
 
 # N 01
-def qry_ori_otc_t_alta_baja_hist(vTAltBajHist):
+def qry_dlt_otc_t_abh_alta(vTAltBajHist, f_inicio, fecha_proceso):
     qry='''
-SELECT
-	TIPO
-	, TELEFONO
-	, FECHA
-	, CANAL
-	, SUB_CANAL
-	, NUEVO_SUB_CANAL
-	, PORTABILIDAD
-	, Operadora_origen
-	, Operadora_destino
-	, motivo
-	, DISTRIBUIDOR
-	, OFICINA
+DELETE
 FROM
 	{vTAltBajHist}
-    '''.format(vTAltBajHist=vTAltBajHist)
+WHERE
+	TIPO = 'ALTA'
+	AND FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}'
+    '''.format(vTAltBajHist=vTAltBajHist, f_inicio=f_inicio, fecha_proceso=fecha_proceso)
     return qry
 
-def qry_insrt_otc_t_alta_baja_hist_alta(vTAltBI, fecha_movimientos_cp):
+def qry_insrt_otc_t_abh_alta(vTAltBajHist, vTAltBI, fecha_movimientos_cp):
     qry='''
+INSERT
+	INTO
+	{vTAltBajHist}
 SELECT
 	'ALTA' AS TIPO
 	, TELEFONO
@@ -44,13 +38,27 @@ FROM
 WHERE
 	p_FECHA_PROCESO = '{fecha_movimientos_cp}'
 	AND marca = 'TELEFONICA'
-    '''.format(vTAltBI=vTAltBI, fecha_movimientos_cp=fecha_movimientos_cp)
+    '''.format(vTAltBajHist=vTAltBajHist, vTAltBI=vTAltBI, fecha_movimientos_cp=fecha_movimientos_cp)
     return qry
 
 # N 02
-
-def qry_insrt_otc_t_alta_baja_hist_baja(vTBajBI, fecha_movimientos_cp):
+def qry_dlt_otc_t_abh_baja(vTAltBajHist, f_inicio, fecha_proceso):
     qry='''
+DELETE
+FROM
+	{vTAltBajHist}
+WHERE
+	TIPO = 'BAJA'
+	AND FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}'
+    '''.format(vTAltBajHist=vTAltBajHist, f_inicio=f_inicio, fecha_proceso=fecha_proceso)
+    return qry
+
+
+def qry_insrt_otc_t_abh_baja(vTAltBajHist, vTBajBI, fecha_movimientos_cp):
+    qry='''
+INSERT
+	INTO
+	{vTAltBajHist}
 SELECT
 	'BAJA' AS TIPO
 	, TELEFONO
@@ -69,30 +77,28 @@ FROM
 WHERE
 	p_FECHA_PROCESO = '{fecha_movimientos_cp}'
 	AND marca = 'TELEFONICA'
-    '''.format(vTBajBI=vTBajBI, fecha_movimientos_cp=fecha_movimientos_cp)
+    '''.format(vTAltBajHist=vTAltBajHist, vTBajBI=vTBajBI, fecha_movimientos_cp=fecha_movimientos_cp)
     return qry
 
 
 # N03
-def qry_ori_otc_t_transfer_hist(vTTransfHist):
+def qry_dlt_otc_t_th_pre_pos(vTTransfHist, f_inicio, fecha_proceso):
     qry='''
-SELECT
-	TIPO
-	, TELEFONO
-	, FECHA
-	, CANAL
-	, SUB_CANAL
-	, NUEVO_SUB_CANAL
-	, DISTRIBUIDOR
-	, OFICINA
+DELETE
 FROM
 	{vTTransfHist}
-    '''.format(vTTransfHist=vTTransfHist)
+WHERE
+	TIPO = 'PRE_POS'
+	AND FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}'
+    '''.format(vTTransfHist=vTTransfHist, f_inicio=f_inicio, fecha_proceso=fecha_proceso)
     return qry
 
 
-def qry_insrt_otc_t_transfer_hist_pre_pos(vTTrInBI, fecha_movimientos_cp):
+def qry_insrt_otc_t_th_pre_pos(vTTransfHist, vTTrInBI, fecha_movimientos_cp):
     qry='''
+INSERT
+	INTO
+	{vTTransfHist}
 SELECT
 	'PRE_POS' AS TIPO
 	, TELEFONO
@@ -106,13 +112,27 @@ FROM
 	{vTTrInBI}
 WHERE
 	p_FECHA_PROCESO = '{fecha_movimientos_cp}'
-    '''.format(vTTrInBI=vTTrInBI, fecha_movimientos_cp=fecha_movimientos_cp)
+    '''.format(vTTransfHist=vTTransfHist, vTTrInBI=vTTrInBI, fecha_movimientos_cp=fecha_movimientos_cp)
     return qry
 
 # N 04
-
-def qry_insrt_otc_t_transfer_hist_pos_pre(vTTrOutBI, fecha_movimientos_cp):
+def qry_dlt_otc_t_th_pos_pre(vTTransfHist, f_inicio, fecha_proceso):
     qry='''
+DELETE
+FROM
+	{vTTransfHist}
+WHERE
+	TIPO = 'POS_PRE'
+	AND FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}'
+    '''.format(vTTransfHist=vTTransfHist, f_inicio=f_inicio, fecha_proceso=fecha_proceso)
+    return qry
+
+
+def qry_insrt_otc_t_th_pos_pre(vTTransfHist, vTTrOutBI, fecha_movimientos_cp):
+    qry='''
+INSERT
+	INTO
+	{vTTransfHist}
 SELECT
 	'POS_PRE' AS TIPO
 	, TELEFONO
@@ -126,35 +146,27 @@ FROM
 	{vTTrOutBI}
 WHERE
 	p_FECHA_PROCESO = '{fecha_movimientos_cp}'
-    '''.format(vTTrOutBI=vTTrOutBI, fecha_movimientos_cp=fecha_movimientos_cp)
+    '''.format(vTTransfHist, vTTrOutBI=vTTrOutBI, fecha_movimientos_cp=fecha_movimientos_cp)
     return qry
 
 
 # N 5
-def qry_ori_otc_t_cambio_plan_hist(vTCPHist):
+def qry_dlt_otc_t_cph(vTCPHist, f_inicio, fecha_proceso):
     qry='''
-SELECT
-	TIPO
-	, TELEFONO
-	, FECHA
-	, CANAL
-	, SUB_CANAL
-	, NUEVO_SUB_CANAL
-	, DISTRIBUIDOR
-	, OFICINA
-	, COD_PLAN_ANTERIOR
-	, DES_PLAN_ANTERIOR
-	, TB_DESCUENTO
-	, TB_OVERRIDE
-	, DELTA
+DELETE
 FROM
 	{vTCPHist}
-    '''.format(vTCPHist=vTCPHist)
+WHERE
+	FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}'
+    '''.format(vTCPHist=vTCPHist, f_inicio=f_inicio, fecha_proceso=fecha_proceso)
     return qry
 
 
-def qry_insrt_otc_t_cambio_plan_hist(vTCPBI, fecha_movimientos_cp):
+def qry_insrt_otc_t_cph(vTCPHist, vTCPBI, fecha_movimientos_cp):
     qry='''
+INSERT
+	INTO
+	{vTCPHist}
 SELECT
 	TIPO_MOVIMIENTO AS TIPO
 	, TELEFONO
@@ -173,7 +185,7 @@ FROM
 	{vTCPBI}
 WHERE
 	p_FECHA_PROCESO = {fecha_movimientos_cp}
-    '''.format(vTCPBI=vTCPBI, fecha_movimientos_cp=fecha_movimientos_cp)
+    '''.format(vTCPHist=vTCPHist, vTCPBI=vTCPBI, fecha_movimientos_cp=fecha_movimientos_cp)
     return qry
 
 # N 06
