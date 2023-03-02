@@ -13,9 +13,9 @@ import time
 import sys
 import os
 # General cliente 360
-sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/config')
+sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Configuraciones')
 from otc_t_360_parque_traficador_config import *
-sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/query')
+sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Querys')
 from otc_t_360_parque_traficador_query import *
 # Genericos otc_t_360_parque_traficador
 sys.path.insert(1,'/var/opt/tel_spark')

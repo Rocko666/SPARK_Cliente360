@@ -42,13 +42,13 @@ $VAL_KINIT
 
 ###################################################################################################################
 # PARAMETROS INICIALES Y DE ENTRADA
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validar parametros iniciales y de entrada" >>$VAL_LOG
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validar parametros iniciales y de entrada" 2>&1 &>>$VAL_LOG
 ###################################################################################################################
 FECHAEJE=$1
 PASO=$2
 if [ -z "$FECHAEJE" ] ||
 	[ -z "$PASO" ]; then
-	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros iniciales/entrada estan vacios" >>$VAL_LOG
+	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros iniciales/entrada estan vacios" 2>&1 &>>$VAL_LOG
 	exit 1
 fi
 
@@ -65,22 +65,22 @@ if [ -z "$RUTA_LOG" ] ||
 	[ -z "$VAL_DIA" ] ||
 	[ -z "$VAL_HORA" ] ||
 	[ -z "$VAL_LOG" ] ; then
-	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros esta vacio o nulo [Creacion del file log]" >>$VAL_LOG
+	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros esta vacio o nulo [Creacion del file log]" 2>&1 &>>$VAL_LOG
 	exit 1
 fi
 
 ###################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Obtener y validar parametros genericos SPARK..." >> $VAL_LOG
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Obtener y validar parametros genericos SPARK..." 2>&1 &>> $VAL_LOG
 ###################################################################################################################
 VAL_RUTA_SPARK=`mysql -N  <<<"select valor from params where entidad = 'SPARK_GENERICO'  AND parametro = 'VAL_RUTA_SPARK';"`
 
 if [ -z "$VAL_RUTA_SPARK" ] ; then
-	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros de SPARK GENERICO es nulo o vacio" >> $VAL_LOG
+	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros de SPARK GENERICO es nulo o vacio" 2>&1 &>> $VAL_LOG
 	exit 1
 fi
 
 ###################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Obtener y validar parametros definidos en la tabla params..." >> $VAL_LOG
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Obtener y validar parametros definidos en la tabla params..." 2>&1 &>> $VAL_LOG
 ###################################################################################################################
 RUTA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RUTA';"`
 HIVEDB=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'HIVEDB';"`
@@ -132,20 +132,20 @@ if [ -z "$HIVEDB" ] ||
 	[ -z "$ESQUEMA_TABLA_1" ] ||
 	[ -z "$ESQUEMA_TABLA_2" ] ||
 	[ -z "$ESQUEMA_TABLA_3" ] ; then
-	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros de la tabla params es nulo o vacio" >> $VAL_LOG
+	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros de la tabla params es nulo o vacio" 2>&1 &>> $VAL_LOG
 	exit 1
 fi
 
 
 ###################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Obtener y validar parametros autogenerados..." >> $VAL_LOG
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Obtener y validar parametros autogenerados..." 2>&1 &>> $VAL_LOG
 ###################################################################################################################
 
 eval year=`echo $FECHAEJE | cut -c1-4`
 eval month=`echo $FECHAEJE | cut -c5-6`
 day="01"
 if [ -z "$year" ] || [ -z "$month" ] || [ -z "$day" ];then 
-	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros iniciales es nulo o vacio" >> $VAL_LOG
+	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros iniciales es nulo o vacio" 2>&1 &>> $VAL_LOG
 	exit 1
 fi
 
@@ -158,7 +158,7 @@ let fecha_proc1=$fecha_eje2
 fecha_eje4=`date '+%d-%m-%Y' -d "$FECHAEJE"`
 
 if [ -z "$fechaMes" ] || [ -z "$fechaIniMes" ] || [ -z "$fecha_eje1" ] || [ -z "$fecha_eje2" ] || [ -z "$fecha_eje4" ];then 
-	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros calculados validacion [1] es nulo o vacio" >> $VAL_LOG
+	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros calculados validacion [1] es nulo o vacio" 2>&1 &>> $VAL_LOG
 	exit 1
 fi
 
@@ -178,7 +178,7 @@ fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
 let fechamas11=$fechamas1_1*1
 
 if [ -z "$fecha_inico_mes_1_1" ] || [ -z "$fecha_inico_mes_1_2" ] || [ -z "$fecha_eje3" ] || [ -z "$fechamas1" ] || [ -z "$fechamas1_1" ];then 
-	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros calculados validacion [2] es nulo o vacio" >> $VAL_LOG
+	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros calculados validacion [2] es nulo o vacio" 2>&1 &>> $VAL_LOG
 	exit 1
 fi
 
@@ -210,20 +210,21 @@ if [ -z "$path_actualizacion" ] ||
 		[ -z "$fechaInimenos2mes_1" ] ||
 		[ -z "$fechaInimenos3mes_1" ] ||
 		[ -z "$fechamenos5_1" ] ; then
-	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros calculados validacion [3] es nulo o vacio" >>$VAL_LOG
+	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros calculados validacion [3] es nulo o vacio" 2>&1 &>>$VAL_LOG
 	exit 1
 fi
 
 
 ###################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando el JOB: $ENTIDAD" >> $VAL_LOG
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando el JOB: $ENTIDAD" 2>&1 &>> $VAL_LOG
 ###################################################################################################################
 
 if [ "$PASO" = "1" ]; then
 ###################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando la importacion en spark" >> $VAL_LOG
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando la importacion en spark" 2>&1 &>> $VAL_LOG
 ###################################################################################################################
 $VAL_RUTA_SPARK \
+--conf spark.ui.enabled=false \
 --master $VAL_MASTER \
 --name $ENTIDAD \
 --driver-memory $VAL_DRIVER_MEMORY \
@@ -246,19 +247,19 @@ $VAL_RUTA_PYTHON/$VAL_FILE_PYTHON \
 --vSEsquemaTabla3=$ESQUEMA_TABLA_3 \
 --vIFechaMenos2Mes=$fechamenos2mes \
 --vIFechaEje1=$fecha_eje1 \
---vSPathQueryConf=$VAL_PATH_CONF >> $VAL_LOG
+--vSPathQueryConf=$VAL_PATH_CONF 2>&1 &>> $VAL_LOG
 
 ###################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validamos el LOG de la ejecucion, si encontramos fallas finalizamos con num_e > 0" >> $VAL_LOG
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validamos el LOG de la ejecucion, si encontramos fallas finalizamos con num_e > 0" 2>&1 &>> $VAL_LOG
 ###################################################################################################################
 VAL_ERRORES=`egrep 'NODATA:|error|error:|Error:|Error|error|KeyProviderCache:|Caused by:|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $VAL_LOG | wc -l`
 if [ $VAL_ERRORES -eq 0 ];then
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA $PASO => La extraccion de informacion fue ejecutada de manera EXITOSA" >> $VAL_LOG	
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA $PASO con EXITO " >> $VAL_LOG
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA $PASO => La extraccion de informacion fue ejecutada de manera EXITOSA" 2>&1 &>> $VAL_LOG	
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA $PASO con EXITO " 2>&1 &>> $VAL_LOG
 		PASO=1
 		`mysql -N  <<<"update params set valor='"$PASO"' where ENTIDAD = '"$ENTIDAD"' and parametro = 'ETAPA';"`    	
 else
-				echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Problemas en la carga de informacion en las tablas del proceso" >> $VAL_LOG   
+				echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Problemas en la carga de informacion en las tablas del proceso" 2>&1 &>> $VAL_LOG   
 				exit 1       
 fi
 

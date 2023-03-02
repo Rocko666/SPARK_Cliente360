@@ -803,7 +803,7 @@ FROM db_rbm.reporte_cartera t2 WHERE fecha_carga=$fechamas1;" 2>> $LOGS/$EJECUCI
 QUEUENAME=capa_semantica
 conteo1=`hive --hiveconf tez.queue.name=${QUEUENAME} -S -e "select count(1) from $ESQUEMA_TEMP.otc_t_360_cartera_vencimiento; "`
 
-echo "Numero registros: "$conteo1 &>> $LOGS/$EJECUCION_LOG.log
+echo "Numero registros: "$conteo1 2>&1 &>> $LOGS/$EJECUCION_LOG.log
 if [ 0 -eq $conteo1 ];then
 	((rc=90)) 
 	log e "El Query de cartera no obtuvo valores de la fuente $TDDB.$TDTABLE registros:${conteo1}" $PASO

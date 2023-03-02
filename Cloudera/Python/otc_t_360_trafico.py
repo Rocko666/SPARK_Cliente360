@@ -14,7 +14,8 @@ import sys
 import os
 # General cliente 360
 sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Querys')
-from otc_t_360_ubicacion_query import *
+from otc_t_360_trafico_query import *
+
 # Genericos
 sys.path.insert(1,'/var/opt/tel_spark')
 from messages import *
@@ -31,21 +32,23 @@ try:
     print(lne_dvs())
     parser = argparse.ArgumentParser()
     parser.add_argument('--vSEntidad', required=True, type=str)
-    parser.add_argument('--vSSchHiveMain', required=True, type=str)
-    parser.add_argument('--vSTblHiveMain', required=True, type=str)
-    parser.add_argument('--vTMksharevozdatos_90', required=True, type=str)
-    parser.add_argument('--vIFechaProceso', required=True, type=int)
+    parser.add_argument('--vSSchHiveTmp', required=True, type=str)
+    parser.add_argument('--vSTblHiveTmp', required=True, type=str)
+    parser.add_argument('--vABREVIATURA_TEMP', required=True, type=str)
+
+
     parametros = parser.parse_args()
     vSEntidad=parametros.vSEntidad
-    vSSchHiveMain=parametros.vSSchHiveMain
-    vSTblHiveMain=parametros.vSTblHiveMain
-    vTMksharevozdatos_90=parametros.vTMksharevozdatos_90
-    vIFechaProceso=parametros.vIFechaProceso
-    print(etq_info(log_p_parametros("vSEntidad",vSEntidad)))
-    print(etq_info(log_p_parametros("vSSchHiveMain",vSSchHiveMain)))
-    print(etq_info(log_p_parametros("vSTblHiveMain",vSTblHiveMain)))
-    print(etq_info(log_p_parametros("vTMksharevozdatos_90",vTMksharevozdatos_90)))
-    print(etq_info(log_p_parametros("vIFechaProceso",vIFechaProceso)))
+    vTempSchema=parametros.vSSchHiveTmp
+    vTempTable=parametros.vSTblHiveTmp
+    ABREVIATURA_TEMP=parametros.vABREVIATURA_TEMP
+
+
+    print(etq_info(log_p_parametros("Entidad",vSEntidad)))
+    print(etq_info(log_p_parametros("Esquema Temporal",vTempSchema)))
+    print(etq_info(log_p_parametros("Tabla Temporal",vTempTable)))
+    print(etq_info(log_p_parametros("ABREVIATURA_TEMP",ABREVIATURA_TEMP)))
+
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
@@ -65,8 +68,8 @@ try:
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
         .config("spark.yarn.queue", "default")\
-	    .config("hive.enforce.bucketing", "false")\
-	    .config("hive.enforce.sorting", "false")\
+	.config("hive.enforce.bucketing", "false")\
+	.config("hive.enforce.sorting", "false")\
         .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -79,67 +82,60 @@ except Exception as e:
 
 print(lne_dvs())
 
-VStp='Paso [3]: Generando logica de negocio '
+VStp='Paso [3]: Eliminando tablas temporales'
+vTempTable1=str(vTempTable)+str(ABREVIATURA_TEMP)
+tabla_trafico_temp=vTempSchema+"."+vTempTable1
+
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    spark.sql("DROP TABLE IF EXISTS " + str(tabla_trafico_temp))
+
+    print(etq_info(str(tabla_trafico_temp)))
+
+    te_step = datetime.now()
+
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+
+print(lne_dvs())
+
+VStp='Paso [4]: Generando logica de negocio '
 print(etq_info(VStp))
 print(lne_dvs())
-VStp='Paso [3.1]: Extraccion de informacion de la tabla {} '.format(vTMksharevozdatos_90)
+VStp='Paso [4.1]: Se crea tabla  {} '.format(tabla_trafico_temp)
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
     print(lne_dvs())
-    print(etq_sql(qyr_mksharevozdatos_90(vTMksharevozdatos_90, vIFechaProceso)))
-    df01=spark.sql(qyr_mksharevozdatos_90(vTMksharevozdatos_90, vIFechaProceso)) 
-    df01=df01.withColumn('fecha_proceso', lit(vIFechaProceso))   
+    print(etq_info(msg_i_create_hive_tmp(str(tabla_trafico_temp))))
+    print(etq_sql(qry_tmp_otc_t_360_trafico_01(ABREVIATURA_TEMP)))
+    df01=spark.sql(qry_tmp_otc_t_360_trafico_01(ABREVIATURA_TEMP))
     if df01.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df01'))))
     else:
         try:
             ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(str(tabla_trafico_temp))))
+            df01.repartition(1).write.mode('overwrite').saveAsTable(str(tabla_trafico_temp))
             df01.printSchema()
-            print(etq_info(msg_t_total_registros_hive(str(qyr_mksharevozdatos_90(vTMksharevozdatos_90, vIFechaProceso)),str(df01.count()))))
+            print(etq_info(msg_t_total_registros_hive(str(tabla_trafico_temp),str(df01.count()))))
             te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(str(qyr_mksharevozdatos_90(vTMksharevozdatos_90, vIFechaProceso)),vle_duracion(ts_step_tbl,te_step_tbl))))
+            print(etq_info(msg_d_duracion_hive(str(tabla_trafico_temp),vle_duracion(ts_step_tbl,te_step_tbl))))
         except Exception as e:
-            exit(etq_error(msg_e_df_nodata(str(qyr_mksharevozdatos_90(vTMksharevozdatos_90, vIFechaProceso)),str(e))))
+            exit(etq_error(msg_e_insert_hive(str(tabla_trafico_temp),str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
-print(lne_dvs())
 
-otc_t_360_ubicacion=vSSchHiveMain+"."+vSTblHiveMain
-VStp='Paso [4]: Insertar registros del negocio en la tabla {}'.format(otc_t_360_ubicacion)
-try:
-    ts_step = datetime.now()
-    print(etq_info(VStp))
-    print(lne_dvs())
-    if df01.rdd.isEmpty():
-        exit(etq_nodata(msg_e_df_nodata(str('df01'))))
-    else:
-        try:
-            ts_step_tbl = datetime.now()
-            print(etq_info(msg_i_insert_hive(otc_t_360_ubicacion)))
-            query_truncate = "ALTER TABLE "+otc_t_360_ubicacion+" DROP IF EXISTS PARTITION (fecha_proceso = "+str(vIFechaProceso)+") purge"
-            print(etq_info(query_truncate))
-            hc=HiveContext(spark)
-            hc.sql(query_truncate)
-            df01.repartition(1).write.mode('append').insertInto(otc_t_360_ubicacion)
-            df01.printSchema()
-            print(etq_info(msg_t_total_registros_hive(otc_t_360_ubicacion,str(df01.count())))) #BORRAR
-            te_step_tbl = datetime.now()
-            print(etq_info(msg_d_duracion_hive(otc_t_360_ubicacion,vle_duracion(ts_step_tbl,te_step_tbl))))
-        except Exception as e:
-            exit(etq_error(msg_e_insert_hive(otc_t_360_ubicacion,str(e))))
-    te_step = datetime.now()
-    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
-except Exception as e:
-    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
 vStpFin='Paso [Final]: Eliminando dataframes ..'
 print(lne_dvs())
-
 try:
     ts_step = datetime.now()
     del df01
@@ -150,11 +146,8 @@ except Exception as e:
 
 print(lne_dvs())
 
+print('OK - PROCESO1 PYSPARK TERMINADO')
 spark.stop()
 timeend = datetime.now()
 print(etq_info(msg_d_duracion_ejecucion(vSEntidad,vle_duracion(timestart,timeend))))
 print(lne_dvs())
-
-
-
-####

@@ -28,9 +28,9 @@ SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND p
 VAL_HORA=`date '+%Y%m%d%H%M%S'`
 VAL_RUTA_LOG=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RUTA_LOG';"`
 VAL_LOG_EJECUCION=$VAL_RUTA_LOG/$ENTIDAD"_"$VAL_HORA.log
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando registro en el log.." >> $VAL_LOG_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando registro en el log.." 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros definidos en la tabla params" >> $VAL_LOG_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros definidos en la tabla params" 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 VAL_RUTA=`mysql -N <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RUTA';"` 
 HIVEDB=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'HIVEDB';"`         
@@ -61,11 +61,11 @@ VAL_RUTA_SPARK=`mysql -N  <<<"select valor from params where ENTIDAD = '"$SPARK_
 VAL_KINIT=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENERICO' AND parametro = 'VAL_KINIT';"`
 $VAL_KINIT
 ###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Definir parametros por consola o ControlM" >> $VAL_LOG_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Definir parametros por consola o ControlM" 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 VAL_FECHA_PROCESO=$1
 ###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validacion de parametros iniciales, nulos y existencia de Rutas " >> $VAL_LOG_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validacion de parametros iniciales, nulos y existencia de Rutas " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 if [ -z "$VAL_FECHA_PROCESO" ] || 
 	[ -z "$ENTIDAD" ] || 
@@ -100,12 +100,12 @@ if [ -z "$VAL_FECHA_PROCESO" ] ||
 	[ -z "$VAL_ETP02_NUM_EXECUTORS_CORES" ] ||
 	[ -z "$ABREVIATURA_TEMP" ] ||
 	[ -z "$VAL_RUTA_SPARK" ]; then
-  echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: $TIME [ERROR] $rc unos de los parametros esta vacio o es nulo" >> $VAL_LOG_EJECUCION
+  echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: $TIME [ERROR] $rc unos de los parametros esta vacio o es nulo" 2>&1 &>> $VAL_LOG_EJECUCION
   error=1
   exit $error
 fi
 ###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros calculados de fechas  " >> $VAL_LOG_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros calculados de fechas  " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 #------------------------------------------------------
 # DEFINICION DE FECHAS
@@ -169,7 +169,7 @@ if [ -z "$ETAPA" ] ||
 	[ -z "$fecha_alt_dos_meses_ant_ini" ] || 
 	[ -z "$fechaIniMes" ] || 
 	[ -z "$fecha_inac_1" ] ; then
-  echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: $TIME [ERROR] $rc unos de los parametros calculados esta vacio o es nulo" >> $VAL_LOG_EJECUCION
+  echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: $TIME [ERROR] $rc unos de los parametros calculados esta vacio o es nulo" 2>&1 &>> $VAL_LOG_EJECUCION
   error=1
   exit $error
 fi
@@ -188,10 +188,11 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fecha_inac_1 => " $fecha_inac_1
 ###########################################################################################################################################################
 if [ "$ETAPA" = "1" ]; then
 ###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1: Extraer datos desde hive " >> $VAL_LOG_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1: Extraer datos desde hive " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 
 $VAL_RUTA_SPARK \
+--conf spark.ui.enabled=false \
 --name $ENTIDAD \
 --master $VAL_ETP01_MASTER \
 --driver-memory $VAL_ETP01_DRIVER_MEMORY \
@@ -224,18 +225,18 @@ $RUTA_PYTHON/otc_t_360_pivot_parque_1.py \
 --fec_inac_1=$fecha_inac_1 \
 --fechaeje1=$fechaeje1 \
 --vAbrev=$ABREVIATURA_TEMP \
---vIFechaProceso=$VAL_FECHA_PROCESO >> $VAL_LOG_EJECUCION
+--vIFechaProceso=$VAL_FECHA_PROCESO 2>&1 &>> $VAL_LOG_EJECUCION
 
 	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
 	VAL_ERRORES=`egrep 'NODATA:|serious problem|An error occurred while calling o102.partitions|Caused by:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
 	if [ $VAL_ERRORES -ne 0 ];then
-		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Problemas en la carga de informacion en las tablas del proceso" >> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Problemas en la carga de informacion en las tablas del proceso" 2>&1 &>> $VAL_LOG_EJECUCION
 		exit 1    		
 	else		
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1 --> La carga de informacion fue extraida de manera EXITOSA" >> $VAL_LOG_EJECUCION	
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1 --> La carga de informacion fue extraida de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
 		ETAPA=2
 		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA 1 con EXITO " >> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA 1 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
 		`mysql -N  <<<"update params set valor='2' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 	fi
 fi
@@ -243,10 +244,11 @@ fi
 
 if [ "$ETAPA" = "2" ]; then
 ###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2: Ejecucion del segundo proceso spark " >> $VAL_LOG_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2: Ejecucion del segundo proceso spark " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 
 $VAL_RUTA_SPARK \
+--conf spark.ui.enabled=false \
 --name $ENTIDAD \
 --master $VAL_ETP02_MASTER \
 --driver-memory $VAL_ETP02_DRIVER_MEMORY \
@@ -264,27 +266,28 @@ $RUTA_PYTHON/otc_t_360_pivot_parque_2.py \
 -fec_alt_dos_meses_ant_ini $fecha_alt_dos_meses_ant_ini \
 -fec_ini_mes $fechaIniMes \
 -fec_inac_1 $fecha_inac_1 \
--fec_tmstmp '$fecha_tmstmp' >> $VAL_LOG_EJECUCION
+-fec_tmstmp '$fecha_tmstmp' 2>&1 &>> $VAL_LOG_EJECUCION
 
 	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
 	VAL_ERRORES=`egrep 'NODATA:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
 	if [ $VAL_ERRORES -ne 0 ];then
-		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: ETAPA 2 --> Problemas en la carga de informacion a ORACLE " >> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: ETAPA 2 --> Problemas en la carga de informacion a ORACLE " 2>&1 &>> $VAL_LOG_EJECUCION
 		exit 1																																 
 	else
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2 --> La carga de informacion a ORACLE fue ejecutada de manera EXITOSA" >> $VAL_LOG_EJECUCION	
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2 --> La carga de informacion a ORACLE fue ejecutada de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
 		ETAPA=3
 		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params_des
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: $SHELL --> Se procesa la ETAPA 2 con EXITO " >> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: $SHELL --> Se procesa la ETAPA 2 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
 		`mysql -N  <<<"update params_des set valor='3' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 	fi
 fi
 
 if [ "$ETAPA" = "3" ]; then
 ###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Ejecucion del tercer proceso spark " >> $VAL_LOG_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Ejecucion del tercer proceso spark " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 $VAL_RUTA_SPARK \
+--conf spark.ui.enabled=false \
 --name $ENTIDAD \
 --master $VAL_ETP02_MASTER \
 --driver-memory $VAL_ETP02_DRIVER_MEMORY \
@@ -297,30 +300,30 @@ $RUTA_PYTHON/otc_t_360_pivot_parque_3.py \
 --vTRiMobPN=$vTRiMobPN \
 --fec_alt_ini=$fecha_alt_ini \
 --vAbrev=$ABREVIATURA_TEMP \
---vIFechaProceso=$VAL_FECHA_PROCESO >> $VAL_LOG_EJECUCION
+--vIFechaProceso=$VAL_FECHA_PROCESO 2>&1 &>> $VAL_LOG_EJECUCION
 
 	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
 	VAL_ERRORES=`egrep 'NODATA:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
 	if [ $VAL_ERRORES -ne 0 ];then
-		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: ETAPA 3 --> Problemas en la carga de informacion a HIVE " >> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: ETAPA 3 --> Problemas en la carga de informacion a HIVE " 2>&1 &>> $VAL_LOG_EJECUCION
 		exit 1																																 
 	else
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3 --> La carga de informacion a ORACLE fue ejecutada de manera EXITOSA" >> $VAL_LOG_EJECUCION	
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3 --> La carga de informacion a ORACLE fue ejecutada de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
 		ETAPA=4
 		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params_des
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: $SHELL --> Se procesa la ETAPA 3 con EXITO " >> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: $SHELL --> Se procesa la ETAPA 3 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
 		`mysql -N  <<<"update params_des set valor='4' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 	fi
 fi
 
 if [ "$ETAPA" = "4" ]; then
 ###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Finalizar el proceso " >> $VAL_LOG_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Finalizar el proceso " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 						   
 	#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params_des
-	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El Proceso termina de manera exitosa " >> $VAL_LOG_EJECUCION
+	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El Proceso termina de manera exitosa " 2>&1 &>> $VAL_LOG_EJECUCION
 	`mysql -N  <<<"update params_des set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 
-	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_PIVOT_PARQUE finaliza correctamente " >> $VAL_LOG_EJECUCION
+	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_PIVOT_PARQUE finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
 fi
