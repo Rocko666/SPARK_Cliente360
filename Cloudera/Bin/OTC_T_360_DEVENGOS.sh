@@ -119,6 +119,8 @@ echo "Tabla Destino: $HIVEDB.$tablaDestino" 2>&1 &>> $LOGS/$EJECUCION_LOG.log
 
 $VAL_RUTA_SPARK --master $VAL_MASTER \
 --conf spark.ui.enabled=false \
+--conf spark.shuffle.service.enabled=false \
+--conf spark.dynamicAllocation.enabled=false \
 --executor-memory $VAL_EXECUTOR_MEMORY \
 --num-executors $VAL_NUM_EXECUTORS \
 --executor-cores $VAL_NUM_EXECUTORS_CORES \

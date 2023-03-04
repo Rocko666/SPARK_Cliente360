@@ -80,6 +80,8 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Inicia ejecucion del proceso $ENTIDAD" 2
 #REALIZA EL LLAMADO EL ARCHIVO SPARK QUE REALIZA LA EXTRACCION DE LA INFORMACION DE ORACLE A HIVE
 $VAL_RUTA_SPARK \
 --conf spark.ui.enabled=false \
+--conf spark.shuffle.service.enabled=false \
+--conf spark.dynamicAllocation.enabled=false \
 --master $VAL_MASTER \
 --name $ENTIDAD \
 --driver-memory $VAL_DRIVER_MEMORY \

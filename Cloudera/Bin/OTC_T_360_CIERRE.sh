@@ -1,32 +1,24 @@
 #!/bin/bash
-##########################################################################
-#   Script de carga de Generica para entidades de URM con reejecución    #
-# Creado 13-Jun-2018 (LC) Version 1.0                                    #
-# Las tildes hansido omitidas intencionalmente en el script              #
-#------------------------------------------------------------------------#
-
-
 #########################################################################################################
-# NOMBRE: OTC_T_360_GENERAL.sh  		      												                        
+# NOMBRE: OTC_T_360_CIERRE.sh  		      												                        
 # DESCRIPCION:																							                                            
 # Script de carga de Generica para entidades de URM con reejecución
 # Las tildes hansido omitidas intencionalmente en el script			                                                 											             
 # AUTOR: LC             														                          
 # FECHA CREACION: 2018-06-13																			                                      
 # PARAMETROS DEL SHELL                            													                            
-# $1: Parametro de Fecha Inicial del proceso a ejecutar  								        		                    						                	
+# $1: Parametro de Fecha Inicial del proceso a ejecutar  		yyyyMMdd						        		                    						                	
 #########################################################################################################
 # MODIFICACIONES																						                                            
 # FECHA  		AUTOR     		                DESCRIPCION MOTIVO														                                
-# 2023-02-14	Diego Cuasapaz (Softconsulting) Migracion cloudera                                                                                                    
+# 2023-02-26	Cristian Ortiz (Softconsulting) Migracion cloudera                                                                                                    
 #########################################################################################################
-
 
 ###################################################################################################################
 # PARAMETROS INICIALES Y DE ENTRADA
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validar parametros iniciales y de entrada"
 ###################################################################################################################
-ENTIDAD=OTC_T_360_GENERAL
+ENTIDAD=OTC_T_360_CIERRE
 
 if [ -z "$ENTIDAD" ] ; then
 	echo " ERROR: Uno de los parametros iniciales/entrada estan vacios"

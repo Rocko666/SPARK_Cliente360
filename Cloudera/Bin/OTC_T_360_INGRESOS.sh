@@ -120,6 +120,8 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Reingenieria del proceso OTC_T_360_INGRE
 
 $VAL_RUTA_SPARK \
 --conf spark.ui.enabled=false \
+--conf spark.shuffle.service.enabled=false \
+--conf spark.dynamicAllocation.enabled=false \
 --name $ENTIDAD \
 --master $VAL_MASTER \
 --driver-memory $VAL_DRIVER_MEMORY \

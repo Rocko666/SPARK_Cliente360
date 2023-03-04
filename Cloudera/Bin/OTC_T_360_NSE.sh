@@ -91,6 +91,8 @@ VAL_LOG_EJECUCION_1=$RUTA'/Log/OTC_T_MODELO_NSE_'$EJECUCION_LOG.log
 #### Agrupar tabla
 $VAL_RUTA_SPARK \
 --conf spark.ui.enabled=false \
+--conf spark.shuffle.service.enabled=false \
+--conf spark.dynamicAllocation.enabled=false \
 --master $VAL_MASTER \
 --executor-memory $VAL_EXECUTOR_MEMORY \
 --num-executors $VAL_NUM_EXECUTORS \
