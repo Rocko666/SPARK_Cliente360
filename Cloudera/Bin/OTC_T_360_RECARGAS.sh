@@ -11,7 +11,6 @@
 # 2021-04-26    Katherine Del Valle (KV 303551)       Para obtener el PARQUE_RECARGADOR_DIARIO_UNICO y PARQUE_RECARGADOR_30_DIAS
 ###########################################################################
 
-
 ##############
 # VARIABLES #
 ##############
@@ -129,7 +128,7 @@ fecha_menos_4meses=`date '+%Y%m%d' -d "$FECHAEJE-3 month"`
 let fecha_proc_menos_4meses=$fecha_menos_4meses
 eval year_menos_4meses=`echo $fecha_proc_menos_4meses | cut -c1-4`
 eval month_menos_4meses=`echo $fecha_proc_menos_4meses | cut -c5-6`
-fechaIni_menos_4meses=$year_menos_2meses$month_menos_4meses$day   
+fechaIni_menos_4meses=$year_menos_4meses$month_menos_4meses$day   
 #------------------------------------------------------
 
 
@@ -195,9 +194,6 @@ $RUTA_PYTHON/otc_t_360_recargas.py \
 		`mysql -N  <<<"update params set valor='2' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 	fi
 fi
-
-
-
 
 if [ "$ETAPA" = "2" ]; then
 ###########################################################################################################################################################

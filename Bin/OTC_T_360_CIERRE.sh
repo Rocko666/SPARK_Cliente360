@@ -6,16 +6,6 @@
 #------------------------------------------------------------------------#
 
 
-version=1.2.1000.2.6.5.0-292
-HADOOP_CLASSPATH=$(hcat -classpath) export HADOOP_CLASSPATH
-
-HIVE_HOME=/usr/hdp/current/hive-client
-HCAT_HOME=/usr/hdp/current/hive-webhcat
-SQOOP_HOME=/usr/hdp/current/sqoop-client
-
-export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HIVE_HOME}/lib/hive-metastore-${version}.jar,$HIVE_HOME/lib/libthrift-0.9.3.jar,$HIVE_HOME/lib/hive-exec-${version}.jar,$HIVE_HOME/lib/libfb303-0.9.3.jar,$HIVE_HOME/lib/jdo-api-3.0.1.jar,$SQOOP_HOME/lib/slf4j-api-1.7.7.jar,$HIVE_HOME/lib/hive-cli-${version}.jar
-
-
 ##########################################################################
 #------------------------------------------------------
 # VARIABLES CONFIGURABLES POR PROCESO (MODIFICAR)
@@ -32,33 +22,6 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 	
   COLA_EJECUCION=reportes
 		
-#*****************************************************************************************************#
-#                                            Â¡Â¡ ATENCION !!                                           #
-#                                                                                                     #
-# Configurar las siguientes  consultas de acuerdo al orden de la tabla params de la base de datos URM #
-# en el servidor 10.112.152.183                                                                       #
-#*****************************************************************************************************#
-
-	isnum() { awk -v a="$1" 'BEGIN {print (a == a + 0)}'; }
-	
-	function isParamListNum() #parametro es el grupo de valores separados por ;
-    {
-        local value
-		local isnumPar
-        for value in `echo "$1" | sed -e 's/;/\n/g'`
-        do
-		    isnumPar=`isnum "$value"`
-            if [  "$isnumPar" ==  "0" ]; then
-                ((rc=999))
-                echo " `date +%a" "%d"/"%m"/"%Y" "%X` [ERROR] $rc Parametro $value $2 no son numericos"
-                exit $rc
-			fi
-        done	     
-	
-	}  
-
-	RUTA="" # RUTA es la carpeta del File System (URM-3.5.1) donde se va a trabajar 
-
 	
 	#Verificar que la configuraciÃ³n de la entidad exista
 	if [ "$AMBIENTE" = "1" ]; then
@@ -74,7 +37,7 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
     fi
 	
 	# Verificacion de fecha de ejecucion
-    if [ -z "$FECHAEJE" ]; then #valida que este en blanco el parametro
+    if [ -z "{FECHAEJE}" ]; then #valida que este en blanco el parametro
         ((rc=2))
         echo " $TIME [ERROR] $rc Falta el parametro de fecha de ejecucion del programa"
         exit $rc
@@ -170,7 +133,7 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 # VARIABLES DE OPERACION Y AUTOGENERADAS
 #------------------------------------------------------
    
-    EJECUCION=$ENTIDAD$FECHAEJE
+    EJECUCION=$ENTIDAD{FECHAEJE}
     #DIA: Obtiene la fecha del sistema
     DIA=`date '+%Y%m%d'` 
     #HORA: Obtiene hora del sistema
@@ -191,26 +154,26 @@ export LIB_JARS=$HCAT_HOME/share/hcatalog/hive-hcatalog-core-${version}.jar,${HI
 #------------------------------------------------------
 # DEFINICION DE FECHAS
 #------------------------------------------------------
-eval year=`echo $FECHAEJE | cut -c1-4`
-eval month=`echo $FECHAEJE | cut -c5-6`
+eval year=`echo {FECHAEJE} | cut -c1-4`
+eval month=`echo {FECHAEJE} | cut -c5-6`
 day="01"
 fechaMes=$year$month
 
 #VARIABLES DE RECARGAS
 fechaIniMes=$year$month$day                            #Formato YYYYMMDD  
-fecha_eje2=`date '+%Y%m%d' -d "$FECHAEJE"`
+fecha_eje2=`date '+%Y%m%d' -d "{FECHAEJE}"`
 
 #VARIABLES DE PIVOTE PARQUE
 fecha_proc=`date -d "${FECHAEJE} +1 day"  +"%Y%m%d"`
-fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
-let fechamas1=$fechamas1_1*1
-fechamenos5_1=`date '+%Y%m%d' -d "$FECHAEJE-10 day"`
-let fechamenos5=$fechamenos5_1*1
-fechaeje1=`date '+%Y-%m-%d' -d "$FECHAEJE"`
-fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+fechamas1_1=`date '+%Y%m%d' -d "{FECHAEJE}+1 day"`
+let fechamas1={fechamas1}_1*1
+fechamenos5_1=`date '+%Y%m%d' -d "{FECHAEJE}-10 day"`
+let fechamenos5={fechamenos5}_1*1
+fechaeje1=`date '+%Y-%m-%d' -d "{FECHAEJE}"`
+fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "{fechaIniMes}"`
 fecha_inac_1=`date '+%Y%m%d' -d "$fecha_inico_mes_1_1-1 day"`
 
-fecha_alt_ini=`date '+%Y-%m-%d' -d "$fecha_proc"`
+fecha_alt_ini=`date '+%Y-%m-%d' -d "{fecha_proc}"`
 ultimo_dia_mes_ant=`date -d "${fechaIniMes} -1 day"  +"%Y%m%d"`
 fecha_alt_fin=`date '+%Y-%m-%d' -d "$ultimo_dia_mes_ant"`
 
@@ -218,78 +181,78 @@ eval year_prev=`echo $ultimo_dia_mes_ant | cut -c1-4`
 eval month_prev=`echo $ultimo_dia_mes_ant | cut -c5-6`
 fechaIniMes_prev=$year_prev$month_prev$day                            #Formato YYYYMMDD
 
-fecha_alt_dos_meses_ant_fin=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+fecha_alt_dos_meses_ant_fin=`date '+%Y-%m-%d' -d "{fechaIniMes}"`
 #primer_dia_dos_meses_ant=`date -d "${fecha_alt_dos_meses_ant_fin} -1 month"  +"%Y-%m-%d"`
 path_actualizacion=$RUTA"/Bin/OTC_F_RESTA_1_MES.sh"
-primer_dia_dos_meses_ant=`sh $path_actualizacion $fecha_alt_dos_meses_ant_fin`       #Formato YYYYMMDD
+primer_dia_dos_meses_ant=`sh $path_actualizacion {fecha_alt_dos_meses_ant_fin}`       #Formato YYYYMMDD
 
 ultimo_dia_tres_meses_ant=`date -d "${primer_dia_dos_meses_ant} -1 day"  +"%Y-%m-%d"`
 
-fecha_alt_dos_meses_ant_fin=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+fecha_alt_dos_meses_ant_fin=`date '+%Y-%m-%d' -d "{fechaIniMes}"`
 fecha_alt_dos_meses_ant_ini=`date '+%Y-%m-%d' -d "$ultimo_dia_tres_meses_ant"`
 
 #VARIABLES MOVIMIENTOS DE PARQUE
-fecha_proceso=`date -d "$FECHAEJE" "+%Y-%m-%d"`
-f_check=`date -d "$FECHAEJE" "+%d"`
-fecha_movimientos=`date '+%Y-%m-%d' -d "$fecha_proceso+1 day"`
-fecha_movimientos_cp=`date '+%Y%m%d' -d "$fecha_proceso+1 day"`
+fecha_proceso=`date -d "{FECHAEJE}" "+%Y-%m-%d"`
+f_check=`date -d "{FECHAEJE}" "+%d"`
+fecha_movimientos=`date '+%Y-%m-%d' -d "{fecha_proceso}+1 day"`
+fecha_movimientos_cp=`date '+%Y%m%d' -d "{fecha_proceso}+1 day"`
 #p_date=$(hive -e "select max(fecha_proceso) from $ESQUEMA_TEMP.$TABLA_PIVOTANTE;")
 #p_date=`date -d "$p_date" "+%Y-%m-%d"`
 
         if [ $f_check == "01" ];
         then
-       f_inicio=`date -d "$FECHAEJE -1 days" "+%Y-%m-01"`
+       f_inicio=`date -d "{FECHAEJE} -1 days" "+%Y-%m-01"`
        else
-        f_inicio=`date -d "$FECHAEJE" "+%Y-%m-01"`
-        echo $f_inicio
+        f_inicio=`date -d "{FECHAEJE}" "+%Y-%m-01"`
+        echo {f_inicio}
        fi
-	echo $f_inicio" Fecha Inicio"
-	echo $fecha_proceso" Fecha Ejecucion"
+	echo {f_inicio}" Fecha Inicio"
+	echo {fecha_proceso}" Fecha Ejecucion"
 	echo $p_date" Fecha proceso Pivot360"
 
 #VARIABLES CAMPOS ADICIONALES
-fechamas1_2=`date '+%Y-%m-%d' -d "$fechamas1"`
+fechamas1_2=`date '+%Y-%m-%d' -d "{fechamas1}"`
 
   
 #VARIABLES GENERAL
-fecha_eje1=`date '+%Y-%m-%d' -d "$FECHAEJE"`
-  let fecha_hoy=$fecha_eje1
-#fecha_eje2=`date '+%Y%m%d' -d "$FECHAEJE"`
-  let fecha_proc1=$fecha_eje2
- # fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+fecha_eje1=`date '+%Y-%m-%d' -d "{FECHAEJE}"`
+  let fecha_hoy={fecha_eje1}
+#fecha_eje2=`date '+%Y%m%d' -d "{FECHAEJE}"`
+  let fecha_proc1={fecha_eje2}
+ # fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "{fechaIniMes}"`
  let fechainiciomes=$fecha_inico_mes_1_1
-  fecha_inico_mes_1_2=`date '+%Y%m%d' -d "$fechaIniMes"`
+  fecha_inico_mes_1_2=`date '+%Y%m%d' -d "{fechaIniMes}"`
   let fechainiciomes=$fecha_inico_mes_1_2
-  fecha_eje3=`date '+%Y%m%d' -d "$FECHAEJE-1 day"`
+  fecha_eje3=`date '+%Y%m%d' -d "{FECHAEJE}-1 day"`
   let fecha_proc_menos1=$fecha_eje3
- # fechamas1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
-  let fecha_mas_uno=$fechamas1
+ # fechamas1=`date '+%Y%m%d' -d "{FECHAEJE}+1 day"`
+  let fecha_mas_uno={fechamas1}
   
-  #fechaInimenos1mes_1=`date '+%Y%m%d' -d "$fechaIniMes-1 month"`
-  fechaInimenos1mes_1=`sh $path_actualizacion $fechaIniMes`       #Formato YYYYMMDD
+  #fechaInimenos1mes_1=`date '+%Y%m%d' -d "{fechaIniMes}-1 month"`
+  fechaInimenos1mes_1=`sh $path_actualizacion {fechaIniMes}`       #Formato YYYYMMDD
   
   
-  let fechaInimenos1mes=$fechaInimenos1mes_1*1
-  fechaInimenos2mes_1=`date '+%Y%m%d' -d "$fechaIniMes-2 month"`
-  let fechaInimenos2mes=$fechaInimenos2mes_1*1
-  fechaInimenos3mes_1=`date '+%Y%m%d' -d "$fechaIniMes-3 month"`
-  let fechaInimenos3mes=$fechaInimenos3mes_1*1
+  let fechaInimenos1mes={fechaInimenos1mes}_1*1
+  fechaInimenos2mes_1=`date '+%Y%m%d' -d "{fechaIniMes}-2 month"`
+  let fechaInimenos2mes={fechaInimenos2mes}_1*1
+  fechaInimenos3mes_1=`date '+%Y%m%d' -d "{fechaIniMes}-3 month"`
+  let fechaInimenos3mes={fechaInimenos3mes}_1*1
     
-  let fechamas11=$fechamas1_1*1
-  #fechamenos1mes_1=`date '+%Y%m%d' -d "$FECHAEJE-1 month"`
+  let fechamas11={fechamas1}_1*1
+  #fechamenos1mes_1=`date '+%Y%m%d' -d "{FECHAEJE}-1 month"`
 
-  fechamenos1mes_1=`sh $path_actualizacion $FECHAEJE`       #Formato YYYYMMDD
+  fechamenos1mes_1=`sh $path_actualizacion {FECHAEJE}`       #Formato YYYYMMDD
 
 
-  let fechamenos1mes=$fechamenos1mes_1*1
-  #fechamenos2mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-1 month"`
+  let fechamenos1mes={fechamenos1mes}_1*1
+  #fechamenos2mes_1=`date '+%Y%m%d' -d "{fechamenos1mes}-1 month"`
 
-  fechamenos2mes_1=`sh $path_actualizacion $fechamenos1mes`       #Formato YYYYMMDD
+  fechamenos2mes_1=`sh $path_actualizacion {fechamenos1mes}`       #Formato YYYYMMDD
   
 
-  let fechamenos2mes=$fechamenos2mes_1*1
-  fechamenos6mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-6 month"`
-  let fechamenos6mes=$fechamenos6mes_1*1  
+  let fechamenos2mes={fechamenos2mes}_1*1
+  fechamenos6mes_1=`date '+%Y%m%d' -d "{fechamenos1mes}-6 month"`
+  let fechamenos6mes={fechamenos6mes}_1*1  
  
   
 #------------------------------------------------------
@@ -318,7 +281,7 @@ fecha_eje1=`date '+%Y-%m-%d' -d "$FECHAEJE"`
         fi
     
         # CREACION DEL ARCHIVO DE LOG 
-        echo "# Entidad: "$ENTIDAD" Fecha: "$FECHAEJE $DIA"-"$HORA > $LOGS/$EJECUCION_LOG.log
+        echo "# Entidad: "$ENTIDAD" Fecha: "{FECHAEJE} $DIA"-"$HORA > $LOGS/$EJECUCION_LOG.log
         if [ $? -eq 0 ];	then
             echo "# Fecha de inicio: "$DIA" "$HORA >> $LOGS/$EJECUCION_LOG.log
             echo "---------------------------------------------------------------------" >> $LOGS/$EJECUCION_LOG.log
@@ -331,7 +294,7 @@ fecha_eje1=`date '+%Y-%m-%d' -d "$FECHAEJE"`
         
         # CREACION DE ARCHIVO DE ERROR 
         
-        echo "# Entidad: "$ENTIDAD" Fecha: "$FECHAEJE $DIA"-"$HORA > $LOGS/$EJECUCION_LOG.log
+        echo "# Entidad: "$ENTIDAD" Fecha: "{FECHAEJE} $DIA"-"$HORA > $LOGS/$EJECUCION_LOG.log
         if [ $? -eq 0 ];	then
             echo "# Fecha de inicio: "$DIA" "$HORA >> $LOGS/$EJECUCION_LOG.log
             echo "---------------------------------------------------------------------" >> $LOGS/$EJECUCION_LOG.log
@@ -359,10 +322,9 @@ fecha_eje1=`date '+%Y-%m-%d' -d "$FECHAEJE"`
 		set tez.queue.name=$COLA_EJECUCION;
 
 --N 01
-		
-DROP TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_CIERRE;
+# DROP TABLE {vTC001};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_otc_t_recargas_dia_periodo_cierre AS
+# CREATE TABLE {vTC001} AS
 	SELECT
 	numero_telefono
 	, CASE
@@ -380,12 +342,12 @@ CREATE TABLE $ESQUEMA_TEMP.tmp_360_otc_t_recargas_dia_periodo_cierre AS
 FROM
 	{vTDetRec} a
 INNER JOIN {vTParOriRec} ori
-	-- usar el catÃƒÂ¡logo de recargas vÃƒÂ¡lidas
+	-- usar el catalogo de recargas validas
 	ON
 	ori.ORIGENRECARGAID = a.origen_recarga_aa
 WHERE
-	(fecha_proceso >= $fechaIniMes
-		AND fecha_proceso <= $fecha_eje2)
+	(fecha_proceso >= {fechaIniMes}
+		AND fecha_proceso <= {fecha_eje2})
 	AND operadora IN ('MOVISTAR')
 	AND TIPO_TRANSACCION = 'ACTIVA'
 	--transacciones validas
@@ -407,9 +369,9 @@ GROUP BY
 --N 02
 
 --bonos y combos
-	DROP TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE;
+# DROP TABLE {vTC002};
 
-CREATE TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE AS
+# CREATE TABLE {vTC002} AS
 	SELECT
 	fecha_proceso
 	, r.numero_telefono AS num_telefono
@@ -422,8 +384,8 @@ CREATE TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE AS
 	, SUM(r.valor_recarga_base)/ 1.12 coste
 	--Para quitar el valor del impuesto
 	, count(*) cantidad
-	--combos o bonos segÃƒÂºn el tipo de la tabla {vTCBPDV} , hacer el case correspondiente
-	, $fecha_eje2 AS fecha_proc
+	--combos o bonos segun el tipo de la tabla {vTCBPDV} , hacer el case correspondiente
+	, {fecha_eje2} AS fecha_proc
 	------- parametro del ultimo dia del rango
 FROM
 	{vTDetRec} r
@@ -439,9 +401,9 @@ INNER JOIN (
 			AND r.codigo_paquete IS NOT NULL))
 	-- solo los que se venden en PDV
 WHERE
-	fecha_proceso >= $fechaIniMes
+	fecha_proceso >= {fechaIniMes}
 	--
-	and fecha_proceso<=$fecha_eje2  --(di  a n)
+	and fecha_proceso<={fecha_eje2}  --(di  a n)
 	AND r.rec_pkt = 'PKT'
 	-- solo los que se venden en PDV
 	AND plataforma IN ('PM')
@@ -457,76 +419,76 @@ WHERE
 	, b.tipo;
 
 --N 03
-DROP TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_CIERRE;
+# DROP TABLE {vTC003};
 
-CREATE TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_CIERRE AS
+# CREATE TABLE {vTC003} AS
 	SELECT
 	b.numero_telefono
 FROM
-	$ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_CIERRE b
+	{vTC001} b
 UNION ALL 
 	SELECT
 	c.num_telefono
 FROM
-	$ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE c;
+	{vTC002} c;
 
 --N 04
-DROP TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_UNICOS_CIERRE;
+# DROP TABLE {vTC004};
 
-CREATE TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_UNICOS_CIERRE AS
-	SELECT
+# CREATE TABLE {vTC004} AS
+SELECT
 	numero_telefono
 	, 
 	count(1) AS cant_t
 FROM
-	$ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_CIERRE
+	{vTC003}
 GROUP BY
 	numero_telefono;
 
 --N 05
 --mes 0
-	DROP TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_0_CIERRE;
+	# DROP TABLE {vTC005};
 
-CREATE TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_0_CIERRE AS
-	SELECT
+# CREATE TABLE {vTC005} AS
+SELECT
 	numero_telefono
 	, sum(valor_recargas) costo_recargas_acum
 	, sum(cantidad_recargas) cant_recargas_acum
 FROM
-	$ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_CIERRE
+	{vTC001}
 WHERE
-	fecha_proceso >= $fechaIniMes
-	AND fecha_proceso <= $fecha_eje2
+	fecha_proceso >= {fechaIniMes}
+	AND fecha_proceso <= {fecha_eje2}
 GROUP BY
 	numero_telefono;
 
 --N 06
 --dia ejecucion
-	DROP TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_1_CIERRE;
+# DROP TABLE {vTC006};
 
-CREATE TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_1_CIERRE AS
-	SELECT
+# CREATE TABLE {vTC006} AS
+SELECT
 	numero_telefono
 	, sum(valor_recargas) costo_recargas_dia
 	, sum(cantidad_recargas) cant_recargas_dia
 FROM
-	$ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_CIERRE
+	{vTC001}
 WHERE
-	fecha_proceso = $fecha_eje2
+	fecha_proceso = {fecha_eje2}
 GROUP BY
 	numero_telefono;
 
 --N 07
 --BONOS ACUMULADOS DEL MES
-	DROP TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_BONO_CIERRE;
+# DROP TABLE {vTC007};
 
-CREATE TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_BONO_CIERRE AS
-	SELECT
+# CREATE TABLE {vTC007} AS
+SELECT
 	num_telefono
 	, sum(coste) coste_paym_periodo
 	, sum(cantidad) cant_paym_periodo
 FROM
-	$ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE
+	{vTC002}
 WHERE
 	combo_bono = 'BONO'
 GROUP BY
@@ -534,32 +496,32 @@ GROUP BY
 
 --N 08
 --BONOS DEL DIA
-	DROP TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_BONO_CIERRE;
+# DROP TABLE {vTC008};
 
-CREATE TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_BONO_CIERRE AS
-	SELECT
+# CREATE TABLE {vTC008} AS
+SELECT
 	num_telefono
 	, sum(coste) coste_paym_periodo
 	, sum(cantidad) cant_paym_periodo
 FROM
-	$ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE
+	{vTC002}
 WHERE
 	combo_bono = 'BONO'
-	AND fecha_proceso = $fecha_eje2
+	AND fecha_proceso = {fecha_eje2}
 GROUP BY
 	num_telefono;
 
 --N 09
 --COMBOS ACUMULADOS DEL MES
-	DROP TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_COMBO_CIERRE;
+# DROP TABLE {vTC009};
 
-CREATE TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_COMBO_CIERRE AS
-	SELECT
+# CREATE TABLE {vTC009} AS
+SELECT
 	num_telefono
 	, sum(coste) coste_paym_periodo
 	, sum(cantidad) cant_paym_periodo
 FROM
-	$ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE
+	{vTC002}
 WHERE
 	combo_bono = 'COMBO'
 GROUP BY
@@ -567,27 +529,27 @@ GROUP BY
 
 --N 10
 --COMBOS DEL DIA
-	DROP TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_COMBO_CIERRE;
+# DROP TABLE {vTC010};
 
-CREATE TABLE $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_COMBO_CIERRE AS
-	SELECT
+# CREATE TABLE {vTC010} AS
+SELECT
 	num_telefono
 	, sum(coste) coste_paym_periodo
 	, sum(cantidad) cant_paym_periodo
 FROM
-	$ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE
+	{vTC002}
 WHERE
 	combo_bono = 'COMBO'
-	AND fecha_proceso = $fecha_eje2
+	AND fecha_proceso = {fecha_eje2}
 GROUP BY
 	num_telefono;
 
 --N 11
 --CONSOLIDACION DE TODOS LOS VALORES OBTENIDOS
-	DROP TABLE $ESQUEMA_TEMP.TMP_OTC_T_360_RECARGAS_CIERRE;
+# DROP TABLE {vTC011};
 
-CREATE TABLE $ESQUEMA_TEMP.TMP_OTC_T_360_RECARGAS_CIERRE AS
-	SELECT
+# CREATE TABLE {vTC011} AS
+SELECT
 	a.numero_telefono
 	, COALESCE(b.costo_recargas_acum, 0) ingreso_recargas_m0
 	, COALESCE(b.cant_recargas_acum, 0) cantidad_recargas_m0
@@ -602,23 +564,23 @@ CREATE TABLE $ESQUEMA_TEMP.TMP_OTC_T_360_RECARGAS_CIERRE AS
 	, COALESCE(h.coste_paym_periodo, 0) ingreso_combos_dia
 	, COALESCE(h.cant_paym_periodo, 0) cantidad_combos_dia
 FROM
-	$ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_UNICOS_CIERRE a
-LEFT JOIN $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_0_CIERRE b
+	{vTC004} a
+LEFT JOIN {vTC005} b
 	ON
 	a.numero_telefono = b.numero_telefono
-LEFT JOIN $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_1_CIERRE c 
+LEFT JOIN {vTC006} c 
 	ON
 	a.numero_telefono = c.numero_telefono
-LEFT JOIN $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_BONO_CIERRE d
+LEFT JOIN {vTC007} d
 	ON
 	a.numero_telefono = d.num_telefono
-LEFT JOIN $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_COMBO_CIERRE f
+LEFT JOIN {vTC009} f
 	ON
 	a.numero_telefono = f.num_telefono
-LEFT JOIN $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_BONO_CIERRE g
+LEFT JOIN {vTC008} g
 	ON
 	a.numero_telefono = g.num_telefono
-LEFT JOIN $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_COMBO_CIERRE h
+LEFT JOIN {vTC010} h
 	ON
 	a.numero_telefono = h.num_telefono;
 	
@@ -658,51 +620,51 @@ LEFT JOIN $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_COMBO_CIERRE h
 
 --N 12
 --SE OBTIENEN LAS ALTAS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO	
-DROP TABLE $ESQUEMA_TEMP.tmp_360_alta_cierre;
+# DROP TABLE {vTC012};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_alta_cierre AS		
-		SELECT
+# CREATE TABLE {vTC012} AS		
+SELECT
 	a.telefono
 	, a.numero_abonado
 	, a.fecha_alta
 FROM
 	{vTABI} a
 WHERE
-	a.p_fecha_proceso = $fecha_proc
+	a.p_fecha_proceso = {fecha_proc}
 	AND a.marca = 'TELEFONICA';
 
 --N 13
 --SE OBTIENEN LAS TRANSFERENCIAS POS A PRE DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO
-		DROP TABLE $ESQUEMA_TEMP.tmp_360_transfer_in_pp_cierre;
+# DROP TABLE {vTC013};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_transfer_in_pp_cierre AS		
-		SELECT
+# CREATE TABLE {vTC013} AS		
+SELECT
 	a.telefono
 	, a.fecha_transferencia
 FROM
 	{vTTOBI} a
 WHERE
-	a.p_fecha_proceso = $fecha_proc;
+	a.p_fecha_proceso = {fecha_proc};
 
 --N 14
 --SE OBTIENEN LAS TRANSFERENCIAS PRE A POS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO
-		DROP TABLE $ESQUEMA_TEMP.tmp_360_transfer_in_pos_cierre;
+# DROP TABLE {vTC014};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_transfer_in_pos_cierre AS		
-		SELECT
+# CREATE TABLE {vTC014} AS		
+SELECT
 	a.telefono
 	, a.fecha_transferencia
 FROM
 	{vTTIBI} a
 WHERE
-	a.p_fecha_proceso = $fecha_proc;
+	a.p_fecha_proceso = {fecha_proc};
 
 --N 15
 --SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO UPSELL
-		DROP TABLE $ESQUEMA_TEMP.tmp_360_upsell_cierre;
+# DROP TABLE {vTC015};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_upsell_cierre AS
-		SELECT
+# CREATE TABLE {vTC015} AS
+SELECT
 	a.telefono
 	, a.fecha_cambio_plan
 FROM
@@ -710,14 +672,14 @@ FROM
 WHERE
 	UPPER(A.tipo_movimiento)= 'UPSELL'
 	AND 
-		a.p_fecha_proceso = $fecha_proc;
+		a.p_fecha_proceso = {fecha_proc};
 
 --N 16
 --SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO DOWNSELL
-		DROP TABLE $ESQUEMA_TEMP.tmp_360_downsell_cierre;
+# DROP TABLE {vTC016};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_downsell_cierre AS
-		SELECT
+# CREATE TABLE {vTC016} AS
+SELECT
 	a.telefono
 	, a.fecha_cambio_plan
 FROM
@@ -725,14 +687,14 @@ FROM
 WHERE
 	UPPER(A.tipo_movimiento)= 'DOWNSELL'
 	AND
-		a.p_fecha_proceso = $fecha_proc;
+		a.p_fecha_proceso = {fecha_proc};
 
 --N 17
 --SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO CROSSELL
-		DROP TABLE $ESQUEMA_TEMP.tmp_360_misma_tarifa_cierre;
+# DROP TABLE {vTC017};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_misma_tarifa_cierre AS
-		SELECT
+# CREATE TABLE {vTC017} AS
+SELECT
 	a.telefono
 	, a.fecha_cambio_plan
 FROM
@@ -740,21 +702,21 @@ FROM
 WHERE
 	UPPER(A.tipo_movimiento)= 'MISMA_TARIFA'
 	AND 
-		a.p_fecha_proceso = $fecha_proc;
+		a.p_fecha_proceso = {fecha_proc};
 
 --N 18
 --SE OBTIENEN LAS BAJAS INVOLUNTARIAS, EN EL PERIODO DEL MES
-		DROP TABLE $ESQUEMA_TEMP.tmp_360_bajas_invo_cierre;
+# DROP TABLE {vTC018};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_bajas_invo_cierre AS
-		SELECT
+# CREATE TABLE {vTC018} AS
+SELECT
 	a.num_telefonico AS telefono
 	, a.fecha_proceso
 	, count(1) AS conteo
 FROM
 	{vTBInv} a
 WHERE
-	a.proces_date BETWEEN $fechaIniMes AND '$FECHAEJE'
+	a.proces_date BETWEEN {fechaIniMes} AND '{FECHAEJE}'
 	AND a.marca = 'TELEFONICA'
 GROUP BY
 	a.num_telefonico
@@ -762,10 +724,10 @@ GROUP BY
 
 --N 19
 --SE OBTIENEN EL PARQUE PREPAGO, DE ACUERDO A LA M?IMA FECHA DE CHURN MENOR A LA FECHA DE EJECUCI?
-		DROP TABLE $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_ori_cierre;
+# DROP TABLE {vTC019};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_ori_cierre AS
-		SELECT
+# CREATE TABLE {vTC019} AS
+SELECT
 	PHONE_ID num_telefonico
 	, COUNTED_DAYS
 FROM
@@ -777,8 +739,8 @@ WHERE
 	FROM
 		{vTChurnSP2}
 	WHERE
-		PROCES_DATE>$fechamenos5
-		AND PROCES_DATE < $fechamas1)
+		PROCES_DATE>{fechamenos5}
+		AND PROCES_DATE < {fechamas1})
 	AND a.marca = 'TELEFONICA'
 GROUP BY
 	PHONE_ID
@@ -786,14 +748,14 @@ GROUP BY
 
 --N 20
 --EMULAMOS UN CHURN DEL D?, USANDO LAS COMPRAS DE BONOS, COMBOS O RECARGAS DEL D? DE PROCESO
-DROP TABLE $ESQUEMA_TEMP.tmp_360_otc_t_360_churn_dia_cierre;
+# DROP TABLE {vTC020};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_otc_t_360_churn_dia_cierre AS
+# CREATE TABLE {vTC020} AS
 SELECT
 	DISTINCT numero_telefono AS num_telefonico
 	, 0 AS COUNTED_DAYS
 FROM
-	$ESQUEMA_TEMP.TMP_OTC_T_360_RECARGAS_CIERRE
+	{vTC011}
 WHERE
 	ingreso_recargas_dia>0
 	OR
@@ -809,34 +771,34 @@ WHERE
 
 --N 21
 --COMPOSICION DE LA NUEVA TABLA DE CHURN
-DROP TABLE $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp_cierre;
+# DROP TABLE {vTC021};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp_cierre AS
-		SELECT
+# CREATE TABLE {vTC021} AS
+SELECT
 	t2.num_telefonico
 	, t2.COUNTED_DAYS
 	, 'dia' AS fuente
 FROM
-	$ESQUEMA_TEMP.tmp_360_otc_t_360_churn_dia_cierre t2
+	{vTC020} t2
 UNION ALL
 		SELECT
 	t1.num_telefonico
 	, t1.COUNTED_DAYS
 	, 'churn' AS fuente
 FROM
-	$ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_ori_cierre t1
+	{vTC019} t1
 WHERE
 	t1.num_telefonico NOT IN (
 	SELECT
 		num_telefonico
 	FROM
-		$ESQUEMA_TEMP.tmp_360_otc_t_360_churn_dia_cierre);
+		{vTC020});
 
 --N 22
 --SE OBTIENE POR CUENTA DE FACTURACION EN BANCO ATADO
-DROP TABLE $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP_cierre;
+# DROP TABLE {vTC022};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP_cierre AS
+# CREATE TABLE {vTC022} AS
 SELECT
 	x.CTA_FACTURACION
 	, x.CLIENTE_FECHA_ALTA
@@ -853,18 +815,18 @@ FROM
 		, B.MANDATE_ATTR_1 AS BANCO_EMISOR
 	FROM
 		{vTVWCFac} A
-		, db_rbm.otc_t_PRMANDATE B
+		, {vTPrmDate} B
 	WHERE
 		A.CTA_FACTURACION = B.ACCOUNT_NUM
-		AND to_date(b.active_from_dat)<= '$fechaeje1') AS x
+		AND to_date(b.active_from_dat)<= '{fechaeje1}') AS x
 WHERE
 	rownum = 1;
 
 --N 23
 --SE OBTIENE EL PARQUE ACTUAL DE LA TABLA MOVI_PARQUE
-DROP TABLE $ESQUEMA_TEMP.tmp_360_otc_t_360_parque_2_tmp_cierre;
+# DROP TABLE {vTC023};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_otc_t_360_parque_2_tmp_cierre AS
+# CREATE TABLE {vTC023} AS
 SELECT
 	DISTINCT t.num_telefonico
 	, t.plan_codigo codigo_plan
@@ -911,8 +873,8 @@ FROM
 		END AS fecha_baja_new
 		, estado_abonado
 		,
-		--$fechamenos1_1 fecha_proceso,
-		$FECHAEJE fecha_proceso
+		--{fechamenos1_1} fecha_proceso,
+		{FECHAEJE} fecha_proceso
 		, numero_abonado
 		, linea_negocio
 		, account_num
@@ -938,7 +900,7 @@ FROM
 	FROM
 		{vTNCMovParV1}
 	WHERE
-		fecha_proceso = $fecha_proc) t
+		fecha_proceso = {fecha_proc}) t
 LEFT OUTER JOIN (
 	SELECT
 		cliente_id
@@ -953,7 +915,7 @@ LEFT OUTER JOIN (
 		, cta_facturacion)Cta
 	ON
 	cta.cta_facturacion = t.account_num
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp_cierre ch ON
+LEFT JOIN {vTC021} ch ON
 	ch.num_telefonico = t.num_telefonico
 LEFT JOIN {vTPlCatT} pct ON
 	pct.cod_plan_activo = t.plan_codigo
@@ -961,14 +923,14 @@ WHERE
 	t.orden = 1
 	AND upper(t.marca) = 'TELEFONICA'
 	AND t.estado_abonado NOT IN ('BAA')
-	AND t.fecha_alta<'$fecha_alt_ini'
-	AND (t.fecha_baja>'$fecha_alt_fin'
+	AND t.fecha_alta<'{fecha_alt_ini}'
+	AND (t.fecha_baja>'{fecha_alt_fin}'
 		OR t.fecha_baja IS NULL);
 
 --N 24
-DROP TABLE $ESQUEMA_TEMP.tmp_360_otc_t_parque_act_cierre;
+# DROP TABLE {vTC024};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_otc_t_parque_act_cierre AS 
+# CREATE TABLE {vTC024} AS 
 SELECT
 	a.*
 	, CASE
@@ -992,80 +954,80 @@ SELECT
 		ELSE NULL
 	END AS fecha_movimiento_mes
 FROM
-	$ESQUEMA_TEMP.tmp_360_otc_t_360_parque_2_tmp_cierre AS a
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_alta_cierre AS b
+	{vTC023} AS a
+LEFT JOIN {vTC012} AS b
 	ON
 	a.num_telefonico = b.telefono
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_upsell_cierre AS c
+LEFT JOIN {vTC015} AS c
 	ON
 	a.num_telefonico = c.telefono
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_downsell_cierre AS d
+LEFT JOIN {vTC016} AS d
 	ON
 	a.num_telefonico = d.telefono
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_misma_tarifa_cierre AS e
+LEFT JOIN {vTC017} AS e
 	ON
 	a.num_telefonico = e.telefono
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_bajas_invo_cierre AS f
+LEFT JOIN {vTC018} AS f
 	ON
 	a.num_telefonico = f.telefono
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_transfer_in_pp_cierre AS g
+LEFT JOIN {vTC013} AS g
 	ON
 	a.num_telefonico = g.telefono
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_transfer_in_pos_cierre AS h
+LEFT JOIN {vTC014} AS h
 	ON
 	a.num_telefonico = h.telefono;
 
 --N 25
-DROP TABLE $ESQUEMA_TEMP.tmp_360_baja_tmp_cierre;
+# DROP TABLE {vTC025};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_baja_tmp_cierre AS		
+# CREATE TABLE {vTC025} AS		
 SELECT
 	a.telefono
 	, a.fecha_baja
 FROM
 	{vTBBI} a
 WHERE
-	a.p_fecha_proceso = $fecha_proc
+	a.p_fecha_proceso = {fecha_proc}
 	AND a.marca = 'TELEFONICA';
 
 --N 26
-DROP TABLE $ESQUEMA_TEMP.tmp_360_parque_inactivo_cierre;
+# DROP TABLE {vTC026};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_parque_inactivo_cierre AS
+# CREATE TABLE {vTC026} AS
 SELECT
 	telefono
 FROM
-	$ESQUEMA_TEMP.tmp_360_baja_tmp_cierre
+	{vTC025}
 UNION ALL
 	SELECT
 	telefono
 FROM
-	$ESQUEMA_TEMP.tmp_360_transfer_in_pp_cierre
+	{vTC013}
 UNION ALL
 	SELECT
 	telefono
 FROM
-	$ESQUEMA_TEMP.tmp_360_transfer_in_pos_cierre;
+	{vTC014};
 
 --N 27
-DROP TABLE $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp1_cierre;
+# DROP TABLE {vTC027};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp1_cierre AS
-	SELECT
+# CREATE TABLE {vTC027} AS
+SELECT
 	PHONE_ID num_telefonico
 	, COUNTED_DAYS
 FROM
 	{vTChurnSP2} a
 WHERE
-	PROCES_DATE = '$fecha_inac_1'
+	PROCES_DATE = '{fecha_inac_1}'
 	AND a.marca = 'TELEFONICA'
 GROUP BY
 	PHONE_ID, COUNTED_DAYS ;
 
 --N 28
-DROP TABLE $ESQUEMA_TEMP.tmp_360_otc_t_parque_inac_cierre;
+# DROP TABLE {vTC028};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_otc_t_parque_inac_cierre AS
+# CREATE TABLE {vTC028} AS
 SELECT
 	DISTINCT t.num_telefonico
 	, t.plan_codigo codigo_plan
@@ -1113,7 +1075,7 @@ FROM
 			ELSE fecha_baja
 		END AS fecha_baja_new
 		, 'BAA' estado_abonado
-		, $FECHAEJE AS fecha_proceso
+		, {FECHAEJE} AS fecha_proceso
 		, numero_abonado
 		, linea_negocio
 		, account_num
@@ -1139,7 +1101,7 @@ FROM
 	FROM
 		{vTNCMovParV1}
 	WHERE
-		fecha_proceso = '$fechaIniMes' ) t
+		fecha_proceso = '{fechaIniMes}' ) t
 LEFT OUTER JOIN (
 	SELECT
 		cliente_id
@@ -1154,7 +1116,7 @@ LEFT OUTER JOIN (
 		, cta_facturacion)Cta
 			ON
 	cta.cta_facturacion = t.account_num
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp1_cierre ch ON
+LEFT JOIN {vTC027} ch ON
 	ch.num_telefonico = t.num_telefonico
 LEFT JOIN {vTPlCatT} pct ON
 	pct.cod_plan_activo = t.plan_codigo
@@ -1166,16 +1128,16 @@ WHERE
 	SELECT
 		telefono
 	FROM
-		$ESQUEMA_TEMP.tmp_360_parque_inactivo_cierre)
-	AND t.fecha_alta<'$fecha_alt_dos_meses_ant_fin'
-	AND (t.fecha_baja>'$fecha_alt_dos_meses_ant_ini'
+		{vTC026})
+	AND t.fecha_alta<'{fecha_alt_dos_meses_ant_fin}'
+	AND (t.fecha_baja>'{fecha_alt_dos_meses_ant_ini}'
 		OR t.fecha_baja IS NULL)) ;
 
 --N 29
-DROP TABLE $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact_cierre;
+# DROP TABLE {vTC029};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact_cierre AS 
-		SELECT
+# CREATE TABLE {vTC029} AS 
+SELECT
 	a.*
 	, CASE
 		WHEN b.telefono IS NOT NULL THEN 'BAJA'
@@ -1190,23 +1152,23 @@ CREATE TABLE $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact_cierre AS
 		ELSE NULL
 	END AS fecha_movimiento_mes
 FROM
-	$ESQUEMA_TEMP.tmp_360_otc_t_parque_inac_cierre AS a
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_baja_tmp_cierre AS b
+	{vTC028} AS a
+LEFT JOIN {vTC025} AS b
 		ON
 	a.num_telefonico = b.telefono
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_transfer_in_pp_cierre AS g
+LEFT JOIN {vTC013} AS g
 		ON
 	a.num_telefonico = g.telefono
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_transfer_in_pos_cierre AS h
+LEFT JOIN {vTC014} AS h
 		ON
 	a.num_telefonico = h.telefono;
 
 --N 30
 --SE OBTIENEN LAS LINEAS PREACTIVAS		
-DROP TABLE $ESQUEMA_TEMP.tmp_360_base_preactivos_cierre;
+# DROP TABLE {vTC030};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_base_preactivos_cierre AS
-	SELECT
+# CREATE TABLE {vTC030} AS
+SELECT
 	SUBSTR(NAME
 	,-9) AS TELEFONO
 	,modified_when AS fecha_alta
@@ -1226,12 +1188,12 @@ WHERE
 	AND PHONE_NUMBER_TYPE = 9144665319313429453
 	--   NORMAL   
 	AND ASSOC_SIM_ICCID IS NOT NULL
-	AND modified_when<'$fecha_alt_ini';
+	AND modified_when<'{fecha_alt_ini}';
 
 --N 31
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all_cierre;
+# DROP TABLE {vTC031};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all_cierre AS
+# CREATE TABLE {vTC031} AS
 SELECT 
 	b.num_telefonico
 	, b.codigo_plan
@@ -1262,7 +1224,7 @@ SELECT
 	, b.fecha_movimiento_mes
 	, 'NO' AS ES_PARQUE
 FROM
-	$ESQUEMA_TEMP.tmp_360_otc_t_parque_inact_cierre b
+	{vTC029} b
 UNION ALL
 SELECT 
 	a.num_telefonico
@@ -1306,7 +1268,7 @@ SELECT
 		ELSE 'SI'
 	END AS ES_PARQUE
 FROM
-	$ESQUEMA_TEMP.tmp_360_otc_t_parque_act_cierre a
+	{vTC024} a
 UNION ALL
 SELECT 
 	c.telefono num_telefonico
@@ -1314,7 +1276,7 @@ SELECT
 	, c.fecha_alta
 	, CAST(NULL AS timestamp) fecha_last_status
 	, 'PREACTIVO' estado_abonado
-	, $FECHAEJE fecha_proceso
+	, {FECHAEJE} fecha_proceso
 	, CAST(NULL AS string) numero_abonado
 	, 'Prepago' linea_negocio
 	, CAST(NULL AS string) account_num
@@ -1338,18 +1300,18 @@ SELECT
 	, CAST(NULL AS date) fecha_movimiento_mes
 	, 'NO' ES_PARQUE
 FROM
-	$ESQUEMA_TEMP.tmp_360_base_preactivos_cierre c
+	{vTC030} c
 WHERE 
 		c.telefono NOT IN (
 	SELECT
 		x.num_telefonico
 	FROM
-		$ESQUEMA_TEMP.tmp_360_otc_t_parque_act_cierre x
+		{vTC024} x
 UNION ALL
 	SELECT
 		y.num_telefonico
 	FROM
-		$ESQUEMA_TEMP.tmp_360_otc_t_parque_inact_cierre y)
+		{vTC029} y)
 UNION ALL
 SELECT 
 	d.num_telefonico num_telefonico
@@ -1357,7 +1319,7 @@ SELECT
 	, CAST(NULL AS timestamp) fecha_alta
 	, CAST(NULL AS timestamp) fecha_last_status
 	, 'RECARGADOR' estado_abonado
-	, $FECHAEJE fecha_proceso
+	, {FECHAEJE} fecha_proceso
 	, CAST(NULL AS string) numero_abonado
 	, 'Prepago' linea_negocio
 	, CAST(NULL AS string) account_num
@@ -1381,28 +1343,28 @@ SELECT
 	, CAST(NULL AS date) fecha_movimiento_mes
 	, 'NO' ES_PARQUE
 FROM
-	$ESQUEMA_TEMP.tmp_360_otc_t_360_churn_dia_cierre d
+	{vTC020} d
 WHERE
 	d.num_telefonico NOT IN (
 	SELECT
 		o.num_telefonico
 	FROM
-		$ESQUEMA_TEMP.tmp_360_otc_t_parque_act_cierre o
+		{vTC024} o
 UNION ALL
 	SELECT
 		p.num_telefonico
 	FROM
-		$ESQUEMA_TEMP.tmp_360_otc_t_parque_inact_cierre p
+		{vTC029} p
 UNION ALL
 	SELECT
 		q.telefono AS num_telefonico
 	FROM
-		$ESQUEMA_TEMP.tmp_360_base_preactivos_cierre q);
+		{vTC030} q);
 
 --N 32
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre;
+# DROP TABLE {vTC032};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre AS
+# CREATE TABLE {vTC032} AS
 SELECT
 	DISTINCT
 	a.num_telefonico
@@ -1435,8 +1397,8 @@ SELECT
 	, a.es_parque
 	, b.BANCO_EMISOR AS banco
 FROM
-	$ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all_cierre a
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP_cierre b 
+	{vTC031} a
+LEFT JOIN {vTC022} b 
 		ON
 	a.account_num = b.CTA_FACTURACION;
 	
@@ -1482,7 +1444,7 @@ FROM
 	{vTRABH}
 WHERE
 	TIPO = 'ALTA'
-	AND FECHA BETWEEN '$f_inicio' AND '$fecha_proceso' ;
+	AND FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}' ;
 --INSERTA LA DATA DEL MES
 INSERT
 	INTO
@@ -1503,7 +1465,7 @@ SELECT
 FROM
 	{vTABI}
 WHERE
-	p_FECHA_PROCESO = '$fecha_movimientos_cp'
+	p_FECHA_PROCESO = '{fecha_movimientos_cp}'
 	AND marca = 'TELEFONICA';
 
 --N 34
@@ -1513,7 +1475,7 @@ FROM
 	{vTRABH}
 WHERE
 	TIPO = 'BAJA'
-	AND FECHA BETWEEN '$f_inicio' AND '$fecha_proceso' ;
+	AND FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}' ;
 --INSERTA LA DATA DEL MES
 INSERT
 	INTO
@@ -1534,7 +1496,7 @@ SELECT
 FROM
 	{vTBBI}
 WHERE
-	p_FECHA_PROCESO = '$fecha_movimientos_cp'
+	p_FECHA_PROCESO = '{fecha_movimientos_cp}'
 	AND marca = 'TELEFONICA';
 
 --N 35
@@ -1544,7 +1506,7 @@ FROM
 	{vTTrH}
 WHERE
 	TIPO = 'PRE_POS'
-	AND FECHA BETWEEN '$f_inicio' AND '$fecha_proceso' ;
+	AND FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}' ;
 --INSERTA LA DATA DEL MES
 INSERT
 	INTO
@@ -1561,7 +1523,7 @@ SELECT
 FROM
 	{vTTIBI}
 WHERE
-	p_FECHA_PROCESO = '$fecha_movimientos_cp';
+	p_FECHA_PROCESO = '{fecha_movimientos_cp}';
 
 --N 36
 --ELIMINA LA DATA PRE EXISTENTE
@@ -1570,7 +1532,7 @@ FROM
 	{vTTrH}
 WHERE
 	TIPO = 'POS_PRE'
-	AND FECHA BETWEEN '$f_inicio' AND '$fecha_proceso' ;
+	AND FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}' ;
 --INSERTA LA DATA DEL MES
 INSERT
 	INTO
@@ -1587,7 +1549,7 @@ SELECT
 FROM
 	{vTTOBI}
 WHERE
-	p_FECHA_PROCESO = '$fecha_movimientos_cp';
+	p_FECHA_PROCESO = '{fecha_movimientos_cp}';
 
 --N 37
 --ELIMINA LA DATA PRE EXISTENTE	
@@ -1595,7 +1557,7 @@ DELETE
 FROM
 	{vTCPH}
 WHERE
-	FECHA BETWEEN '$f_inicio' AND '$fecha_proceso';
+	FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}';
 --INSERTA LA DATA DEL MES
 INSERT
 	INTO
@@ -1617,13 +1579,13 @@ SELECT
 FROM
 	{vTCPBI}
 WHERE
-	p_FECHA_PROCESO = $fecha_movimientos_cp;
+	p_FECHA_PROCESO = {fecha_movimientos_cp};
 
 --N 38
 --OBTIENE EL ulTIMO EVENTO DEL ALTA EN TODA LA HISTORIA HASTA LA FECHA DE PROCESO
-DROP TABLE db_reportes.OTC_T_ALTA_HIST_UNIC_CIERRE;
+# DROP TABLE {vTC038};
 
-CREATE TABLE db_reportes.OTC_T_ALTA_HIST_UNIC_CIERRE AS
+# CREATE TABLE {vTC038} AS
 SELECT
 	XX.TIPO
 	, XX.TELEFONO
@@ -1659,7 +1621,7 @@ FROM
 	FROM
 		{vTRABH} AS AA
 	WHERE
-		FECHA <'$fecha_movimientos'
+		FECHA <'{fecha_movimientos}'
 		AND TIPO = 'ALTA'
 		) XX
 WHERE
@@ -1667,9 +1629,9 @@ WHERE
 
 --N 39
 --OBTIENE EL ulTIMO EVENTO DE LAS BAJAS EN TODA LA HISTORIA HASTA LA FECHA DE PROCESO
-DROP TABLE db_reportes.OTC_T_BAJA_HIST_UNIC_CIERRE;
+# DROP TABLE {vTC039};
 
-CREATE TABLE db_reportes.OTC_T_BAJA_HIST_UNIC_CIERRE AS
+# CREATE TABLE {vTC039} AS
 SELECT
 	XX.TIPO
 	, XX.TELEFONO
@@ -1705,7 +1667,7 @@ FROM
 	FROM
 		{vTRABH} AS AA
 	WHERE
-		FECHA <'$fecha_movimientos'
+		FECHA <'{fecha_movimientos}'
 		AND TIPO = 'BAJA'
 		) XX
 WHERE
@@ -1713,9 +1675,9 @@ WHERE
 
 --N 40
 --OBTIENE EL ulTIMO EVENTO DE LAS TRANSFERENCIAS OUT EN TODA LA HISTORIA HASTA LA FECHA DE PROCESO
-DROP TABLE db_reportes.OTC_T_POS_PRE_HIST_UNIC_CIERRE;
+# DROP TABLE {vTC040};
 
-CREATE TABLE db_reportes.OTC_T_POS_PRE_HIST_UNIC_CIERRE AS
+# CREATE TABLE {vTC040} AS
 SELECT
 	XX.TIPO
 	, XX.TELEFONO
@@ -1743,7 +1705,7 @@ FROM
 	FROM
 		{vTTrH} AS AA
 	WHERE
-		FECHA <'$fecha_movimientos'
+		FECHA <'{fecha_movimientos}'
 		AND TIPO = 'POS_PRE'
 		) XX
 WHERE
@@ -1751,9 +1713,9 @@ WHERE
 
 --N 41
 --OBTIENE EL ulTIMO EVENTO DE LAS TRANSFERENCIAS IN  EN TODA LA HISTORIA HASTA LA FECHA DE PROCESO
-DROP TABLE db_reportes.OTC_T_PRE_POS_HIST_UNIC_CIERRE;
+# DROP TABLE {vTC041};
 
-CREATE TABLE db_reportes.OTC_T_PRE_POS_HIST_UNIC_CIERRE AS
+# CREATE TABLE {vTC041} AS
 SELECT
 	XX.TIPO
 	, XX.TELEFONO
@@ -1781,7 +1743,7 @@ FROM
 	FROM
 		{vTTrH} AS AA
 	WHERE
-		FECHA <'$fecha_movimientos'
+		FECHA <'{fecha_movimientos}'
 		AND TIPO = 'PRE_POS'
 		) XX
 WHERE
@@ -1789,9 +1751,9 @@ WHERE
 
 --N 42
 --OBTIENE EL ulTIMO EVENTO DE LOS CAMBIOS DE PLAN EN TODA LA HISTORIA HASTA LA FECHA DE PROCESO
-DROP TABLE db_reportes.otc_t_cambio_plan_hist_UNIC_CIERRE;
+# DROP TABLE {vTC042};
 
-CREATE TABLE db_reportes.otc_t_cambio_plan_hist_UNIC_CIERRE AS
+# CREATE TABLE {vTC042} AS
 SELECT
 	XX.TIPO
 	, XX.TELEFONO
@@ -1828,7 +1790,7 @@ FROM
 	FROM
 		{vTCPH} AS AA
 	WHERE
-		FECHA <'$fecha_movimientos'
+		FECHA <'{fecha_movimientos}'
 		) XX
 WHERE
 	XX.rnum = 1;
@@ -1837,10 +1799,10 @@ WHERE
 --REALIZAMOS EL CRUCE CON CADA TABLA USANDO LA TABLA PIVOT (TABLA RESULTANTE DE PIVOT_PARQUE) Y AGREANDO LOS CAMPOS DE CADA TABLA RENOMBRANDOLOS DE ACUERDO AL MOVIEMIENTO QUE CORRESPONDA.
 --ESTA ES LA PRIMERA TABLA RESULTANTE QUE SERVIRA PARA ALIMENTAR LA ESTRUCTURA OTC_T_360_GENERAL.
 
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_t_mov_CIERRE;
+# DROP TABLE {vTC043};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_t_mov_CIERRE AS 
-	SELECT
+# CREATE TABLE {vTC043} AS 
+SELECT
 	NUM_TELEFONICO
 	, CODIGO_PLAN
 	, FECHA_ALTA
@@ -1904,28 +1866,28 @@ CREATE TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_t_mov_CIERRE AS
 	, TB_OVERRIDE
 	, DELTA
 FROM
-	$ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre AS Z
-LEFT JOIN db_reportes.OTC_T_ALTA_HIST_UNIC_CIERRE AS A
+	{vTC032} AS Z
+LEFT JOIN {vTC038} AS A
 		ON
 	(NUM_TELEFONICO = A.TELEFONO)
-LEFT JOIN db_reportes.OTC_T_PRE_POS_HIST_UNIC_CIERRE AS C
+LEFT JOIN {vTC041} AS C
 		ON
 	(NUM_TELEFONICO = C.TELEFONO)
 	AND (LINEA_NEGOCIO_HOMOLOGADO <> 'PREPAGO')
-LEFT JOIN db_reportes.OTC_T_POS_PRE_HIST_UNIC_CIERRE AS D
+LEFT JOIN {vTC040} AS D
 		ON
 	(NUM_TELEFONICO = D.TELEFONO)
 	AND (LINEA_NEGOCIO_HOMOLOGADO = 'PREPAGO')
-LEFT JOIN db_reportes.otc_t_cambio_plan_hist_UNIC_CIERRE AS E
+LEFT JOIN {vTC042} AS E
 		ON
 	(NUM_TELEFONICO = E.TELEFONO)
 	AND (LINEA_NEGOCIO_HOMOLOGADO <> 'PREPAGO');
 
 --N 44
 --CREAMOS TABLA TEMPORAL UNION PARA OBTENER ULTIMO MOVIMIENTO DEL MES POR NUM_TELEFONO
-DROP TABLE $ESQUEMA_TEMP.OTC_T_360_PARQUE_1_MOV_MES_TMP_CIERRE;
+# DROP TABLE {vTC044};
 
-CREATE TABLE $ESQUEMA_TEMP.OTC_T_360_PARQUE_1_MOV_MES_TMP_CIERRE AS 
+# CREATE TABLE {vTC044} AS 
 SELECT
 	TIPO
 	, TELEFONO
@@ -1988,9 +1950,9 @@ FROM
 			, TB_OVERRIDE
 			, DELTA
 		FROM
-			db_reportes.otc_t_cambio_plan_hist_UNIC_CIERRE
+			{vTC042}
 		WHERE
-			FECHA BETWEEN '$f_inicio' AND '$fecha_proceso'
+			FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}'
 	UNION ALL
 		SELECT
 			TIPO
@@ -2011,9 +1973,9 @@ FROM
 			, CAST( NULL AS DOUBLE) AS TB_OVERRIDE
 			, CAST( NULL AS DOUBLE) AS DELTA
 		FROM
-			db_reportes.OTC_T_POS_PRE_HIST_UNIC_CIERRE
+			{vTC040}
 		WHERE
-			FECHA BETWEEN '$f_inicio' AND '$fecha_proceso'
+			FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}'
 	UNION ALL
 		SELECT
 			TIPO
@@ -2034,9 +1996,9 @@ FROM
 			, CAST( NULL AS DOUBLE) AS TB_OVERRIDE
 			, CAST( NULL AS DOUBLE) AS DELTA
 		FROM
-			db_reportes.OTC_T_PRE_POS_HIST_UNIC_CIERRE
+			{vTC041}
 		WHERE
-			FECHA BETWEEN '$f_inicio' AND '$fecha_proceso'
+			FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}'
 	UNION ALL
 		SELECT
 			TIPO
@@ -2057,9 +2019,9 @@ FROM
 			, CAST( NULL AS DOUBLE) AS TB_OVERRIDE
 			, CAST( NULL AS DOUBLE) AS DELTA
 		FROM
-			db_reportes.OTC_T_BAJA_HIST_UNIC_CIERRE
+			{vTC039}
 		WHERE
-			FECHA BETWEEN '$f_inicio' AND '$fecha_proceso'
+			FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}'
 	UNION ALL
 		SELECT
 			TIPO
@@ -2080,17 +2042,17 @@ FROM
 			, CAST( NULL AS DOUBLE) AS TB_OVERRIDE
 			, CAST( NULL AS DOUBLE) AS DELTA
 		FROM
-			db_reportes.OTC_T_ALTA_HIST_UNIC_CIERRE
+			{vTC038}
 		WHERE
-			FECHA BETWEEN '$f_inicio' AND '$fecha_proceso' 
+			FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}' 
 		) ZZ ) TT
 WHERE
 	RNUM = 1;
 
 --N 45
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_mov_seg_tmp_CIERRE;
+# DROP TABLE {vTC045};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_mov_seg_tmp_CIERRE AS 
+# CREATE TABLE {vTC045} AS 
 SELECT
 	TIPO AS ORIGEN_ALTA_SEGMENTO
 	, TELEFONO
@@ -2139,7 +2101,7 @@ FROM
 			, CAST( NULL AS STRING) AS OPERADORA_DESTINO
 			, CAST( NULL AS STRING) AS MOTIVO
 		FROM
-			db_reportes.OTC_T_POS_PRE_HIST_UNIC_CIERRE
+			{vTC040}
 	UNION ALL
 		SELECT
 			TIPO
@@ -2155,7 +2117,7 @@ FROM
 			, CAST( NULL AS STRING) AS OPERADORA_DESTINO
 			, CAST( NULL AS STRING) AS MOTIVO
 		FROM
-			db_reportes.OTC_T_PRE_POS_HIST_UNIC_CIERRE
+			{vTC041}
 	UNION ALL
 		SELECT
 			TIPO
@@ -2171,15 +2133,15 @@ FROM
 			, OPERADORA_DESTINO
 			, MOTIVO
 		FROM
-			db_reportes.OTC_T_ALTA_HIST_UNIC_CIERRE
+			{vTC038}
 		) ZZ ) TT
 WHERE
 	RNUM = 1;
 
 --N 46
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_t_mov_mes_CIERRE;
+# DROP TABLE {vTC046};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_t_mov_mes_CIERRE AS
+# CREATE TABLE {vTC046} AS
 SELECT
 	NUM_TELEFONICO
 	, CODIGO_PLAN
@@ -2225,8 +2187,8 @@ SELECT
 	, TB_OVERRIDE_MOVIMIENTO_MES
 	, DELTA_MOVIMIENTO_MES
 FROM
-	$ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre AS B
-LEFT JOIN $ESQUEMA_TEMP.OTC_T_360_PARQUE_1_MOV_MES_TMP_CIERRE AS A
+	{vTC032} AS B
+LEFT JOIN {vTC044} AS A
 		ON
 	(NUM_TELEFONICO = A.TELEFONO)
 	AND B.FECHA_MOVIMIENTO_MES = A.FECHA_MOVIMIENTO_MES;
@@ -2265,9 +2227,9 @@ LEFT JOIN $ESQUEMA_TEMP.OTC_T_360_PARQUE_1_MOV_MES_TMP_CIERRE AS A
 		set tez.queue.name=$COLA_EJECUCION;
 
 --N 47
-DROP TABLE $ESQUEMA_TEMP.tmp_360_prq_glb;
+# DROP TABLE {vTC047};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_prq_glb AS
+# CREATE TABLE {vTC047} AS
 SELECT
 	fecha_activacion
 	, telefono
@@ -2298,7 +2260,7 @@ SELECT
 FROM
 	{vTPRQGLBBI}
 WHERE
-	fecha_proceso = $FECHAEJE
+	fecha_proceso = {FECHAEJE}
 	AND marca = 'TELEFONICA';
 " 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
@@ -2337,9 +2299,9 @@ WHERE
 
 --N 48
 --SE OBTIENEN LOS MOTIVOS DE SUSPENSION, POSTERIORMENTE ESTA TEMPORAL ES USADA EN EL PROCESO OTC_T_360_GENARAL.sh
-DROP TABLE $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre;
+# DROP TABLE {vTC048};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre AS
+# CREATE TABLE {vTC048} AS
 SELECT
 	NUM.NAME
 	, D.NAME AS MOTIVO_SUSPENSION
@@ -2363,15 +2325,15 @@ WHERE
 	AND A.ACTUAL_END_DATE IS NULL
 	AND B.ACTUAL_END_DATE IS NULL
 	AND A.OBJECT_ID = B.OBJECT_ID
-	AND CAST(A.modified_when AS date) <= '$fechaeje1'
+	AND CAST(A.modified_when AS date) <= '{fechaeje1}'
 ORDER BY
 	NUM.NAME;
 
 --N 49
 --SE OBTIENE LAS RENOVACIONES DE TERMINALES A PARTIR DE LA FECHA DE LA SALIDA JANUS
-DROP TABLE $ESQUEMA_TEMP.tmp_360_ultima_renovacion_cierre;
+# DROP TABLE {vTC049};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_ultima_renovacion_cierre AS
+# CREATE TABLE {vTC049} AS
 SELECT
 	t1.*
 FROM 
@@ -2389,7 +2351,7 @@ FROM
 		{vTTerSC} a
 	WHERE 
 		(a.p_fecha_factura >= 20171015
-			AND a.p_fecha_factura <= $FECHAEJE )
+			AND a.p_fecha_factura <= {FECHAEJE} )
 		AND a.clasificacion = 'TERMINALES'
 		AND a.modelo_terminal NOT IN ('DIFERENCIA DE EQUIPOS', 'FINANCIAMIENTO')
 			AND a.codigo_tipo_documento <> 25
@@ -2399,9 +2361,9 @@ WHERE
 
 --N 50
 --SE OBTIENE LAS RENOVACIONES DE TERMINALES ANTES DE LA FECHA DE LA SALIDA JANUS
-DROP TABLE $ESQUEMA_TEMP.tmp_360_ultima_renovacion_scl_cierre;
+# DROP TABLE {vTC050};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_ultima_renovacion_scl_cierre AS
+# CREATE TABLE {vTC050} AS
 SELECT
 	t2.*
 FROM
@@ -2426,9 +2388,9 @@ WHERE
 
 --N 51
 --SE CONSOLIDAN LAS DOS FUENTES, QUEDANDONOS CON LA ULTIMA RENOVACIÃ“N POR LÃNEA MOVIL
-DROP TABLE $ESQUEMA_TEMP.tmp_360_ultima_renovacion_end_cierre;
+# DROP TABLE {vTC051};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_ultima_renovacion_end_cierre AS
+# CREATE TABLE {vTC051} AS
 SELECT
 	t2.*
 FROM
@@ -2450,7 +2412,7 @@ FROM
 			, 'yyyyMMdd'))
 			, 'yyyy-MM-dd') AS date) AS fecha_renovacion
 		FROM
-			$ESQUEMA_TEMP.tmp_360_ultima_renovacion_cierre
+			{vTC049}
 		WHERE
 			telefono IS NOT NULL
 	UNION ALL
@@ -2459,7 +2421,7 @@ FROM
 			, identificacion_cliente
 			, fecha_renovacion
 		FROM
-			$ESQUEMA_TEMP.tmp_360_ultima_renovacion_scl_cierre
+			{vTC050}
 		WHERE
 			telefono IS NOT NULL) AS T1) AS t2
 WHERE
@@ -2467,9 +2429,9 @@ WHERE
 
 --N 52
 --SE OBTIEN LA DIRECCIONES POR CLIENTE
-DROP TABLE $ESQUEMA_TEMP.tmp_360_adress_ord_cierre;
+# DROP TABLE {vTC052};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_adress_ord_cierre AS
+# CREATE TABLE {vTC052} AS
 SELECT               
 	a.CUSTOMER_REF
 	, A.ADDRESS_SEQ
@@ -2493,9 +2455,9 @@ WHERE
 
 --N 53
 --SE ASIGNAN A LAS CUENTAS DE FACTURACIÃ“N LAS DIRECCIONES
-DROP TABLE $ESQUEMA_TEMP.tmp_360_account_address_cierre;
+# DROP TABLE {vTC053};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_account_address_cierre AS
+# CREATE TABLE {vTC053} AS
 SELECT
 	a.ACCOUNT_NUM
 	, b.ADDRESS_2
@@ -2503,15 +2465,15 @@ SELECT
 	, b.ADDRESS_4
 FROM
 	{vTAccount} AS a
-	, $ESQUEMA_TEMP.tmp_360_adress_ord_cierre AS b
+	, {vTC052} AS b
 WHERE
 	a.CUSTOMER_REF = b.CUSTOMER_REF;
 
 --N 54
 --SE OBTIENE LA VIGENCIA DE CONTRATO
-DROP TABLE $ESQUEMA_TEMP.tmp_360_vigencia_contrato_cierre;
+# DROP TABLE {vTC054};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_vigencia_contrato_cierre AS
+# CREATE TABLE {vTC054} AS
 SELECT 
 	H.NAME NUM_TELEFONICO
 	, A.VALID_FROM
@@ -2538,13 +2500,13 @@ INNER JOIN {vTRIMobPN} H
 LEFT JOIN {vTAmCPE} F 
 		ON
 	(C.IMEI = F.OBJECT_ID)
-	AND CAST(C.ACTUAL_START_DATE AS date) <= '$fechamas1_2';
+	AND CAST(C.ACTUAL_START_DATE AS date) <= '{fechamas1_2}';
 
 --N 55
---NOS QUEDAMOS CON LA ÃšLTIMA VIGENCIA DE CONTRATO
-DROP TABLE $ESQUEMA_TEMP.tmp_360_vigencia_contrato_unicos_cierre;
+--NOS QUEDAMOS CON LA uLTIMA VIGENCIA DE CONTRATO
+# DROP TABLE {vTC055};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_vigencia_contrato_unicos_cierre AS
+# CREATE TABLE {vTC055} AS
 SELECT
 	*
 FROM 
@@ -2561,15 +2523,15 @@ FROM
 	ORDER BY
 		FECHA_FIN_CONTRATO DESC) AS id
 	FROM
-		$ESQUEMA_TEMP.tmp_360_vigencia_contrato_cierre) AS t1
+		{vTC054}) AS t1
 WHERE
 	t1.id = 1;
 
 --N 56
 --SE OBTIENEN UN CATALOGO DE PLANES CON LA VIGENCIAS
-DROP TABLE $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_cierre;
+# DROP TABLE {vTC056};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_cierre AS
+# CREATE TABLE {vTC056} AS
 SELECT  
 	PO.PROD_CODE
 	, PO.NAME
@@ -2604,9 +2566,9 @@ ORDER BY
 
 --N 57
 --SE ASIGNA UN ID SECUENCIAL, QUE SERA LA VERSIoN DEL PLAN, ORDENADO POR CODIGO DE PLAN Y SUS FECHAS DE VIGENCIA
-DROP TABLE $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_cierre;
+# DROP TABLE {vTC057};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_cierre AS
+# CREATE TABLE {vTC057} AS
 SELECT
 	*
 	, ROW_NUMBER() OVER (PARTITION BY PROD_CODE
@@ -2614,13 +2576,13 @@ ORDER BY
 	AVAILABLE_FROM
 	, AVAILABLE_TO) AS VERSION
 FROM
-	$ESQUEMA_TEMP.tmp_360_PLANES_JANUS_cierre;
+	{vTC056};
 
 --N 58
 --DEBIDO A QUE NO SE TIENEN FECHAS CONTINUAS EN LAS VIGENCIAS (ACTUAL_START_DATE Y ACTUAL_END_DATE),  SE REASIGNAN LAS VIGENCIAS PARA QUE TENGAN SECUENCIA EN EL TIEMPO
-DROP TABLE $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_cierre;
+# DROP TABLE {vTC058};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_cierre AS
+# CREATE TABLE {vTC058} AS
 SELECT
 	CASE 
 		WHEN A.VERSION = 1 THEN A.available_from
@@ -2630,29 +2592,29 @@ SELECT
 	, A.*
 	, b.VERSION AS ver_b
 FROM
-	$ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_cierre a
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_cierre b
+	{vTC057} a
+LEFT JOIN {vTC057} b
 		ON
 	(a.PROD_CODE = b.PROD_CODE
 		AND a.version = b.version + 1);
 
 --N 59
 --OBTENEMOS EL CATALOGO SOLO PARA PRIMERA VERSION
-DROP TABLE $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_VER_UNO_cierre;
+# DROP TABLE {vTC059};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_VER_UNO_cierre AS
+# CREATE TABLE {vTC059} AS
 SELECT
 	*
 FROM
-	$ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_cierre
+	{vTC058}
 WHERE
 	VERSION = 1;
 
 --N 60
 --OBTENEMOS EL CATALOGO SOLO PARA LA ULTIMA VERSION
-DROP TABLE $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_VER_ULTIMA_cierre;
+# DROP TABLE {vTC060};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_VER_ULTIMA_cierre AS
+# CREATE TABLE {vTC060} AS
 SELECT
 	*
 FROM
@@ -2663,15 +2625,15 @@ FROM
 	ORDER BY
 		version DESC) AS orden
 	FROM
-		$ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_cierre) t1
+		{vTC058}) t1
 WHERE
 	t1.orden = 1;
 
 --N 61
 --OBTENEMOS LOS PLANES QUE POSEE EL ABONADO, ESTO GENERA TODOS LOS PLANES QUE TENGA EL ABONADO A LA FECHA DE EJECUCION
-DROP TABLE $ESQUEMA_TEMP.tmp_360_abonado_plan_cierre;
+# DROP TABLE {vTC061};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_abonado_plan_cierre AS
+# CREATE TABLE {vTC061} AS
 SELECT
 	NUM.NAME AS TELEFONO
 	, A.SUBSCRIPTION_REF AS NUM_ABONADO
@@ -2695,13 +2657,13 @@ LEFT JOIN {vTRIMobPN} NUM
 WHERE
 	A.ACTUAL_END_DATE IS NULL
 	AND A.OBJECT_ID = B.TOP_BPI
-	AND CAST(A.ACTUAL_START_DATE AS date) < '$fechamas1_2';
+	AND CAST(A.ACTUAL_START_DATE AS date) < '{fechamas1_2}';
 
 --N 62
---NOS QUEDAMOS SOLO CON EL ÃšLTIMO PLAN DEL ABONADO A LA FECHA DE EJECUCION
-DROP TABLE $ESQUEMA_TEMP.tmp_360_abonado_plan_unico_cierre;
+--NOS QUEDAMOS SOLO CON EL uLTIMO PLAN DEL ABONADO A LA FECHA DE EJECUCION
+# DROP TABLE {vTC062};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_abonado_plan_unico_cierre AS
+# CREATE TABLE {vTC062} AS
 SELECT
 	b.*
 FROM 
@@ -2713,16 +2675,16 @@ FROM
 	ORDER BY
 		a.fechainicio DESC) AS id
 	FROM
-		$ESQUEMA_TEMP.tmp_360_abonado_plan_cierre a) AS b
+		{vTC061} a) AS b
 WHERE
 	b.id = 1;
 
 --N 63
 --SE ASIGNA LA VERsioN POR OBJECT ID, SI NO SE OBTIENE OR OBJECT ID POR LA VERSION MINIMA Y MAXIMA DEL PLAN
-DROP TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_prev_cierre;
+# DROP TABLE {vTC063};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_prev_cierre AS 
-	SELECT
+# CREATE TABLE {vTC063} AS 
+SELECT
 	a.NUM_TELEFONICO AS TELEFONO
 	, VALID_FROM
 	, VALID_UNTIL
@@ -2749,10 +2711,10 @@ CREATE TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_prev_cierre AS
 		END
 		)
 	END AS FECHA_FIN_CONTRATO
-	, date_format(from_unixtime(unix_timestamp(CAST($FECHAEJE AS string)
+	, date_format(from_unixtime(unix_timestamp(CAST({FECHAEJE} AS string)
 	, 'yyyyMMdd'))
 	, 'yyyy-MM-dd') AS fecha_hoy
-	,months_between(date_format(from_unixtime(unix_timestamp(CAST($FECHAEJE AS string)
+	,months_between(date_format(from_unixtime(unix_timestamp(CAST({FECHAEJE} AS string)
 	, 'yyyyMMdd'))
 	, 'yyyy-MM-dd')
 	,(CASE
@@ -2779,27 +2741,27 @@ CREATE TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_prev_cierre AS
 	, C.VERSION AS OLD
 	, B.PROD_CODE
 FROM
-	$ESQUEMA_TEMP.tmp_360_vigencia_contrato_unicos_cierre AS A
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_abonado_plan_unico_cierre AS B
+	{vTC055} AS A
+LEFT JOIN {vTC062} AS B
 		ON
 	(a.num_telefonico = B.telefono)
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_cierre AS C
+LEFT JOIN {vTC058} AS C
 		ON
 	(B.OBJECT_ID_PLAN = C.PROD_OFFERING
 		AND B.PROD_CODE = c.PROD_CODE)
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_VER_UNO_cierre AS D
+LEFT JOIN {vTC059} AS D
 		ON
 	(B.PROD_CODE = D.PROD_CODE)
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_VER_ULTIMA_cierre AS E
+LEFT JOIN {vTC060} AS E
 		ON
 	(B.PROD_CODE = E.PROD_CODE);
 
 --N 64
 --ASIGNACION DE VERSIoN POR FECHAS SOLO PARA LOS QUE LA VERSION ES NULLL, ESTO VA CAUSAR DUPLICIDAD EN LOS REGISTROS CUYA VERSIÃ“N DE PLAN SEA NULL
-DROP TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_dup_cierre;
+# DROP TABLE {vTC064};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_dup_cierre AS
-		SELECT
+# CREATE TABLE {vTC064} AS
+SELECT
 		b.*
 	, CASE
 		WHEN b.VERSION_PLAN IS NULL
@@ -2807,18 +2769,18 @@ CREATE TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_dup_cierre AS
 		ELSE b.version_plan
 	END AS version_plan_new
 FROM
-	$ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_prev_cierre AS B
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_cierre AS C
+	{vTC063} AS B
+LEFT JOIN {vTC058} AS C
 		ON
 	(B.PROD_CODE = c.PROD_CODE
 		AND b.VERSION_PLAN IS NULL);
 
 --N 65
 --ELIMINAMOS LOS DUPLICADOS, ORDENANDO POR LA NUEVA VERSIoN DE PLAN
-DROP TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_cierre;
+# DROP TABLE {vTC065};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_cierre AS 
-		SELECT
+# CREATE TABLE {vTC065} AS 
+SELECT
 	t1.*
 FROM
 		(
@@ -2828,15 +2790,15 @@ FROM
 	ORDER BY
 		version_plan_new DESC) AS id
 	FROM
-		$ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_dup_cierre AS B) AS t1
+		{vTC064} AS B) AS t1
 WHERE
 	t1.id = 1;
 
 --N 66
 --CALCULAMOS LA FECHA DE FIN DE CONTRATO
-DROP TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_def_cierre;
+# DROP TABLE {vTC066};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_def_cierre AS
+# CREATE TABLE {vTC066} AS
 SELECT
 	a.telefono
 	, a.valid_from
@@ -2854,12 +2816,12 @@ SELECT
 	, ADD_MONTHS(FECHA_FIN_CONTRATO
 	,(CAST(CEIL(MESES_DIFERENCIA / INITIAL_TERM_NEW) AS INT))* INITIAL_TERM_NEW) AS FECHA_FIN_CONTRATO_DEFINITIVO
 FROM
-	$ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_cierre a;
+	{vTC065} a;
 
 --N 67
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_parque_camp_ad_cierre;
+# DROP TABLE {vTC067};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_parque_camp_ad_cierre AS
+# CREATE TABLE {vTC067} AS
 SELECT
 	t1.*
 FROM
@@ -2870,15 +2832,15 @@ FROM
 	ORDER BY
 		es_parque DESC) AS id
 	FROM
-		$ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre) AS t1
+		{vTC032}) AS t1
 WHERE
 	t1.id = 1;
 
 --N 68
-DROP TABLE $ESQUEMA_TEMP.tmp_360_campos_adicionales_cierre;
+# DROP TABLE {vTC068};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_campos_adicionales_cierre AS
-	SELECT
+# CREATE TABLE {vTC068} AS
+SELECT
 	a.num_telefonico AS telefono
 	, a.account_num
 	, b.fecha_renovacion
@@ -2891,23 +2853,23 @@ CREATE TABLE $ESQUEMA_TEMP.tmp_360_campos_adicionales_cierre AS
 	, d.imei_fec_modificacion AS FECHA_ULTIMA_RENOVACION_JN
 	, d.fecha_activacion_plan_actual AS FECHA_ULTIMO_CAMBIO_PLAN
 FROM
-	$ESQUEMA_TEMP.otc_t_360_parque_camp_ad_cierre a
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_ultima_renovacion_end b
+	{vTC067} a
+LEFT JOIN {vTTemp360UR} b
 		ON
 	(a.num_telefonico = b.telefono
 		AND a.identificacion_cliente = b.identificacion_cliente)
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_account_address c
+LEFT JOIN {vTTmp360AA} c
 		ON
 	a.account_num = c.account_num
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_def d
+LEFT JOIN {vTTmp360VA} d
 		ON
 	(a.num_telefonico = d.TELEFONO);
 
 --N 69
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_cartera_vencimiento_cierre;
+# DROP TABLE {vTC069};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_cartera_vencimiento_cierre AS
-	SELECT 
+# CREATE TABLE {vTC069} AS
+SELECT 
 		cuenta_facturacion
 	,	CASE 
 		WHEN t2.DDIAS_390 IS NOT NULL
@@ -2963,7 +2925,7 @@ CREATE TABLE $ESQUEMA_TEMP.otc_t_360_cartera_vencimiento_cierre AS
 FROM
 	{vTRepCart} t2
 WHERE
-	fecha_carga = $fechamas1;
+	fecha_carga = {fechamas1};
 
 " 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
@@ -3000,9 +2962,9 @@ WHERE
 		set tez.queue.name=$COLA_EJECUCION;
 
 --N 70
-DROP TABLE $ESQUEMA_TEMP.OTC_T_voz_dias_tmp_cierre;
+# DROP TABLE {vTC070};
 
-CREATE TABLE $ESQUEMA_TEMP.OTC_T_voz_dias_tmp_cierre AS
+# CREATE TABLE {vTC070} AS
 SELECT
 	DISTINCT CAST(msisdn AS bigint) msisdn
 	, CAST(fecha AS bigint) fecha
@@ -3010,8 +2972,8 @@ SELECT
 FROM
 	{vTAltPPCSLl}
 WHERE
-	fecha >= $fechaIniMes
-	AND fecha <= $FECHAEJE
+	fecha >= {fechaIniMes}
+	AND fecha <= {FECHAEJE}
 	AND tip_prepago IN (
 	SELECT
 		DISTINCT codigo
@@ -3021,9 +2983,9 @@ WHERE
 		marca = 'Movistar');
 
 --N 71
-DROP TABLE $ESQUEMA_TEMP.OTC_T_datos_dias_tmp_cierre;
+# DROP TABLE {vTC071};
 
-CREATE TABLE $ESQUEMA_TEMP.OTC_T_datos_dias_tmp_cierre AS
+# CREATE TABLE {vTC071} AS
 SELECT
 	DISTINCT CAST(msisdn AS bigint) msisdn
 	, CAST(feh_llamada AS bigint) fecha
@@ -3031,8 +2993,8 @@ SELECT
 FROM
 	{vTPPCSDi}
 WHERE
-	feh_llamada >= '$fechaIniMes'
-	AND feh_llamada <= '$FECHAEJE'
+	feh_llamada >= '{fechaIniMes}'
+	AND feh_llamada <= '{FECHAEJE}'
 	AND tip_prepago IN (
 	SELECT
 		DISTINCT codigo
@@ -3042,9 +3004,9 @@ WHERE
 		marca = 'Movistar');
 
 --N 72
-DROP TABLE $ESQUEMA_TEMP.OTC_T_sms_dias_tmp_cierre;
+# DROP TABLE {vTC072};
 
-CREATE TABLE $ESQUEMA_TEMP.OTC_T_sms_dias_tmp_cierre AS
+# CREATE TABLE {vTC072} AS
 SELECT
 	DISTINCT CAST(msisdn AS bigint) msisdn
 	, CAST(fecha AS bigint) fecha
@@ -3052,8 +3014,8 @@ SELECT
 FROM
 	{vTPPCSMe}
 WHERE
-	fecha >= '$fechaIniMes'
-	AND fecha <= '$FECHAEJE'
+	fecha >= '{fechaIniMes}'
+	AND fecha <= '{FECHAEJE}'
 	AND tip_prepago IN (
 	SELECT
 		DISTINCT codigo
@@ -3063,9 +3025,9 @@ WHERE
 		marca = 'Movistar');
 
 --N 73
-DROP TABLE $ESQUEMA_TEMP.OTC_T_cont_dias_tmp_cierre;
+# DROP TABLE {vTC073};
 
-CREATE TABLE $ESQUEMA_TEMP.OTC_T_cont_dias_tmp_cierre AS
+# CREATE TABLE {vTC073} AS
 SELECT
 	DISTINCT CAST(msisdn AS bigint) msisdn
 	, CAST(fecha AS bigint) fecha
@@ -3073,8 +3035,8 @@ SELECT
 FROM
 	{vTPPCSCon}
 WHERE
-	fecha >= '$fechaIniMes'
-	AND fecha <= '$FECHAEJE'
+	fecha >= '{fechaIniMes}'
+	AND fecha <= '{FECHAEJE}'
 	AND tip_prepago IN (
 	SELECT
 		DISTINCT codigo
@@ -3084,41 +3046,40 @@ WHERE
 		marca = 'Movistar');
 
 --N 74
-DROP TABLE $ESQUEMA_TEMP.OTC_T_parque_traficador_dias_tmp_cierre;
+# DROP TABLE {vTC074};
 
-CREATE TABLE $ESQUEMA_TEMP.OTC_T_parque_traficador_dias_tmp_cierre AS	
+# CREATE TABLE {vTC074} AS	
 WITH contadias AS (
 SELECT
 	DISTINCT msisdn
 	, fecha
 FROM
-	$ESQUEMA_TEMP.OTC_T_voz_dias_tmp_cierre
+	{vTC070}
 UNION
 SELECT
 	DISTINCT msisdn
 	, fecha
 FROM
-	$ESQUEMA_TEMP.OTC_T_datos_dias_tmp_cierre
+	{vTC071}
 UNION
 SELECT
 	DISTINCT msisdn
 	, fecha
 FROM
-	$ESQUEMA_TEMP.OTC_T_sms_dias_tmp_cierre
+	{vTC072}
 UNION
 SELECT
 	DISTINCT msisdn
 	, fecha
 FROM
-	$ESQUEMA_TEMP.OTC_T_cont_dias_tmp_cierre
+	{vTC073}
 			)
 SELECT
 			CASE
-		WHEN telefono LIKE '30%' THEN substr(telefono
-		, 3)
+		WHEN telefono LIKE '30%' THEN substr(telefono, 3)
 		ELSE telefono
 	END AS TELEFONO
-	, $FECHAEJE fecha_corte
+	, {FECHAEJE} fecha_corte
 	, sum(T_voz) dias_voz
 	, sum(T_datos) dias_datos
 	, sum(T_sms) dias_sms
@@ -3136,16 +3097,16 @@ FROM
 		, COALESCE (p.T_voz, a.T_datos, m.T_sms, n.T_CONTENIDO, 0) total
 	FROM
 		contadias
-	LEFT JOIN $ESQUEMA_TEMP.OTC_T_voz_dias_tmp_cierre p ON
+	LEFT JOIN {vTC070} p ON
 		contadias.msisdn = p.msisdn
 		AND contadias.fecha = p.fecha
-	LEFT JOIN $ESQUEMA_TEMP.OTC_T_datos_dias_tmp_cierre a ON
+	LEFT JOIN {vTC071} a ON
 		contadias.msisdn = a.msisdn
 		AND contadias.fecha = a.fecha
-	LEFT JOIN $ESQUEMA_TEMP.OTC_T_sms_dias_tmp_cierre m ON
+	LEFT JOIN {vTC072} m ON
 		contadias.msisdn = m.msisdn
 		AND contadias.fecha = m.fecha
-	LEFT JOIN $ESQUEMA_TEMP.OTC_T_cont_dias_tmp_cierre n ON
+	LEFT JOIN {vTC073} n ON
 		contadias.msisdn = n.msisdn
 		AND contadias.fecha = n.fecha) bb
 GROUP BY
@@ -3187,9 +3148,9 @@ GROUP BY
 
 --N 75
 --OBTIENE EL METODO O FORMA DE PAGO POR CUENTA
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_mop_defecto_tmp_cierre;
+# DROP TABLE {vTC075};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_mop_defecto_tmp_cierre AS
+# CREATE TABLE {vTC075} AS
 SELECT 
 	t.account_num
 	, t.payment_method_id
@@ -3218,15 +3179,15 @@ FROM
 	INNER JOIN {vTPaymMeth} b ON
 		b.payment_method_id = a.payment_method_id
 	WHERE
-		a.start_dat <= '$fecha_alt_ini') t
+		a.start_dat <= '{fecha_alt_ini}') t
 WHERE
 	t.orden IN (1, 2);
 
 --N 76
 --SE incluye LA FORMA DE PAGO AL PARQUE LinEA A LinEA
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_parque_mop_1_tmp_cierre;
+# DROP TABLE {vTC076};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_parque_mop_1_tmp_cierre AS
+# CREATE TABLE {vTC076} AS
 SELECT
 	*
 FROM
@@ -3240,16 +3201,16 @@ FROM
 	FROM
 		{vTNCMovParV1}
 	WHERE
-		fecha_proceso = $fechamas1) t
+		fecha_proceso = {fechamas1}) t
 WHERE
 	t.orden = 1;
 
 --N 77
 --SE OBTIENE EL CATALOGO DE SEGMENTO POR COMBINACIon unICA DE SEGMENTO Y SUBSEGMENTO
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_homo_segmentos_1_tmp_cierre;
+# DROP TABLE {vTC077};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_homo_segmentos_1_tmp_cierre AS
-	SELECT
+# CREATE TABLE {vTC077} AS
+SELECT
 	DISTINCT
 	upper(segmentacion) segmentacion
 	, UPPER(segmento) segmento
@@ -3258,9 +3219,9 @@ FROM
 
 --N 78
 --SE OBTIENE LA EDAD Y SEXO CALCULADOS PARA CADA LinEA
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_parque_edad_tmp_cierre;
+# DROP TABLE {vTC078};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_parque_edad_tmp_cierre AS
+# CREATE TABLE {vTC078} AS
 SELECT
 	dd.user_id num_telefonico
 	, dd.edad
@@ -3273,35 +3234,35 @@ INNER JOIN (
 	FROM
 		{vTBoxPE20}
 	WHERE
-		fecha_proceso < $fechamas1) fm ON
+		fecha_proceso < {fechamas1}) fm ON
 	fm.max_fecha = dd.fecha_proceso;
 
 --N 79
 --SE OBTIENE A PARTIR DE LA 360 MODELO EL TAC DE TRAFICO DE CADA LinEA
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_imei_tmp_cierre;
+# DROP TABLE {vTC079};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_imei_tmp_cierre AS
+# CREATE TABLE {vTC079} AS
 SELECT
 	ime.num_telefonico num_telefonico
 	, ime.tac tac
 FROM
 	{vT360Mod} ime
 WHERE
-	fecha_proceso = $FECHAEJE;
+	fecha_proceso = {FECHAEJE};
 
 --N 80
 --SE OBTIENEN LOS NUMEROS TELEFONICOS QUE USAN LA APP MI MOVISTAR
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_usa_app_tmp_cierre;
+# DROP TABLE {vTC080};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_usa_app_tmp_cierre AS
+# CREATE TABLE {vTC080} AS
 SELECT
 	numero_telefono
 	, count(1) total
 FROM
 	{vTUsuAct}
 WHERE
-	fecha_proceso >= $fechamenos1mes
-	AND fecha_proceso < $fechamas1
+	fecha_proceso >= {fechamenos1mes}
+	AND fecha_proceso < {fechamas1}
 GROUP BY
 	numero_telefono
 HAVING
@@ -3309,9 +3270,9 @@ HAVING
 
 --N 81
 --SE OBTIENEN LOS NUMEROS TELEFONICOS REGISTRADOS EN LA APP MI MOVISTAR					
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_usuario_app_tmp_cierre;
+# DROP TABLE {vTC081};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_usuario_app_tmp_cierre AS
+# CREATE TABLE {vTC081} AS
 SELECT
 	celular numero_telefono
 	, count(1) total
@@ -3324,21 +3285,21 @@ HAVING
 
 --N 82
 --SE OBTIENEN LA FECHA MinIMA DE CARGA DE LA TABLA DE USUARIO MOVISTAR PLAY, MENOR O IGUAL A LA FECHA DE EJECUCI?
-DROP TABLE $ESQUEMA_TEMP.tmp_360_fecha_mplay_cierre;
+# DROP TABLE {vTC082};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_fecha_mplay_cierre AS
+# CREATE TABLE {vTC082} AS
 SELECT
 	MAX(FECHA_PROCESO) AS fecha_proceso
 FROM
 	{vTUseSem}
 WHERE
-	FECHA_PROCESO <= $FECHAEJE;
+	FECHA_PROCESO <= {FECHAEJE};
 
 --N 83
 --SE OBTIENEN LOS USUARIOS QUE USAN MOVISTAR PLAY
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_usa_app_movi_tmp_cierre;
+# DROP TABLE {vTC083};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_usa_app_movi_tmp_cierre AS
+# CREATE TABLE {vTC083} AS
 SELECT
 	DISTINCT
 		SUBSTR((CASE
@@ -3351,16 +3312,16 @@ FROM
 LEFT JOIN {vTMPUsers} AS B ON
 	(A.USERUNIQUEID = B.MIBID
 		AND A.FECHA_PROCESO = B.FECHA_PROCESO)
-INNER JOIN $ESQUEMA_TEMP.tmp_360_fecha_mplay_cierre c ON
+INNER JOIN {vTC082} c ON
 	(a.fecha_proceso = c.fecha_proceso)
 WHERE
 	UPPER (A.SUBSCRIPTIONNAME) = 'EC_INT_TV_U_ACT_SERV';
 
 --N 84
 --SE OBTIENEN LOS USUARIOS REGISTRADOS EN MOVISTAR PLAY					
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_usuario_app_movi_tmp_cierre;
+# DROP TABLE {vTC084};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_usuario_app_movi_tmp_cierre AS
+# CREATE TABLE {vTC084} AS
 SELECT
 	DISTINCT
 		SUBSTR((CASE
@@ -3373,15 +3334,15 @@ FROM
 LEFT JOIN {vTMPUsers} AS B ON
 	(A.USERUNIQUEID = B.MIBID
 		AND A.FECHA_PROCESO = B.FECHA_PROCESO)
-INNER JOIN $ESQUEMA_TEMP.tmp_360_fecha_mplay_cierre c ON
+INNER JOIN {vTC082} c ON
 	(a.fecha_proceso = c.fecha_proceso)
 WHERE
 	UPPER (A.SUBSCRIPTIONNAME) = 'EC_INT_TV_U_REG';
 
 --N 85
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_bonos_devengo_tmp_cierre;
+# DROP TABLE {vTC085};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_bonos_devengo_tmp_cierre AS 
+# CREATE TABLE {vTC085} AS 
 SELECT 
 	a.num_telefono AS numero_telefono
 	, sum(b.imp_coste / 1.12)/ 1000 AS valor_bono
@@ -3391,10 +3352,10 @@ FROM
 	{vTPPGAAd} a
 LEFT JOIN {vTABoPre} b
 	ON
-	(b.fecha > $fechamenos1mes
-		AND b.fecha < $fechamas1
-		AND a.fecha > $fechamenos1mes
-		AND a.fecha < $fechamas1
+	(b.fecha > {fechamenos1mes}
+		AND b.fecha < {fechamas1}
+		AND a.fecha > {fechamenos1mes}
+		AND a.fecha < {fechamas1}
 		AND a.num_telefono = b.num_telefono
 		AND a.sec_actuacion = b.sec_actuacion
 		AND a.cod_particion = b.cod_particion)
@@ -3405,10 +3366,10 @@ WHERE
 	a.sec_baja IS NULL
 	AND b.cod_actuacio = 'AB'
 	AND b.cod_estarec = 'EJ'
-	AND b.fecha > $fechamenos1mes
-	AND b.fecha < $fechamas1
-	AND a.fecha > $fechamenos1mes
-	AND a.fecha < $fechamas1
+	AND b.fecha > {fechamenos1mes}
+	AND b.fecha < {fechamas1}
+	AND a.fecha > {fechamenos1mes}
+	AND a.fecha < {fechamas1}
 	AND b.imp_coste > 0
 GROUP BY
 	a.num_telefono
@@ -3416,9 +3377,9 @@ GROUP BY
 	, a.fec_alta;
 
 --N 86
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_bonos_all_tmp_cierre;
+# DROP TABLE {vTC086};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_bonos_all_tmp_cierre AS
+# CREATE TABLE {vTC086} AS
 SELECT
 	t1.numero_telefono
 	, sum(t1.valor_bono) AS valor_bono
@@ -3443,14 +3404,14 @@ FROM
 			t.c_transaction_datetime DESC) AS id
 		FROM
 			{vTBonCom} t
-		INNER JOIN $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre t2 ON
+		INNER JOIN {vTC032} t2 ON
 			t2.num_telefonico = t.c_customer_id
 			AND upper(t2.linea_negocio) LIKE 'PRE%'
 		INNER JOIN {vTCTLBon} t1 ON
 			t1.operacion = t.c_packet_code
 		WHERE
-			t.fecha_proceso > $fechamenos2mes
-			AND t.fecha_proceso < $fechamas1) b
+			t.fecha_proceso > {fechamenos2mes}
+			AND t.fecha_proceso < {fechamas1}) b
 	WHERE
 		b.id = 1
 UNION ALL
@@ -3460,16 +3421,16 @@ UNION ALL
 		, codigo_bono
 		, fec_alta AS fecha
 	FROM
-		$ESQUEMA_TEMP.otc_t_360_bonos_devengo_tmp_cierre) AS t1
+		{vTC085}) AS t1
 GROUP BY
 	t1.numero_telefono
 	, t1.codigo_bono
 	, t1.fecha;
 
 --N 87
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_bonos_tmp_cierre;
+# DROP TABLE {vTC087};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_bonos_tmp_cierre AS
+# CREATE TABLE {vTC087} AS
 SELECT
 	t1.numero_telefono
 	, t1.valor_bono
@@ -3486,14 +3447,14 @@ FROM
 	ORDER BY
 		fecha DESC) AS orden
 	FROM
-		$ESQUEMA_TEMP.otc_t_360_bonos_all_tmp_cierre) AS t1
+		{vTC086}) AS t1
 WHERE
 	orden = 1;
 
 --N 88
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_combero_all_tmp_cierre;
+# DROP TABLE {vTC088};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_combero_all_tmp_cierre AS
+# CREATE TABLE {vTC088} AS
 SELECT
 	t1.numero_telefono
 	, sum(t1.valor_bono) AS valor_bono
@@ -3518,7 +3479,7 @@ FROM
 			t.c_transaction_datetime DESC) AS id
 		FROM
 			{vTBonCom} t
-		INNER JOIN $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre t2 ON
+		INNER JOIN {vTC032} t2 ON
 			t2.num_telefonico = t.c_customer_id
 			AND upper(t2.linea_negocio) LIKE 'PRE%'
 		INNER JOIN {vTCTLBon} t1 ON
@@ -3526,8 +3487,8 @@ FROM
 		INNER JOIN {vTOfComComb} t3 ON
 			t3.cod_aa = t1.cod_aa
 		WHERE
-			t.fecha_proceso > $fechamenos1mes
-			AND t.fecha_proceso < $fechamas1) b
+			t.fecha_proceso > {fechamenos1mes}
+			AND t.fecha_proceso < {fechamas1}) b
 	WHERE
 		b.id = 1
 UNION ALL
@@ -3537,16 +3498,16 @@ UNION ALL
 		, codigo_bono
 		, fec_alta AS fecha
 	FROM
-		$ESQUEMA_TEMP.otc_t_360_bonos_devengo_tmp_cierre) AS t1
+		{vTC085}) AS t1
 GROUP BY
 	t1.numero_telefono
 	, t1.codigo_bono
 	, t1.fecha;
 
 --N 89
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_combero_tmp_cierre;
+# DROP TABLE {vTC089};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_combero_tmp_cierre AS
+# CREATE TABLE {vTC089} AS
 SELECT
 	t1.numero_telefono
 	, t1.valor_bono
@@ -3563,19 +3524,19 @@ FROM
 	ORDER BY
 		fecha DESC) AS orden
 	FROM
-		$ESQUEMA_TEMP.otc_t_360_combero_all_tmp_cierre) AS t1
+		{vTC088}) AS t1
 WHERE
 	orden = 1;
 
 --N 90
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_prob_churn_pre_temp_cierre;
+# DROP TABLE {vTC090};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_prob_churn_pre_temp_cierre AS	
+# CREATE TABLE {vTC090} AS	
 SELECT
 	gen.num_telefonico
 	, pre.prob_churn
 FROM
-	$ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre gen
+	{vTC032} gen
 INNER JOIN {vTChuPre} pre ON
 	pre.telefono = gen.num_telefonico
 INNER JOIN (
@@ -3584,7 +3545,7 @@ INNER JOIN (
 	FROM
 		{vTChuPre}
 	WHERE
-		fecha < $fechamas1) fm ON
+		fecha < {fechamas1}) fm ON
 	fm.max_fecha = pre.fecha
 WHERE
 	upper(gen.linea_negocio) LIKE 'PRE%'
@@ -3593,14 +3554,14 @@ GROUP BY
 	, pre.prob_churn;
 
 --N 91
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_prob_churn_pos_temp_cierre;
+# DROP TABLE {vTC091};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_prob_churn_pos_temp_cierre AS	
+# CREATE TABLE {vTC091} AS	
 SELECT
 	gen.num_telefonico
 	, pos.probability_label_1 AS prob_churn
 FROM
-	$ESQUEMA_TEMP.otc_t_360_parque_1_tmp gen
+	{vTTmp360Parq1} gen
 INNER JOIN {vTPredPort22} pos ON
 	pos.num_telefonico = gen.num_telefonico
 WHERE
@@ -3610,9 +3571,9 @@ GROUP BY
 	, pos.probability_label_1;
 
 --N 92
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_1_cierre;
+# DROP TABLE {vTC092};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_1_cierre AS
+# CREATE TABLE {vTC092} AS
 SELECT
 	DISTINCT
 	upper(segmentacion) segmentacion
@@ -3627,16 +3588,16 @@ SELECT
 	, 'OTROS';
 
 --N 93
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_cierre;
+# DROP TABLE {vTC093};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_cierre AS
+# CREATE TABLE {vTC093} AS
 SELECT
 	DISTINCT UPPER(a.sub_segmento) sub_segmento
 	, b.segmento
 	, b.segmento_fin
 FROM
-	$ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre a
-INNER JOIN $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_1_cierre b
+	{vTC032} a
+INNER JOIN {vTC092} b
 	ON
 	b.segmentacion = (CASE
 		WHEN UPPER(a.sub_segmento) = 'ROAMING' THEN 'ROAMING XDR'
@@ -3648,9 +3609,9 @@ INNER JOIN $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_1_cierre b
 	END);
 
 --N 94
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_general_temp_1_cierre;
+# DROP TABLE {vTC094};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_general_temp_1_cierre AS
+# CREATE TABLE {vTC094} AS
 SELECT
 	t.num_telefonico telefono
 	, t.codigo_plan
@@ -3719,34 +3680,34 @@ SELECT
 	, t13.end_dat fecha_fin_pago_anterior
 	, t13.payment_method_name forma_pago_anterior
 FROM
-	$ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre t
-LEFT JOIN $ESQUEMA_TEMP.otc_t_360_parque_mop_1_tmp_cierre t1 ON
+	{vTC032} t
+LEFT JOIN {vTC076} t1 ON
 	t1.num_telefonico = t.num_telefonico
-LEFT JOIN $ESQUEMA_TEMP.otc_t_360_mop_defecto_tmp_cierre t13 ON
+LEFT JOIN {vTC075} t13 ON
 	t13.account_num = t.account_num
 	AND t13.orden = 2
-LEFT JOIN $ESQUEMA_TEMP.otc_t_360_mop_defecto_tmp_cierre t14 ON
+LEFT JOIN {vTC075} t14 ON
 	t14.account_num = t.account_num
 	AND t14.orden = 1
-LEFT OUTER JOIN $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_cierre t3 ON
+LEFT OUTER JOIN {vTC093} t3 ON
 	upper(t3.sub_segmento) = upper(t.sub_segmento)
-LEFT OUTER JOIN $ESQUEMA_TEMP.otc_t_360_parque_edad_tmp_cierre t4 ON
+LEFT OUTER JOIN {vTC078} t4 ON
 	t4.num_telefonico = t.num_telefonico
-LEFT OUTER JOIN $ESQUEMA_TEMP.otc_t_360_imei_tmp_cierre t5 ON
+LEFT OUTER JOIN {vTC079} t5 ON
 	t5.num_telefonico = t.num_telefonico
-LEFT OUTER JOIN $ESQUEMA_TEMP.otc_t_360_usa_app_tmp_cierre t6 ON
+LEFT OUTER JOIN {vTC080} t6 ON
 	t6.numero_telefono = t.num_telefonico
-LEFT OUTER JOIN $ESQUEMA_TEMP.otc_t_360_usuario_app_tmp_cierre t7 ON
+LEFT OUTER JOIN {vTC081} t7 ON
 	t7.numero_telefono = t.num_telefonico
-LEFT OUTER JOIN $ESQUEMA_TEMP.otc_t_360_usa_app_movi_tmp_cierre t9 ON
+LEFT OUTER JOIN {vTC083} t9 ON
 	t9.numero_telefono = t.num_telefonico
-LEFT OUTER JOIN $ESQUEMA_TEMP.otc_t_360_usuario_app_movi_tmp_cierre t10 ON
+LEFT OUTER JOIN {vTC084} t10 ON
 	t10.numero_telefono = t.num_telefonico
-LEFT OUTER JOIN $ESQUEMA_TEMP.otc_t_360_bonos_tmp_cierre t8 ON
+LEFT OUTER JOIN {vTC087} t8 ON
 	t8.numero_telefono = t.num_telefonico
-LEFT OUTER JOIN $ESQUEMA_TEMP.otc_t_360_prob_churn_pre_temp_cierre t11 ON
+LEFT OUTER JOIN {vTC090} t11 ON
 	t11.num_telefonico = t.num_telefonico
-LEFT OUTER JOIN $ESQUEMA_TEMP.otc_t_360_prob_churn_pos_temp_cierre t12 ON
+LEFT OUTER JOIN {vTC091} t12 ON
 	t12.num_telefonico = t.num_telefonico
 WHERE
 	1 = 1
@@ -3819,9 +3780,9 @@ GROUP BY
 	, t13.payment_method_name;
 
 --N 95
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_general_temp_cierre;
+# DROP TABLE {vTC095};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_general_temp_cierre AS
+# CREATE TABLE {vTC095} AS
 SELECT 
 	a.*
 	, CASE
@@ -3831,15 +3792,15 @@ SELECT
 		ELSE 'NO'
 	END AS PARQUE_RECARGADOR
 FROM
-	$ESQUEMA_TEMP.otc_t_360_general_temp_1_cierre a
-LEFT JOIN $ESQUEMA_TEMP.tmp_otc_t_360_recargas_cierre b
+	{vTC094} a
+LEFT JOIN {vTC011} b
 	ON
 	a.telefono = b.numero_telefono;
 
 --N 96
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_catalogo_celdas_dpa_tmp_cierre;
+# DROP TABLE {vTC096};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_catalogo_celdas_dpa_tmp_cierre AS
+# CREATE TABLE {vTC096} AS
 SELECT
 	cc.*
 FROM
@@ -3850,13 +3811,13 @@ INNER JOIN (
 	FROM
 		{vTCatCelDPA}
 	WHERE
-		fecha_proceso < $fechamas1) cfm ON
+		fecha_proceso < {fechamas1}) cfm ON
 	cfm.max_fecha = cc.fecha_proceso;
 
 --N 97
-DROP TABLE $ESQUEMA_TEMP.tmp_360_ticket_recarga_cierre;
+# DROP TABLE {vTC097};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_ticket_recarga_cierre AS
+# CREATE TABLE {vTC097} AS
 SELECT
 	fecha_proceso AS mes
 	, num_telefonico AS telefono
@@ -3865,15 +3826,15 @@ SELECT
 FROM
 	{vT360Ing}
 WHERE
-	fecha_proceso IN ($fechaInimenos3mes, $fechaInimenos2mes, $fechaInimenos1mes)
+	fecha_proceso IN ({fechaInimenos3mes}, {fechaInimenos2mes}, {fechaInimenos1mes})
 GROUP BY
 	fecha_proceso
 	, num_telefonico;
 
 --N 98
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_ticket_rec_tmp_cierre;
+# DROP TABLE {vTC098};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_ticket_rec_tmp_cierre AS
+# CREATE TABLE {vTC098} AS
 SELECT
 	t1.mes
 	, t2.linea_negocio
@@ -3883,8 +3844,8 @@ SELECT
 	, sum(t1.total_rec_bono)/ sum(total_cantidad) AS ticket_mes
 	, count(telefono) AS cant
 FROM
-	$ESQUEMA_TEMP.tmp_360_ticket_recarga_cierre t1
-	, $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre t2
+	{vTC097} t1
+	, {vTC032} t2
 WHERE
 	t2.num_telefonico = t1.telefono
 	AND t2.linea_negocio_homologado = 'PREPAGO'
@@ -3894,35 +3855,35 @@ GROUP BY
 	, t1.telefono;
 
 --N 99
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_ticket_fin_tmp_cierre;
+# DROP TABLE {vTC099};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_ticket_fin_tmp_cierre AS
+# CREATE TABLE {vTC099} AS
 SELECT
 	telefono
 	, sum(nvl(ticket_mes, 0)) AS ticket_mes
 	, sum(nvl(cant, 0)) AS cant
 	, sum(nvl(ticket_mes, 0))/ sum(nvl(cant, 0)) AS ticket
 FROM
-	$ESQUEMA_TEMP.otc_t_360_ticket_rec_tmp_cierre
+	{vTC098}
 GROUP BY
 	telefono;
 
 --N 100
-DROP TABLE $ESQUEMA_TEMP.otc_t_fecha_scoring_tx_cierre;
+# DROP TABLE {vTC100};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_fecha_scoring_tx_cierre AS
+# CREATE TABLE {vTC100} AS
 SELECT
 	max(fecha_carga) AS fecha_carga
 FROM
 	{vTScTX}
 WHERE
-	fecha_carga >= $fechamenos5
-	AND fecha_carga <= $FECHAEJE;
+	fecha_carga >= {fechamenos5}
+	AND fecha_carga <= {FECHAEJE};
 
 --N 101
-DROP TABLE $ESQUEMA_TEMP.otc_t_scoring_tiaxa_tmp_cierre;
+# DROP TABLE {vTC101};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_scoring_tiaxa_tmp_cierre AS
+# CREATE TABLE {vTC101} AS
 SELECT
 	substr(a.msisdn
 	, 4
@@ -3932,18 +3893,16 @@ SELECT
 	, max(a.limite_credito) AS limite_credito
 FROM
 	{vTScTX} a
-	, $ESQUEMA_TEMP.otc_t_fecha_scoring_tx_cierre b
+	, {vTC100} b
 WHERE
 	a.fecha_carga = b.fecha_carga
 GROUP BY
-	substr(a.msisdn
-	, 4
-	, 9);
+	substr(a.msisdn, 4, 9);
 
 --N 102
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_num_bancos_tmp_cierre;
+# DROP TABLE {vTC102};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_num_bancos_tmp_cierre AS
+# CREATE TABLE {vTC102} AS
 SELECT
 	a.numerodestinosms AS telefono
 	, COUNT(*) AS conteo
@@ -3954,16 +3913,16 @@ INNER JOIN {vTNumBSMS} b
 	b.sc = a.numeroorigensms
 WHERE
 	1 = 1
-	AND a.fechasms >= $fechamenos6mes
-	AND a.fechasms < $fechamas1
+	AND a.fechasms >= {fechamenos6mes}
+	AND a.fechasms < {fechamas1}
 GROUP BY
 	a.numerodestinosms;
 
 --N 103
 --parte 2 general
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_bonos_fidelizacion_row_temp_cierre ;
+# DROP TABLE {vTC103} ;
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_bonos_fidelizacion_row_temp_cierre AS
+# CREATE TABLE {vTC103} AS
 SELECT
 	telefono
 	, tipo
@@ -3983,13 +3942,13 @@ INNER JOIN (
 	FROM
 		{vTBonFid}
 	WHERE
-		fecha < $fechamas1) b ON
+		fecha < {fechamas1}) b ON
 	b.fecha_max = a.fecha;
 
 --N 104
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_megas_temp_cierre ;
+# DROP TABLE {vTC104} ;
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_megas_temp_cierre AS
+# CREATE TABLE {vTC104} AS
 SELECT
 	telefono
 	, max(CASE WHEN orden = 1 THEN concat(codigo_slo, '-', mb) ELSE 'NO' END) M01
@@ -3997,16 +3956,16 @@ SELECT
 	, max(CASE WHEN orden = 3 THEN concat(codigo_slo, '-', mb) ELSE 'NO' END) M03
 	, max(CASE WHEN orden = 4 THEN concat(codigo_slo, '-', mb) ELSE 'NO' END) M04
 FROM
-	$ESQUEMA_TEMP.otc_t_360_bonos_fidelizacion_row_temp_cierre
+	{vTC103}
 WHERE
 	tipo = 'BONO_MEGAS'
 GROUP BY
 	telefono;
 
 --N 105
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_megas_colum_temp_cierre ;
+# DROP TABLE {vTC105} ;
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_megas_colum_temp_cierre AS
+# CREATE TABLE {vTC105} AS
 SELECT
 	telefono
 	, CASE WHEN m01 <> 'NO' 
@@ -4023,12 +3982,12 @@ SELECT
 		ELSE ''
 	END fide_megas
 FROM
-	$ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_megas_temp_cierre;
+	{vTC104};
 
 --N 106
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_dumy_temp_cierre ;
+# DROP TABLE {vTC106} ;
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_dumy_temp_cierre AS
+# CREATE TABLE {vTC106} AS
 SELECT
 	telefono
 	, max(CASE WHEN orden = 1 THEN codigo_slo ELSE 'NO' END) M01
@@ -4036,16 +3995,16 @@ SELECT
 	, max(CASE WHEN orden = 3 THEN codigo_slo ELSE 'NO' END) M03
 	, max(CASE WHEN orden = 4 THEN codigo_slo ELSE 'NO' END) M04
 FROM
-	$ESQUEMA_TEMP.otc_t_360_bonos_fidelizacion_row_temp_cierre
+	{vTC103}
 WHERE
 	tipo = 'BONO_DUMY'
 GROUP BY
 	telefono;
 
 --N 107
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_dumy_colum_temp_cierre;
+# DROP TABLE {vTC107};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_dumy_colum_temp_cierre AS
+# CREATE TABLE {vTC107} AS
 SELECT
 	telefono
 	, CASE WHEN m01 <> 'NO' 
@@ -4062,12 +4021,12 @@ SELECT
 		ELSE ''
 	END fide_dumy
 FROM
-	$ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_dumy_temp_cierre;
+	{vTC106};
 
 --N 108
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_nse_adendum_cierre;
+# DROP TABLE {vTC108};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_nse_adendum_cierre AS
+# CREATE TABLE {vTC108} AS
 SELECT
 	t1.es_parque
 	, t1.num_telefonico
@@ -4088,14 +4047,14 @@ FROM
 	FROM
 		{vT360Gen}
 	WHERE
-		fecha_proceso = $FECHAEJE) AS t1
+		fecha_proceso = {FECHAEJE}) AS t1
 WHERE
 	t1.orden = 1;
 
 --N 109
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_general_temp_final_1_cierre;
+# DROP TABLE {vTC109};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_general_temp_final_1_cierre AS
+# CREATE TABLE {vTC109} AS
 SELECT
 	gen.telefono
 	, gen.codigo_plan
@@ -4186,25 +4145,25 @@ SELECT
 	, gen.banco
 	, gen.fecha_proceso
 FROM
-	$ESQUEMA_TEMP.otc_t_360_general_temp_cierre gen
-LEFT OUTER JOIN $ESQUEMA_TEMP.otc_t_360_nse_adendum_cierre nse ON
+	{vTC095} gen
+LEFT OUTER JOIN {vTC108} nse ON
 	nse.num_telefonico = gen.telefono
 LEFT OUTER JOIN {vT360Traf} tra ON
 	tra.telefono = gen.telefono
 	AND tra.fecha_proceso = gen.fecha_proceso
-LEFT JOIN $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_megas_colum_temp_cierre fm ON
+LEFT JOIN {vTC105} fm ON
 	fm.telefono = gen.telefono
-LEFT JOIN $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_dumy_colum_temp_cierre fd ON
+LEFT JOIN {vTC107} fd ON
 	fd.telefono = gen.telefono
-LEFT JOIN $ESQUEMA_TEMP.otc_t_360_num_bancos_tmp_cierre nb ON
+LEFT JOIN {vTC102} nb ON
 	nb.telefono = gen.telefono
-LEFT JOIN $ESQUEMA_TEMP.otc_t_360_ticket_fin_tmp_cierre tk ON
+LEFT JOIN {vTC099} tk ON
 	tk.telefono = gen.telefono
-LEFT JOIN $ESQUEMA_TEMP.otc_t_360_combero_tmp_cierre comb ON
+LEFT JOIN {vTC089} comb ON
 	comb.numero_telefono = gen.telefono
-LEFT JOIN $ESQUEMA_TEMP.otc_t_scoring_tiaxa_tmp_cierre tx ON
+LEFT JOIN {vTC101} tx ON
 	tx.numero_telefono = gen.telefono
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_campos_adicionales_cierre ca ON
+LEFT JOIN {vTC068} ca ON
 	gen.telefono = ca.telefono
 GROUP BY
 	gen.telefono
@@ -4297,9 +4256,9 @@ GROUP BY
 	, gen.fecha_proceso;
 
 --N 110
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_susp_cobranza_cierre;
+# DROP TABLE {vTC110};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_susp_cobranza_cierre AS
+# CREATE TABLE {vTC110} AS
 SELECT
 	t2.*
 FROM
@@ -4323,7 +4282,7 @@ ROW_NUMBER() OVER (PARTITION BY t1.name
 			END AS orden_susp
 			, a.*
 		FROM
-			$ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre a
+			{vTC048} a
 		WHERE
 			(motivo_suspension IN 
 ('Por Cobranzas (uni-direccional)', 'SuspensiÃ³n por facturaciÃ³n','Por Cobranzas (bi-direccional)')
@@ -4334,9 +4293,9 @@ WHERE
 	t2.orden = 1;
 
 --N 111
-DROP TABLE $ESQUEMA_TEMP.tmp_360_otras_suspensiones_cierre;
+# DROP TABLE {vTC111};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_otras_suspensiones_cierre AS
+# CREATE TABLE {vTC111} AS
 SELECT
 	a.name
 	, CASE
@@ -4361,28 +4320,28 @@ SELECT
 		ELSE ''
 	END AS susp_voluntaria
 FROM
-	$ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre a
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre b
+	{vTC048} a
+LEFT JOIN {vTC048} b
 ON
 	(a.name = b.name
 		AND (b.motivo_suspension LIKE 'Abuso 911 - 180 d%'))
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre c
+LEFT JOIN {vTC048} c
 ON
 	(a.name = c.name
 		AND (c.motivo_suspension LIKE 'Abuso 911 - 30 d%'))
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre d
+LEFT JOIN {vTC048} d
 ON
 	(a.name = d.name
 		AND d.motivo_suspension = 'Cobranza puntual')
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre e
+LEFT JOIN {vTC048} e
 ON
 	(a.name = e.name
 		AND e.motivo_suspension = 'Fraude')
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre f
+LEFT JOIN {vTC048} f
 ON
 	(a.name = f.name
 		AND f.motivo_suspension = 'Robo')
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre g
+LEFT JOIN {vTC048} g
 ON
 	(a.name = g.name
 		AND g.motivo_suspension = 'Voluntaria')
@@ -4399,9 +4358,9 @@ WHERE
 	AND a.name <> '';
 
 --N 112
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_general_temp_final_2_cierre;
+# DROP TABLE {vTC112};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_general_temp_final_2_cierre AS 	  
+# CREATE TABLE {vTC112} AS 	  
 SELECT
 	a.telefono
 	, a.codigo_plan
@@ -4500,26 +4459,26 @@ THEN 0
 	, a.adendum
 	, a.fecha_proceso
 FROM
-	$ESQUEMA_TEMP.otc_t_360_general_temp_final_1_cierre a
-LEFT JOIN $ESQUEMA_TEMP.tmp_otc_t_360_recargas_cierre b
+	{vTC109} a
+LEFT JOIN {vTC011} b
 ON
 	a.telefono = b.numero_telefono
-LEFT JOIN $ESQUEMA_TEMP.otc_t_360_susp_cobranza_cierre c
+LEFT JOIN {vTC110} c
 ON
 	a.telefono = c.name
 	AND a.estado_abonado = 'SAA'
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_otras_suspensiones_cierre d
+LEFT JOIN {vTC111} d
 ON
 	a.telefono = d.name
 	AND a.estado_abonado = 'SAA'
-LEFT JOIN $ESQUEMA_TEMP.otc_t_360_cartera_vencimiento_cierre e
+LEFT JOIN {vTC069} e
 ON
 	a.account_num = e.cuenta_facturacion;
 
 --N 113
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_general_temp_final_cierre;
+# DROP TABLE {vTC113};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_general_temp_final_cierre AS
+# CREATE TABLE {vTC113} AS
 SELECT
 	*
 FROM
@@ -4531,15 +4490,15 @@ FROM
 	ORDER BY
 		fecha_alta DESC) AS orden
 	FROM
-		$ESQUEMA_TEMP.otc_t_360_general_temp_final_2_cierre) AS t1
+		{vTC112}) AS t1
 WHERE
 	orden = 1;
 
 --N 114
 --FECHA ALTA DE LA CUENTA
-DROP TABLE $ESQUEMA_TEMP.otc_t_360_cuenta_fecha_cierre;
+# DROP TABLE {vTC114};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_360_cuenta_fecha_cierre AS
+# CREATE TABLE {vTC114} AS
 SELECT
 	CAST(A.ACTUAL_START_DATE AS date) AS SUSCRIPTOR_ACTUAL_START_DATE
 	, ACCT.BILLING_ACCT_NUMBER AS CTA_FACT
@@ -4550,9 +4509,9 @@ INNER JOIN {vTCBMBiAc} ACCT
 	A.BILLING_ACCOUNT = ACCT.OBJECT_ID;
 
 --N 115
-DROP TABLE $ESQUEMA_TEMP.otc_t_cuenta_num_tmp_cierre;
+# DROP TABLE {vTC115};
 
-CREATE TABLE $ESQUEMA_TEMP.otc_t_cuenta_num_tmp_cierre AS 
+# CREATE TABLE {vTC115} AS 
 SELECT
 	Fecha_Alta_Cuenta
 	, CTA_FACT
@@ -4566,7 +4525,7 @@ FROM
 		CTA_FACT
 		, SUSCRIPTOR_ACTUAL_START_DATE) AS orden
 	FROM
-		$ESQUEMA_TEMP.otc_t_360_cuenta_fecha_cierre) FF
+		{vTC114}) FF
 WHERE
 	orden = 1;" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
@@ -4603,9 +4562,9 @@ WHERE
 		set tez.queue.name=$COLA_EJECUCION;
 
 --N 116
-DROP TABLE $ESQUEMA_TEMP.tmp_360_general_cierre_prev;
+# DROP TABLE {vTC116};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_general_cierre_prev AS
+# CREATE TABLE {vTC116} AS
 SELECT
 	DISTINCT 
 	t1.telefono
@@ -4645,11 +4604,9 @@ SELECT
 	, t1.fidelizacion_megas
 	, t1.fidelizacion_dumy
 	, t1.bancarizado
-	, nvl(t1.bono_combero
-	, '') AS bono_combero
+	, nvl(t1.bono_combero, '') AS bono_combero
 	, t1.ticket_recarga
-	, nvl(t1.tiene_score_tiaxa
-	, 'NO') AS tiene_score_tiaxa
+	, nvl(t1.tiene_score_tiaxa, 'NO') AS tiene_score_tiaxa
 	, t1.score_1_tiaxa
 	, t1.score_2_tiaxa
 	, t1.limite_credito
@@ -4746,38 +4703,38 @@ SELECT
 	, A5.dias_total
 	--,cast(t1.fecha_proceso as bigint) fecha_proceso
 	, t1.adendum
-	, $FECHAEJE AS fecha_proceso
+	, {FECHAEJE} AS fecha_proceso
 	, t1.es_parque AS es_parque_old
 FROM
-	$ESQUEMA_TEMP.otc_t_360_general_temp_final_cierre t1
-LEFT JOIN $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_t_mov_cierre A2 ON
+	{vTC113} t1
+LEFT JOIN {vTC043} A2 ON
 	(t1.TELEFONO = A2.NUM_TELEFONICO)
 	AND (t1.LINEA_NEGOCIO = a2.LINEA_NEGOCIO)
-LEFT JOIN $ESQUEMA_TEMP.OTC_T_360_PARQUE_1_MOV_MES_TMP_cierre A1 ON
+LEFT JOIN {vTC044} A1 ON
 	(t1.TELEFONO = A1.TELEFONO)
 	AND (t1.fecha_movimiento_mes = A1.fecha_movimiento_mes)
-LEFT JOIN $ESQUEMA_TEMP.otc_t_cuenta_num_tmp_cierre A3 ON
+LEFT JOIN {vTC115} A3 ON
 	(t1.account_num = A3.cta_fact)
-LEFT JOIN $ESQUEMA_TEMP.otc_t_360_parque_1_mov_seg_tmp_cierre A4 ON
+LEFT JOIN {vTC045} A4 ON
 	(t1.TELEFONO = A4.TELEFONO)
 	AND (t1.es_parque = 'SI')
-LEFT JOIN $ESQUEMA_TEMP.OTC_T_parque_traficador_dias_tmp_cierre A5 ON
+LEFT JOIN {vTC074} A5 ON
 	(t1.TELEFONO = A5.TELEFONO)
-	AND ($FECHAEJE = A5.fecha_corte)
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_prq_glb A6 ON
+	AND ({FECHAEJE} = A5.fecha_corte)
+LEFT JOIN {vTC047} A6 ON
 	(T1.TELEFONO = A6.TELEFONO
 		AND T1.ACCOUNT_NUM = A6.ACCOUNT_NO);
 
 --N 117
-DROP TABLE $ESQUEMA_TEMP.tmp_360_dup_cierre;
+# DROP TABLE {vTC117};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_dup_cierre AS
+# CREATE TABLE {vTC117} AS
 SELECT
 	es_parque
 	, telefono
 	, count(1) AS cant
 FROM
-	$ESQUEMA_TEMP.tmp_360_general_cierre_prev
+	{vTC116}
 GROUP BY
 	es_parque
 	, telefono
@@ -4785,9 +4742,9 @@ HAVING
 	count(1) >1;
 
 --N 118
-DROP TABLE $ESQUEMA_TEMP.tmp_360_cierre_correccion_dup;
+# DROP TABLE {vTC118};
 
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_cierre_correccion_dup AS
+# CREATE TABLE {vTC118} AS
 SELECT
 	t3.*
 FROM 
@@ -4803,16 +4760,16 @@ FROM
 		t1.telefono
 		, t1.fecha_alta DESC) AS id
 	FROM
-		$ESQUEMA_TEMP.tmp_360_general_cierre_prev t1
-		, $ESQUEMA_TEMP.tmp_360_dup_cierre t2
+		{vTC116} t1
+		, {vTC117} t2
 	WHERE
 		t1.telefono = t2.telefono) AS t3
 WHERE
 	t3.id = 1;
 
 --N 119
-DROP TABLE $ESQUEMA_TEMP.tmp_otc_t_user_sin_duplicados_cierre;
-CREATE TABLE $ESQUEMA_TEMP.tmp_otc_t_user_sin_duplicados_cierre AS
+# DROP TABLE {vTC119};
+# CREATE TABLE {vTC119} AS
 SELECT
 	firstname
 	, 'SI' AS usuario_web
@@ -4821,27 +4778,27 @@ FROM
 	{vTPortUs} web
 WHERE
 	web.pt_fecha_creacion >= 20200827
-	AND web.pt_fecha_creacion <= $FECHAEJE
+	AND web.pt_fecha_creacion <= {FECHAEJE}
 	AND LENGTH(firstname)= 19
 GROUP BY
 	firstname;
 
 --N 120
-DROP TABLE $ESQUEMA_TEMP.tmp_360_web_cierre;
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_web_cierre AS
+# DROP TABLE {vTC120};
+# CREATE TABLE {vTC120} AS
 SELECT 
 	web.usuario_web
 	, web.fecha_registro_web
 	, cst.cust_ext_ref
 FROM
-	$ESQUEMA_TEMP.tmp_otc_t_user_sin_duplicados_cierre web
-INNER JOIN db_rdb.otc_t_r_cim_res_cust_acct cst
+	{vTC119} web
+INNER JOIN {vTResCusAcc} cst
 		ON
 	CAST(firstname AS bigint)= cst.object_id;
 
 --N 121
-DROP TABLE $ESQUEMA_TEMP.tmp_360_app_mi_movistar_cierre;
-CREATE TABLE $ESQUEMA_TEMP.tmp_360_app_mi_movistar_cierre AS
+# DROP TABLE {vTC121};
+# CREATE TABLE {vTC121} AS
 SELECT
 	num_telefonico
 	, usuario_app
@@ -4873,21 +4830,21 @@ FROM
 			{vTMinWV}
 		WHERE
 			id_action_wv = 2005
-			AND pt_mes = SUBSTRING($FECHAEJE, 1, 6)
+			AND pt_mes = SUBSTRING({FECHAEJE}, 1, 6)
 		GROUP BY
 			min_mines_wv) trx
 		ON
 		reg.celular = trx.min_mines_wv
 	WHERE
-		reg.pt_fecha_creacion <= $FECHAEJE) x
+		reg.pt_fecha_creacion <= {FECHAEJE}) x
 WHERE
 	x.rnum = 1;
 
 --N 122
 --20210629 - CREA TABLA TEMPORAL CON LA INFORMACION DE LA FUENTE otc_t_r_cim_cont
-DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_otc_t_r_cim_cont;
-CREATE TABLE $ESQUEMA_TEMP.tmp_otc_t_r_cim_cont AS
-	SELECT
+# DROP TABLE IF EXISTS {vTC122};
+# CREATE TABLE {vTC122} AS
+SELECT
 	DISTINCT doc_number AS cedula
 	, birthday AS fecha_nacimiento
 FROM
@@ -4898,9 +4855,9 @@ WHERE
 
 --N 123
 --20210629 - CREA TABLA TEMPORAL CON LA INFORMACION DE LA FUENTE base_censo
-DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_thebox_base_censo;
-CREATE TABLE $ESQUEMA_TEMP.tmp_thebox_base_censo AS
-	SELECT
+# DROP TABLE IF EXISTS {vTC123};
+# CREATE TABLE {vTC123} AS
+SELECT
 	DISTINCT cedula
 	, fecha_nacimiento
 FROM
@@ -4911,9 +4868,9 @@ WHERE
 
 --N 124
 --20210629 - CREA TABLA CON SOLO LA INFORMACION DE LAS CEDULAS DUPLICADOS 
-DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_cim_cont_cedula_duplicada;
-CREATE TABLE $ESQUEMA_TEMP.tmp_cim_cont_cedula_duplicada AS
-	SELECT
+# DROP TABLE IF EXISTS {vTC124};
+# CREATE TABLE {vTC124} AS
+SELECT
 	DISTINCT x.cedula
 FROM
 	(
@@ -4921,7 +4878,7 @@ FROM
 		cedula
 		, count(1)
 	FROM
-		$ESQUEMA_TEMP.tmp_otc_t_r_cim_cont
+		{vTC122}
 	GROUP BY
 		cedula
 	HAVING
@@ -4929,18 +4886,18 @@ FROM
 
 --N 125
 --20210629 - CREA TABLA CON SOLO LA INFORMACION DE LAS CEDULAS CON FECHA SIN DUPLICADOS
-DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_cim_cont_sin_duplicados;
-CREATE TABLE $ESQUEMA_TEMP.tmp_cim_cont_sin_duplicados AS
-	SELECT
+# DROP TABLE IF EXISTS {vTC125};
+# CREATE TABLE {vTC125} AS
+SELECT
 	a.cedula
 	, a.fecha_nacimiento
 FROM
-	$ESQUEMA_TEMP.tmp_otc_t_r_cim_cont a
+	{vTC122} a
 LEFT JOIN (
 	SELECT
 		cedula
 	FROM
-		$ESQUEMA_TEMP.tmp_cim_cont_cedula_duplicada) b
+		{vTC124}) b
 		ON
 	a.cedula = b.cedula
 WHERE
@@ -4948,41 +4905,41 @@ WHERE
 
 --N 126
 --20210629 - CREA TABLA PRINCIPAL CON LA INFORMACION DE otc_t_r_cim_cont CON FECHA OK SIN DUPLICADOS
-DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_cim_cont_con_fecha_ok;
-CREATE TABLE $ESQUEMA_TEMP.tmp_cim_cont_con_fecha_ok AS
-	SELECT
+# DROP TABLE IF EXISTS {vTC126};
+# CREATE TABLE {vTC126} AS
+SELECT
 	DISTINCT a.cedula
 	, b.fecha_nacimiento
 FROM
-	$ESQUEMA_TEMP.tmp_cim_cont_cedula_duplicada a
+	{vTC124} a
 INNER JOIN (
 	SELECT
 		cedula
 		, fecha_nacimiento
 	FROM
-		$ESQUEMA_TEMP.tmp_thebox_base_censo) b
+		{vTC123}) b
 		ON
 	a.cedula = b.cedula;
 
 --N 127
 --20210629 - CREA TABLA PRINCIPAL CON LA INFORMACION DE otc_t_r_cim_cont CON FECHA MIN SIN DUPLICADOS
-DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_principal_min_fecha;
-CREATE TABLE $ESQUEMA_TEMP.tmp_principal_min_fecha AS
-	SELECT
+# DROP TABLE IF EXISTS {vTC127};
+# CREATE TABLE {vTC127} AS
+SELECT
 	a.cedula
 	, MIN(a.fecha_nacimiento) AS fecha_nacimiento
 FROM
-	$ESQUEMA_TEMP.tmp_otc_t_r_cim_cont a
+	{vTC122} a
 INNER JOIN (
 	SELECT
 		a.cedula
 	FROM
-		$ESQUEMA_TEMP.tmp_cim_cont_cedula_duplicada a
+		{vTC124} a
 	LEFT JOIN (
 		SELECT
 			cedula
 		FROM
-			$ESQUEMA_TEMP.tmp_cim_cont_con_fecha_ok) b
+			{vTC126}) b
 		ON
 		a.cedula = b.cedula
 	WHERE
@@ -4994,32 +4951,32 @@ GROUP BY
 
 --N 128
 --20210629 - CREA TABLA PRINCIPAL CON LA INFORMACION TOTAL DE otc_t_r_cim_cont Y base_censo SIN DUPLICADOS
-DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_data_total_sin_duplicados;
-CREATE TABLE $ESQUEMA_TEMP.tmp_data_total_sin_duplicados AS
-	SELECT
+# DROP TABLE IF EXISTS {vTC128};
+# CREATE TABLE {vTC128} AS
+SELECT
 	cedula
 	, fecha_nacimiento
 FROM
-	$ESQUEMA_TEMP.tmp_cim_cont_sin_duplicados
+	{vTC125}
 UNION
 	SELECT
 	cedula
 	, fecha_nacimiento
 FROM
-	$ESQUEMA_TEMP.tmp_cim_cont_con_fecha_ok
+	{vTC126}
 UNION
 	SELECT
 	cedula
 	, fecha_nacimiento
 FROM
-	$ESQUEMA_TEMP.tmp_principal_min_fecha;
+	{vTC127};
 
 --N 129
 --20210629 - CREA TABLA CON LA INFORMACION DE TODOS LAS CEDULAS CON SU FECHA, ANTES DE CRUZAR CON LA MOVIPARQUE
-DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_fecha_nacimiento_mvp;
-CREATE TABLE $ESQUEMA_TEMP.tmp_fecha_nacimiento_mvp AS
+# DROP TABLE IF EXISTS {vTC129};
+# CREATE TABLE {vTC129} AS
 --20210629 - OBTIENE LA INFORMACION DE LOS REGISTROS COMUNES
-	SELECT
+SELECT
 	COALESCE(a.cedula
 	, b.cedula) AS cedula
 	, COALESCE(a.fecha_nacimiento, b.fecha_nacimiento) AS fecha_nacimiento
@@ -5029,7 +4986,7 @@ FROM
 		cedula
 		, fecha_nacimiento
 	FROM
-		$ESQUEMA_TEMP.tmp_data_total_sin_duplicados) a
+		{vTC128}) a
 INNER JOIN (
 	SELECT
 		DISTINCT CAST(cedula AS string) AS cedula
@@ -5052,7 +5009,7 @@ FROM
 		cedula
 		, fecha_nacimiento
 	FROM
-		$ESQUEMA_TEMP.tmp_data_total_sin_duplicados) a
+		{vTC128}) a
 LEFT JOIN (
 	SELECT
 		DISTINCT CAST(cedula AS string) AS cedula
@@ -5086,14 +5043,14 @@ LEFT JOIN (
 		cedula
 		, fecha_nacimiento
 	FROM
-		$ESQUEMA_TEMP.tmp_data_total_sin_duplicados) b
+		{vTC128}) b
 		ON
 	a.cedula = b.cedula
 WHERE
 	b.cedula IS NULL;
 
---N 130
-ALTER TABLE {vT360Gen} DROP IF EXISTS PARTITION(fecha_proceso = $FECHAEJE);
+--N 130 ###### ojo  ###########
+ALTER TABLE {vT360Gen} # DROP IF EXISTS PARTITION(fecha_proceso = {FECHAEJE});
 
 INSERT
 	INTO
@@ -5253,50 +5210,50 @@ INSERT
 	--20210629 - SE AGREGA CAMPO FECHA NACIMIENTO
 	--20210712 - Giovanny Cholca, valida que la fecha actual - fecha de nacimiento no sea menor a 18 aÃ±os, si se cumple colocamos null al a la fecha de nacimiento
 	, CASE
-		WHEN round(datediff('$fecha_eje1'
+		WHEN round(datediff('{fecha_eje1}'
 		, COALESCE(CAST(cs.fecha_nacimiento AS varchar(12))
-		, '$fecha_eje1'))/ 365.25) <18
-		OR round(datediff('$fecha_eje1'
+		, '{fecha_eje1}'))/ 365.25) <18
+		OR round(datediff('{fecha_eje1}'
 		, COALESCE(CAST(cs.fecha_nacimiento AS varchar(12))
-		, '$fecha_eje1'))/ 365.25) > 120
+		, '{fecha_eje1}'))/ 365.25) > 120
 		THEN NULL
 		ELSE cs.fecha_nacimiento
 	END AS fecha_nacimiento
 	, t1.fecha_proceso
 FROM
-	$ESQUEMA_TEMP.tmp_360_general_cierre_prev t1
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_cierre_correccion_dup t2 ON
+	{vTC116} t1
+LEFT JOIN {vTC118} t2 ON
 	t1.telefono = t2.telefono
 	AND t1.account_num = t2.account_num
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_app_mi_movistar_cierre pp ON
+LEFT JOIN {vTC121} pp ON
 	(t1.telefono = pp.num_telefonico)
-LEFT JOIN $ESQUEMA_TEMP.tmp_360_web_cierre wb ON
+LEFT JOIN {vTC120} wb ON
 	(t1.customer_ref = wb.cust_ext_ref)
 	--20210629 - SE REALIZA EL CRUCE CON LA TEMPORAL PARA AGREGAR CAMPO FECHA NACIMIENTO
-LEFT JOIN $ESQUEMA_TEMP.tmp_fecha_nacimiento_mvp cs ON
+LEFT JOIN {vTC129} cs ON
 	t1.identificacion_cliente = cs.cedula;
 
-DROP TABLE $ESQUEMA_TEMP.tmp_otc_t_user_sin_duplicados_cierre;
+# DROP TABLE {vTC119};
 
-DROP TABLE $ESQUEMA_TEMP.tmp_360_web_cierre;
+# DROP TABLE {vTC120};
 
-DROP TABLE $ESQUEMA_TEMP.tmp_360_app_mi_movistar_cierre;
---20210629 - SE AGREGA DROP DE LAS TABLAS
-		DROP TABLE $ESQUEMA_TEMP.tmp_otc_t_r_cim_cont;
+# DROP TABLE {vTC121};
+--20210629 - SE AGREGA # DROP DE LAS TABLAS
+# DROP TABLE {vTC122};
 
-DROP TABLE $ESQUEMA_TEMP.tmp_thebox_base_censo;
+# DROP TABLE {vTC123};
 
-DROP TABLE $ESQUEMA_TEMP.tmp_cim_cont_cedula_duplicada;
+# DROP TABLE {vTC124};
 
-DROP TABLE $ESQUEMA_TEMP.tmp_cim_cont_sin_duplicados;
+# DROP TABLE {vTC125};
 
-DROP TABLE $ESQUEMA_TEMP.tmp_cim_cont_con_fecha_ok;
+# DROP TABLE {vTC126};
 
-DROP TABLE $ESQUEMA_TEMP.tmp_data_total_sin_duplicados;
+# DROP TABLE {vTC128};
 
-DROP TABLE $ESQUEMA_TEMP.tmp_principal_min_fecha;
+# DROP TABLE {vTC127};
 
-DROP TABLE $ESQUEMA_TEMP.tmp_fecha_nacimiento_mvp;" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
+# DROP TABLE {vTC129};" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
 			# Verificacion de creacion de archivo
 			if [ $? -eq 0 ]; then

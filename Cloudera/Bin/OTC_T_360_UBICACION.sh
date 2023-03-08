@@ -1,3 +1,4 @@
+set -e
 #########################################################################################################
 # NOMBRE: OTC_T_360_UBICACION.sh  		      												                        
 # DESCRIPCION:																							                                            
@@ -36,6 +37,7 @@ RUTA_PYTHON=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"'
 HIVEDB=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'HIVEDB';"`         
 HIVETABLE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'HIVETABLE';"`  
 TABLA_MKSHAREVOZDATOS_90=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'TABLA_MKSHAREVOZDATOS_90';"` 
+VAL_ESQUEMA_TMP=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ESQUEMA_TMP';"` 
 VAL_ETP01_MASTER=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_MASTER';"`
 VAL_ETP01_DRIVER_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_DRIVER_MEMORY';"`
 VAL_ETP01_EXECUTOR_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_EXECUTOR_MEMORY';"`
@@ -64,6 +66,7 @@ if [ -z "$VAL_FECHA_PROCESO" ] ||
 	[ -z "$VAL_RUTA" ] || 
 	[ -z "$VAL_LOG_EJECUCION" ] ||
 	[ -z "$TABLA_MKSHAREVOZDATOS_90" ] ||
+	[ -z "$VAL_ESQUEMA_TMP" ] ||
 	[ -z "$VAL_ETP01_MASTER" ] ||
 	[ -z "$VAL_ETP01_DRIVER_MEMORY" ] ||
 	[ -z "$VAL_ETP01_EXECUTOR_MEMORY" ] ||
@@ -78,29 +81,41 @@ fi
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros calculados de fechas  " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 FECHA_EJECUCION=`date '+%Y%m%d' -d "$VAL_FECHA_PROCESO"`
+fecha_menos_3m=`date '+%Y%m%d' -d "$VAL_FECHA_PROCESO-3 month"`
 ETAPA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'ETAPA';"`
 
 if [ -z "$ETAPA" ] || 
-	[ -z "$FECHA_EJECUCION" ] ; then
+	[ -z "$FECHA_EJECUCION" ] || 
+	[ -z "$fecha_menos_3m" ] ; then
   echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: $TIME [ERROR] $rc unos de los parametros calculados esta vacio o es nulo" 2>&1 &>> $VAL_LOG_EJECUCION
   error=1
   exit $error
 fi
 
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: FECHA_EJECUCION => " $FECHA_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: FECHA_MENOS_ => " $FECHA_EJECUCION
 
 ###########################################################################################################################################################
-
-
 if [ "$ETAPA" = "1" ]; then
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1: Extraer datos desde hive " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 
 $VAL_RUTA_SPARK \
+--queue capa_semantica \
+--jars /opt/cloudera/parcels/CDH/jars/hive-warehouse-connector-assembly-*.jar \
+--conf spark.sql.extensions=com.hortonworks.spark.sql.rule.Extensions \
+--conf spark.security.credentials.hiveserver2.enabled=false \
+--conf spark.sql.hive.hwc.execution.mode=spark \
+--conf spark.datasource.hive.warehouse.read.via.llap=false \
+--conf spark.datasource.hive.warehouse.load.staging.dir=/tmp \
+--conf spark.datasource.hive.warehouse.read.jdbc.mode=cluster \
 --conf spark.ui.enabled=false \
 --conf spark.shuffle.service.enabled=false \
 --conf spark.dynamicAllocation.enabled=false \
+--conf spark.datasource.hive.warehouse.user.name="rgenerator" \
+--py-files /opt/cloudera/parcels/CDH/lib/hive_warehouse_connector/pyspark_hwc-1.0.0.7.1.7.1000-141.zip \
+--conf spark.sql.hive.hiveserver2.jdbc.url="jdbc:hive2://quisrvbigdata1.otecel.com.ec:2181,quisrvbigdata2.otecel.com.ec:2181,quisrvbigdata10.otecel.com.ec:2181,quisrvbigdata11.otecel.com.ec:2181/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=hiveserver2" \
 --name $ENTIDAD \
 --master $VAL_ETP01_MASTER \
 --driver-memory $VAL_ETP01_DRIVER_MEMORY \
@@ -109,13 +124,15 @@ $VAL_RUTA_SPARK \
 --executor-cores $VAL_ETP01_NUM_EXECUTORS_CORES \
 $RUTA_PYTHON/otc_t_360_ubicacion.py \
 --vSEntidad=$ENTIDAD \
+--vSchTmp=$VAL_ESQUEMA_TMP \
 --vTMksharevozdatos_90=$TABLA_MKSHAREVOZDATOS_90 \
 --vSSchHiveMain=$HIVEDB \
 --vSTblHiveMain=$HIVETABLE \
+--fecha_menos_3m=$fecha_menos_3m \
 --vIFechaProceso=$VAL_FECHA_PROCESO 2>&1 &>> $VAL_LOG_EJECUCION
 
 	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
-	VAL_ERRORES=`egrep 'NODATA:|serious problem|An error occurred while calling o102.partitions|Caused by:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
+	VAL_ERRORES=`egrep 'NODATA:|serious problem|An error occurred while calling o102.partitions|Caused by:|ERROR:|error:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
 	if [ $VAL_ERRORES -ne 0 ];then
 		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Problemas en la carga de informacion en las tablas del proceso" 2>&1 &>> $VAL_LOG_EJECUCION
 		exit 1    		
@@ -128,7 +145,6 @@ $RUTA_PYTHON/otc_t_360_ubicacion.py \
 	fi
 fi
 
-
 if [ "$ETAPA" = "2" ]; then
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2: Finalizar el proceso " 2>&1 &>> $VAL_LOG_EJECUCION
@@ -140,5 +156,3 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2: Finalizar el proceso " 2>&1 &>>
 	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_UBICACION finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
 fi
 
-
-##sh -x /RGenerator/reportes/Cliente360/Bin/OTC_T_360_UBICACION.sh 20230110

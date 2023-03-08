@@ -3,7 +3,7 @@
 # I: Integer
 # S: String
 
-def qyr_mksharevozdatos_90(TABLA_MKSHAREVOZDATOS_90, FECHAEJE):
+def qry_mksharevozdatos_90(TABLA_MKSHAREVOZDATOS_90, vTTU01, fecha_max):
     qry='''
 SELECT
 	a.id_cliente AS telefono
@@ -26,16 +26,22 @@ SELECT
 	, a.fecha_proceso
 FROM
 	{TABLA_MKSHAREVOZDATOS_90} a
-INNER JOIN (
-	SELECT
-		max(fecha_proceso) max_fecha
-	FROM
-		{TABLA_MKSHAREVOZDATOS_90}
-	WHERE
-		fecha_proceso <= '{FECHAEJE}') fm ON
+INNER JOIN 
+	{vTTU01} fm 
+	ON
 	fm.max_fecha = a.fecha_proceso
 WHERE
 	a.franja_horaria = 'GLOBAL'
-    '''.format(TABLA_MKSHAREVOZDATOS_90= TABLA_MKSHAREVOZDATOS_90,FECHAEJE=FECHAEJE )
+AND a.fecha_proceso = {fecha_max}
+    '''.format(TABLA_MKSHAREVOZDATOS_90=TABLA_MKSHAREVOZDATOS_90, vTTU01=vTTU01, fecha_max=fecha_max)
     return qry
 
+def qry_mksharevozdatos_90_max(TABLA_MKSHAREVOZDATOS_90):
+    qry = '''
+SHOW PARTITIONS
+	{TABLA_MKSHAREVOZDATOS_90}
+    '''.format(TABLA_MKSHAREVOZDATOS_90= TABLA_MKSHAREVOZDATOS_90)
+    return qry 
+
+
+sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Querys')
