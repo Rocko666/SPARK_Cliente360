@@ -1,4 +1,4 @@
-#!/bin/bash
+set -e
 ##########################################################################
 #   Script de carga de Generica para entidades de URM con reejecución    #
 # Creado 13-Jun-2018 (LC) Version 1.0                                    #

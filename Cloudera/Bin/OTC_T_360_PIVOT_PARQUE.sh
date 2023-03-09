@@ -1,3 +1,4 @@
+set -e
 #########################################################################################################
 # NOMBRE: OTC_T_360_PIVOT_PARQUE.sh  		      												                        
 # DESCRIPCION:																							                                            
@@ -229,17 +230,18 @@ $RUTA_PYTHON/otc_t_360_pivot_parque_1.py \
 --vAbrev=$ABREVIATURA_TEMP \
 --vIFechaProceso=$VAL_FECHA_PROCESO 2>&1 &>> $VAL_LOG_EJECUCION
 
-	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
-	VAL_ERRORES=`egrep 'NODATA:|serious problem|An error occurred while calling o102.partitions|Caused by:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
-	if [ $VAL_ERRORES -ne 0 ];then
-		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Problemas en la carga de informacion en las tablas del proceso" 2>&1 &>> $VAL_LOG_EJECUCION
-		exit 1    		
-	else		
+#VALIDA EJECUCION DEL ARCHIVO SPARK
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion del archivo spark otc_t_360_pivot_parque_1.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
 		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1 --> La carga de informacion fue extraida de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
 		ETAPA=2
 		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
 		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA 1 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
 		`mysql -N  <<<"update params set valor='2' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	else		
+		echo "==== ERROR: - En la ejecucion del archivo spark otc_t_360_pivot_parque_1.py ====" 2>&1 &>> $VAL_LOG_EJECUCION
+		exit 1
 	fi
 fi
 
@@ -273,16 +275,17 @@ $RUTA_PYTHON/otc_t_360_pivot_parque_2.py \
 -fec_tmstmp '$fecha_tmstmp' 2>&1 &>> $VAL_LOG_EJECUCION
 
 	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
-	VAL_ERRORES=`egrep 'NODATA:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
-	if [ $VAL_ERRORES -ne 0 ];then
-		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: ETAPA 2 --> Problemas en la carga de informacion a ORACLE " 2>&1 &>> $VAL_LOG_EJECUCION
-		exit 1																																 
-	else
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2 --> La carga de informacion a ORACLE fue ejecutada de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion del archivo spark otc_t_360_pivot_parque_2.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2 --> La carga de informacion fue extraida de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
 		ETAPA=3
 		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params_des
 		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: $SHELL --> Se procesa la ETAPA 2 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
 		`mysql -N  <<<"update params_des set valor='3' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	else
+		echo "==== ERROR: - En la ejecucion del archivo spark otc_t_360_pivot_parque_2.py ====" 2>&1 &>> $VAL_LOG_EJECUCION
+		exit 1
 	fi
 fi
 
@@ -308,17 +311,18 @@ $RUTA_PYTHON/otc_t_360_pivot_parque_3.py \
 --vAbrev=$ABREVIATURA_TEMP \
 --vIFechaProceso=$VAL_FECHA_PROCESO 2>&1 &>> $VAL_LOG_EJECUCION
 
-	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
-	VAL_ERRORES=`egrep 'NODATA:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
-	if [ $VAL_ERRORES -ne 0 ];then
-		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: ETAPA 3 --> Problemas en la carga de informacion a HIVE " 2>&1 &>> $VAL_LOG_EJECUCION
-		exit 1																																 
-	else
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3 --> La carga de informacion a ORACLE fue ejecutada de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
+#VALIDA EJECUCION DEL ARCHIVO SPARK
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion del archivo spark otc_t_360_pivot_parque_3.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3 --> La carga de informacion fue extraida de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
 		ETAPA=4
-		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params_des
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: $SHELL --> Se procesa la ETAPA 3 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
-		`mysql -N  <<<"update params_des set valor='4' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA 3 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
+		`mysql -N  <<<"update params set valor='4' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	else		
+		echo "==== ERROR: - En la ejecucion del archivo spark otc_t_360_pivot_parque_3.py ====" 2>&1 &>> $VAL_LOG_EJECUCION
+		exit 1
 	fi
 fi
 

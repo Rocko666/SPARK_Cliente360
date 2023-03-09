@@ -1,4 +1,4 @@
-#!/bin/bash
+set -e
 ##########################################################################
 #   Script de reingenieria de   OTC_T_GENERAL_PREVIO
 ##########################################################################
@@ -144,15 +144,13 @@ $RUTA_PYTHON/$VAL_PYTHON_FILE_MAIN \
 
 
 #VALIDA EJECUCION DEL ARCHIVO SPARK
-VAL_ERRORES=`egrep 'OK - PROCESO PYSPARK TERMINADO' $VAL_LOG | wc -l`
-if [ $VAL_ERRORES -eq 0 ];then
-    error=3
-    echo "=== ERROR en el proceso $ENTIDAD" 2>&1 &>> $VAL_LOG
-	exit $error
-else
-    error=0
-	echo "==== Proceso $ENTIDAD terminado con EXITO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG
-fi
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion del archivo spark $VAL_PYTHON_FILE_MAIN es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso $ENTIDAD finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
+	else
+		echo "==== ERROR: - En la ejecucion del archivo spark $VAL_PYTHON_FILE_MAIN ====" 2>&1 &>> $VAL_LOG_EJECUCION
+		exit 1
+	fi
 
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Finaliza ejecucion del proceso $ENTIDAD" 2>&1 &>> $VAL_LOG
-

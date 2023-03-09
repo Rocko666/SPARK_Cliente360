@@ -1,4 +1,4 @@
-
+set -e
 #########################################################################################################
 # NOMBRE: OTC_T_360_MOVIMIENTOS_PARQUE.sh  		      												                        
 # DESCRIPCION:																							                                            
@@ -205,34 +205,12 @@ $RUTA_PYTHON/otc_t_360_movimientos_parque.py \
 --f_efectiva=$f_efectiva 2>&1 &>> $VAL_LOG_EJECUCION
 
 	# Se valida el LOG de la ejecucion, si se encuentra errores se finaliza con error >0
-	VAL_ERRORES=`egrep 'NODATA:|serious problem|An error occurred while calling o102.partitions|Caused by:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
-	if [ $VAL_ERRORES -ne 0 ];then
-		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Problemas en la carga de informacion en las tablas del proceso" 2>&1 &>> $VAL_LOG_EJECUCION
-		exit 1    		
-	else		
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1 --> La carga de informacion fue extraida de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
-		ETAPA=2
-		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA 1 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
-		`mysql -N  <<<"update params set valor='2' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+	echo "==== OK - La ejecucion del archivo spark otc_t_360_movimientos_parque.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
+	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_MOVIMIENTOS_PARQUE finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
+	else
+	echo "==== ERROR: - En la ejecucion del archivo spark otc_t_360_movimientos_parque.py ====" 2>&1 &>> $VAL_LOG_EJECUCION
+	exit 1
 	fi
 fi
-
-
-if [ "$ETAPA" = "2" ]; then
-###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Finalizar el proceso " 2>&1 &>> $VAL_LOG_EJECUCION
-###########################################################################################################################################################
-						   
-	#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
-	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El Proceso termina de manera exitosa " 2>&1 &>> $VAL_LOG_EJECUCION
-	`mysql -N  <<<"update params set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
-
-	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_MOVIMIENTOS_PARQUE finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
-fi
-
-
-
-
-
-

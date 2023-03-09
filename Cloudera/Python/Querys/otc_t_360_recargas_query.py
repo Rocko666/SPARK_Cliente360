@@ -5,26 +5,26 @@
 
 # N 01
 def qry_tmp_360_otc_t_recargas_dia_periodo(vTDetRecarg, vTParOriRecarg, fechaIni_menos_3meses, fecha_eje2):
-    qry='''
+qry='''
 SELECT
-	numero_telefono
-	, CASE
+	CAST( numero_telefono AS string) as numero_telefono
+	, CAST( CASE
 		WHEN operadora = 'MOVISTAR'
 		OR operadora IS NULL
 		OR operadora = '' THEN 'TELEFONICA'
 		ELSE operadora
-	END marca	-- si 'MOVISTAR O NULLA O BLANCO' ENTONCES 'TELEFONICA', SINO PONER LA OPERADORA
-	, fecha_proceso	--cada dia  del rango
-	, sum(valor_recarga_base)/ 1.12 valor_recargas	--retitar el IVA
-	, count(1) cantidad_recargas
+	END  AS string) marca	-- si 'MOVISTAR O NULLA O BLANCO' ENTONCES 'TELEFONICA', SINO PONER LA OPERADORA
+	, CAST(fecha_proceso AS string) as fecha_proceso --cada dia  del rango
+	, CAST(sum(valor_recarga_base)/ 1.12 AS string) valor_recargas --retitar el IVA
+	, CAST(count(1) AS string) cantidad_recargas
 FROM
-	{vTDetRecarg} a
-INNER JOIN {vTParOriRecarg} ori	-- usar el catalogo de recargas validas
+	db_cs_recargas.otc_t_cs_detalle_recargas a
+INNER JOIN db_altamira.par_origen_recarga ori	-- usar el catalogo de recargas validas
 ON
 	ori.ORIGENRECARGAID = a.origen_recarga_aa
 WHERE
-	(fecha_proceso >= {fechaIni_menos_3meses}
-		AND fecha_proceso <= {fecha_eje2})
+	(fecha_proceso >= 20221201
+		AND fecha_proceso <= 20230205)
 	AND operadora IN ('MOVISTAR')
 	AND TIPO_TRANSACCION = 'ACTIVA'	--transacciones validas
 	AND ESTADO_RECARGA = 'RECARGA'	--asegurar que son recargas
@@ -38,7 +38,7 @@ GROUP BY
 		ELSE operadora
 	END	-- si 'MOVISTAR O NULLA O BLANCO' ENTONCES 'TELEFONICA', SINO PONER LA OPERADORA
 	, fecha_proceso
-    '''.format(vTDetRecarg=vTDetRecarg, vTParOriRecarg=vTParOriRecarg, fechaIni_menos_3meses=fechaIni_menos_3meses, fecha_eje2=fecha_eje2)
+'''.format(vTDetRecarg=vTDetRecarg, vTParOriRecarg=vTParOriRecarg, fechaIni_menos_3meses=fechaIni_menos_3meses, fecha_eje2=fecha_eje2)
     return qry
 
 

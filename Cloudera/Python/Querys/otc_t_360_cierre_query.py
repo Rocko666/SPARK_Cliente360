@@ -48,11 +48,11 @@ GROUP BY
 	END
 	-- si 'MOVISTAR O NULLA O BLANCO' ENTONCES 'TELEFONICA', SINO PONER LA OPERADORA
 	, fecha_proceso
-    '''.format()
+    '''.format(vTDetRec=vTDetRec, vTParOriRec=vTParOriRec, fechaIniMes=fechaIniMes, fecha_eje2=fecha_eje2)
     return qry
     
 # N 02	
-def qry_002():
+def qry_002(vTCBPDV,fecha_eje2,vTDetRec,fechaIniMes):
     qry='''
 	SELECT
 	fecha_proceso
@@ -99,11 +99,11 @@ WHERE
 		ELSE r.operadora
 	END
 	, b.tipo
-    '''.format()
+    '''.format(vTCBPDV=vTCBPDV,fecha_eje2=fecha_eje2,vTDetRec=vTDetRec,fechaIniMes=fechaIniMes)
     return qry
     
 # N 03	
-def qry_003():
+def qry_003(vTC001,vTC002):
     qry='''
 SELECT
 	b.numero_telefono
@@ -114,11 +114,11 @@ UNION ALL
 	c.num_telefono
 FROM
 	{vTC002} c
-    '''.format()
+    '''.format(vTC001=vTC001,vTC002=vTC002)
     return qry
     
 # N 04	
-def qry_004():
+def qry_004(vTC003):
     qry='''
 SELECT
 	numero_telefono
@@ -128,11 +128,11 @@ FROM
 	{vTC003}
 GROUP BY
 	numero_telefono
-    '''.format()
+    '''.format(vTC003=vTC003)
     return qry
     
 # N 05	
-def qry_005():
+def qry_005(vTC001,fechaIniMes,fecha_eje2):
     qry='''
 SELECT
 	numero_telefono
@@ -145,11 +145,11 @@ WHERE
 	AND fecha_proceso <= {fecha_eje2}
 GROUP BY
 	numero_telefono
-    '''.format()
+    '''.format(vTC001=vTC001,fechaIniMes=fechaIniMes,fecha_eje2=fecha_eje2)
     return qry
     
 # N 06	
-def qry_006():
+def qry_006(vTC001,fecha_eje2):
     qry='''
 SELECT
 	numero_telefono
@@ -161,11 +161,11 @@ WHERE
 	fecha_proceso = {fecha_eje2}
 GROUP BY
 	numero_telefono
-    '''.format()
+    '''.format(vTC001=vTC001,fecha_eje2=fecha_eje2)
     return qry
     
 # N 07	
-def qry_007():
+def qry_007(vTC002):
     qry='''
 SELECT
 	num_telefono
@@ -177,11 +177,11 @@ WHERE
 	combo_bono = 'BONO'
 GROUP BY
 	num_telefono
-    '''.format()
+    '''.format(vTC002=vTC002)
     return qry
     
 # N 08	
-def qry_008():
+def qry_008(vTC002,fecha_eje2):
     qry='''
 SELECT
 	num_telefono
@@ -194,11 +194,11 @@ WHERE
 	AND fecha_proceso = {fecha_eje2}
 GROUP BY
 	num_telefono
-    '''.format()
+    '''.format(vTC002=vTC002, fecha_eje2=fecha_eje2)
     return qry
     
 # N 09	
-def qry_009():
+def qry_009(vTC002):
     qry='''
 SELECT
 	num_telefono
@@ -210,11 +210,11 @@ WHERE
 	combo_bono = 'COMBO'
 GROUP BY
 	num_telefono
-    '''.format()
+    '''.format(vTC002=vTC002)
     return qry
     
 # N 10	
-def qry_010():
+def qry_010(vTC002,fecha_eje2):
     qry='''
 SELECT
 	num_telefono
@@ -227,11 +227,11 @@ WHERE
 	AND fecha_proceso = {fecha_eje2}
 GROUP BY
 	num_telefono
-    '''.format()
+    '''.format(vTC002=vTC002,fecha_eje2=fecha_eje2)
     return qry
     
 # N 11	
-def qry_011():
+def qry_011(vTC004,vTC005,vTC006,vTC007,vTC008,vTC009,vTC010):
     qry='''
 SELECT
 	a.numero_telefono
@@ -267,14 +267,14 @@ LEFT JOIN {vTC008} g
 LEFT JOIN {vTC010} h
 	ON
 	a.numero_telefono = h.num_telefono
-    '''.format()
+    '''.format(vTC004=vTC004,vTC005=vTC005,vTC006=vTC006,vTC007=vTC007,vTC008=vTC008,vTC009=vTC009,vTC010=vTC010)
     return qry
     
 ################################################################
 # Etapa 2
 ################################################################
 # N 12	
-def qry_012():
+def qry_012(vTABI,fecha_proc):
     qry='''
 SELECT
 	a.telefono
@@ -285,11 +285,11 @@ FROM
 WHERE
 	a.p_fecha_proceso = {fecha_proc}
 	AND a.marca = 'TELEFONICA'
-    '''.format()
+    '''.format(vTABI=vTABI,fecha_proc=fecha_proc)
     return qry
     
 # N 13	
-def qry_013():
+def qry_013(vTTOBI,fecha_proc):
     qry='''
 SELECT
 	a.telefono
@@ -298,11 +298,11 @@ FROM
 	{vTTOBI} a
 WHERE
 	a.p_fecha_proceso = {fecha_proc}
-    '''.format()
+    '''.format(vTTOBI=vTTOBI,fecha_proc=fecha_proc)
     return qry
     
 # N 14	
-def qry_014():
+def qry_014(vTTIBI,fecha_proc):
     qry='''
 SELECT
 	a.telefono
@@ -311,11 +311,11 @@ FROM
 	{vTTIBI} a
 WHERE
 	a.p_fecha_proceso = {fecha_proc}
-    '''.format()
+    '''.format(vTTIBI=vTTIBI,fecha_proc=fecha_proc)
     return qry
     
 # N 15	
-def qry_015():
+def qry_015(vTCPBI,fecha_proc):
     qry='''
 SELECT
 	a.telefono
@@ -326,11 +326,11 @@ WHERE
 	UPPER(A.tipo_movimiento)= 'UPSELL'
 	AND 
 		a.p_fecha_proceso = {fecha_proc}
-    '''.format()
+    '''.format(vTCPBI=vTCPBI,fecha_proc=fecha_proc)
     return qry
     
 # N 16	
-def qry_016():
+def qry_016(vTCPBI,fecha_proc):
     qry='''
 SELECT
 	a.telefono
@@ -341,11 +341,11 @@ WHERE
 	UPPER(A.tipo_movimiento)= 'DOWNSELL'
 	AND
 		a.p_fecha_proceso = {fecha_proc}
-    '''.format()
+    '''.format(vTCPBI=vTCPBI,fecha_proc=fecha_proc)
     return qry
     
 # N 17	
-def qry_017():
+def qry_017(vTCPBI,fecha_proc):
     qry='''
 SELECT
 	a.telefono
@@ -356,11 +356,11 @@ WHERE
 	UPPER(A.tipo_movimiento)= 'MISMA_TARIFA'
 	AND 
 		a.p_fecha_proceso = {fecha_proc}
-    '''.format()
+    '''.format(vTCPBI=vTCPBI,fecha_proc=fecha_proc)
     return qry
     
 # N 18	
-def qry_018():
+def qry_018(vTBInv,fechaIniMes,FECHAEJE):
     qry='''
 SELECT
 	a.num_telefonico AS telefono
@@ -374,11 +374,11 @@ WHERE
 GROUP BY
 	a.num_telefonico
 	, a.fecha_proceso
-    '''.format()
+    '''.format(vTBInv=vTBInv,fechaIniMes=fechaIniMes,FECHAEJE=FECHAEJE)
     return qry
     
 # N 19	
-def qry_019():
+def qry_019(vTChurnSP2,fechamenos5,fechamas1):
     qry='''
 SELECT
 	PHONE_ID num_telefonico
@@ -398,11 +398,11 @@ WHERE
 GROUP BY
 	PHONE_ID
 	, COUNTED_DAYS
-    '''.format()
+    '''.format(vTChurnSP2=vTChurnSP2,fechamenos5=fechamenos5,fechamas1=fechamas1)
     return qry
     
 # N 20	
-def qry_020():
+def qry_020(vTC011):
     qry='''
 SELECT
 	DISTINCT numero_telefono AS num_telefonico
@@ -421,11 +421,11 @@ WHERE
 		ingreso_combos_dia>0
 	OR
 		cantidad_combos_dia>0
-    '''.format()
+    '''.format(vTC011=vTC011)
     return qry
     
 # N 21	
-def qry_021():
+def qry_021(vTC020,vTC019):
     qry='''
 SELECT
 	t2.num_telefonico
@@ -446,11 +446,11 @@ WHERE
 		num_telefonico
 	FROM
 		{vTC020})
-    '''.format()
+    '''.format(vTC020=vTC020,vTC019=vTC019)
     return qry
     
 # N 22	
-def qry_022():
+def qry_022(vTVWCFac,vTPrmDate,fechaeje1):
     qry='''
 SELECT
 	x.CTA_FACTURACION
@@ -474,11 +474,11 @@ FROM
 		AND to_date(b.active_from_dat)<= '{fechaeje1}') AS x
 WHERE
 	rownum = 1
-    '''.format()
+    '''.format(vTVWCFac=vTVWCFac,vTPrmDate=vTPrmDate,fechaeje1=fechaeje1)
     return qry
     
 # N 23	
-def qry_023():
+def qry_023(fechamenos1_1,FECHAEJE,vTNCMovParV1,fecha_proc,vTVWCFac,vTC021,vTPlCatT,fecha_alt_ini,fecha_alt_fin):
     qry='''
 SELECT
 	DISTINCT t.num_telefonico
@@ -579,11 +579,11 @@ WHERE
 	AND t.fecha_alta<'{fecha_alt_ini}'
 	AND (t.fecha_baja>'{fecha_alt_fin}'
 		OR t.fecha_baja IS NULL)
-    '''.format()
+    '''.format(fechamenos1_1=fechamenos1_1,FECHAEJE=FECHAEJE,vTNCMovParV1=vTNCMovParV1,fecha_proc=fecha_proc,vTVWCFac=vTVWCFac,vTC021=vTC021,vTPlCatT=vTPlCatT,fecha_alt_ini=fecha_alt_ini,fecha_alt_fin=fecha_alt_fin)
     return qry
     
 # N 24	
-def qry_024():
+def qry_024(vTC023,vTC012,vTC015,vTC016,vTC017,vTC018,vTC013,vTC014):
     qry='''
 SELECT
 	a.*
@@ -630,11 +630,11 @@ LEFT JOIN {vTC013} AS g
 LEFT JOIN {vTC014} AS h
 	ON
 	a.num_telefonico = h.telefono
-    '''.format()
+    '''.format(vTC023=vTC023,vTC012=vTC012,vTC015=vTC015,vTC016=vTC016,vTC017=vTC017,vTC018=vTC018,vTC013=vTC013,vTC014=vTC014)
     return qry
     
 # N 25	
-def qry_025():
+def qry_025(vTBBI,fecha_proc):
     qry='''
 SELECT
 	a.telefono
@@ -644,11 +644,11 @@ FROM
 WHERE
 	a.p_fecha_proceso = {fecha_proc}
 	AND a.marca = 'TELEFONICA'
-    '''.format()
+    '''.format(vTBBI=vTBBI,fecha_proc=fecha_proc)
     return qry
     
 # N 26	
-def qry_026():
+def qry_026(vTC025,vTC013,vTC014):
     qry='''
 SELECT
 	telefono
@@ -664,11 +664,11 @@ UNION ALL
 	telefono
 FROM
 	{vTC014}
-    '''.format()
+    '''.format(vTC025=vTC025,vTC013=vTC013,vTC014=vTC014)
     return qry
     
 # N 27	
-def qry_027():
+def qry_027(vTChurnSP2,fecha_inac_1):
     qry='''
 SELECT
 	PHONE_ID num_telefonico
@@ -680,11 +680,11 @@ WHERE
 	AND a.marca = 'TELEFONICA'
 GROUP BY
 	PHONE_ID, COUNTED_DAYS 
-    '''.format()
+    '''.format(vTChurnSP2=vTChurnSP2,fecha_inac_1=fecha_inac_1)
     return qry
     
 # N 28	
-def qry_028():
+def qry_028(FECHAEJE,vTNCMovParV1,fechaIniMes,vTVWCFac,vTC027,vTPlCatT,vTC026,fecha_alt_dos_meses_ant_fin,fecha_alt_dos_meses_ant_ini):
     qry='''
 SELECT
 	DISTINCT t.num_telefonico
@@ -790,11 +790,11 @@ WHERE
 	AND t.fecha_alta<'{fecha_alt_dos_meses_ant_fin}'
 	AND (t.fecha_baja>'{fecha_alt_dos_meses_ant_ini}'
 		OR t.fecha_baja IS NULL)) 
-    '''.format()
+    '''.format(FECHAEJE=FECHAEJE,vTNCMovParV1=vTNCMovParV1,fechaIniMes=fechaIniMes,vTVWCFac=vTVWCFac,vTC027=vTC027,vTPlCatT=vTPlCatT,vTC026=vTC026,fecha_alt_dos_meses_ant_fin=fecha_alt_dos_meses_ant_fin,fecha_alt_dos_meses_ant_ini=fecha_alt_dos_meses_ant_ini)
     return qry
     
 # N 29	
-def qry_029():
+def qry_029(vTC028,vTC025,vTC013,vTC014):
     qry='''
 SELECT
 	a.*
@@ -821,11 +821,11 @@ LEFT JOIN {vTC013} AS g
 LEFT JOIN {vTC014} AS h
 		ON
 	a.num_telefonico = h.telefono
-    '''.format()
+    '''.format(vTC028=vTC028,vTC025=vTC025,vTC013=vTC013,vTC014=vTC014)
     return qry
     
 # N 30	
-def qry_030():
+def qry_030(vTRIMobPN,fecha_alt_ini):
     qry='''
 SELECT
 	SUBSTR(NAME
@@ -848,11 +848,11 @@ WHERE
 	--   NORMAL   
 	AND ASSOC_SIM_ICCID IS NOT NULL
 	AND modified_when<'{fecha_alt_ini}'
-    '''.format()
+    '''.format(vTRIMobPN=vTRIMobPN,fecha_alt_ini=fecha_alt_ini)
     return qry
     
 # N 31	
-def qry_031():
+def qry_031(vTC029,vTC024,FECHAEJE,vTC020,vTC030):
     qry='''
 SELECT 
 	b.num_telefonico
@@ -1020,11 +1020,11 @@ UNION ALL
 		q.telefono AS num_telefonico
 	FROM
 		{vTC030} q)
-    '''.format()
+    '''.format(vTC029=vTC029,vTC024=vTC024,FECHAEJE=FECHAEJE,vTC020=vTC020,vTC030=vTC030)
     return qry
     
 # N 32	
-def qry_032():
+def qry_032(vTC031,vTC022):
     qry='''
 SELECT
 	DISTINCT
@@ -1062,14 +1062,14 @@ FROM
 LEFT JOIN {vTC022} b 
 		ON
 	a.account_num = b.CTA_FACTURACION
-    '''.format()
+    '''.format(vTC031=vTC031,vTC022=vTC022)
     return qry
 
 ################################################################
 # Etapa 3
 ################################################################
 # N 33	
-def qry_dlt_033():
+def qry_dlt_033(vTRABH,f_inicio,fecha_proceso):
     qry='''
 DELETE
 FROM
@@ -1077,10 +1077,10 @@ FROM
 WHERE
 	TIPO = 'ALTA'
 	AND FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}'
-    '''.format()
+    '''.format(vTRABH=vTRABH,f_inicio=f_inicio,fecha_proceso=fecha_proceso)
     return qry
     
-def qry_insrt_033():
+def qry_insrt_033(vTRABH,vTABI,fecha_movimientos_cp):
     qry='''
 INSERT
 	INTO
@@ -1103,11 +1103,11 @@ FROM
 WHERE
 	p_FECHA_PROCESO = '{fecha_movimientos_cp}'
 	AND marca = 'TELEFONICA'
-    '''.format()
+    '''.format(vTRABH=vTRABH,vTABI=vTABI,fecha_movimientos_cp=fecha_movimientos_cp)
     return qry
     
 # N 34	
-def qry_dlt_034():
+def qry_dlt_034(vTRABH,f_inicio,fecha_proceso):
     qry='''
 DELETE
 FROM
@@ -1115,10 +1115,10 @@ FROM
 WHERE
 	TIPO = 'BAJA'
 	AND FECHA BETWEEN '{f_inicio}' AND '{fecha_proceso}'
-    '''.format()
+    '''.format(vTRABH=vTRABH,f_inicio=f_inicio,fecha_proceso=fecha_proceso)
     return qry
 
-def qry_insrt_034():
+def qry_insrt_034(vTRABH,vTBBI,fecha_movimientos_cp):
     qry='''
 INSERT
 	INTO
@@ -1141,7 +1141,7 @@ FROM
 WHERE
 	p_FECHA_PROCESO = '{fecha_movimientos_cp}'
 	AND marca = 'TELEFONICA'
-    '''.format()
+    '''.format(vTRABH,vTBBI,fecha_movimientos_cp)
     return qry
     
 # N 35	

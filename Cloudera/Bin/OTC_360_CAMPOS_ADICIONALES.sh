@@ -1,4 +1,4 @@
-#!/bin/bash
+set -e
 ##########################################################################
 #   Script de reingenieria de   OTC_T_360_CAMPOS_ADICIONALES
 ##########################################################################
@@ -9,7 +9,6 @@
 
 ENTIDAD=OTC_T_360_CAMPOS_ADICIONALES
 FECHAEJE=$1
-
 
 #PARAMETROS GENERICOS PARA IMPORTACIONES CON SPARK OBTENIDOS DE LA TABLA params
 TDDB_PPGA=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENERICO' AND parametro = 'TDDB_PPGA';"`
@@ -22,8 +21,6 @@ TDTABLE_PPGA=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENE
 VAL_RUTA_SPARK=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENERICO' AND parametro = 'VAL_RUTA_SPARK';"`
 VAL_KINIT=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENERICO' AND parametro = 'VAL_KINIT';"`
 $VAL_KINIT
-
-
 
 #PARAMETROS PROPIOS DEL PROCESO OBTENIDOS DE LA TABLA params
 VAL_RUTA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_RUTA';"`
@@ -38,29 +35,39 @@ VAL_EXECUTOR_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$E
 VAL_NUM_EXECUTORS=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_NUM_EXECUTORS';"`
 VAL_NUM_EXECUTORS_CORES=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_NUM_EXECUTORS_CORES';"`
 
-
 #VALIDACION DE PARAMETROS INICIALES
-if [ -z "$ENTIDAD" ] || [ -z "$FECHAEJE" ]; then
+if [ -z "$ENTIDAD" ] 
+|| [ -z "$FECHAEJE" ]; then
 	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros iniciales esta vacio o nulo"
 	exit 1
 fi
 
 #VALIDACION DE PARAMETROS SPARK GENERICOS
-if [ -z "$TDDB_PPGA" ] || [ -z "$TDHOST_PPGA" ] || [ -z "$TDUSER_PPGA" ] || [ -z "$TDPASS_PPGA" ] || [ -z "$TDPORT_PPGA" ] || [ -z "$TDSERVICE_PPGA" ] || [ -z "$TDTABLE_PPGA" ] ||
-	[ -z "$VAL_RUTA_SPARK" ] ; then
+if [ -z "$TDDB_PPGA" ] 
+|| [ -z "$TDHOST_PPGA" ] 
+|| [ -z "$TDUSER_PPGA" ] 
+|| [ -z "$TDPASS_PPGA" ] 
+|| [ -z "$TDPORT_PPGA" ] 
+|| [ -z "$TDSERVICE_PPGA" ] 
+|| [ -z "$TDTABLE_PPGA" ] 
+|| [ -z "$VAL_RUTA_SPARK" ] ; then
 	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR Uno de los parametros esta vacio o nulo (SPARK GENERICOS)"
 	exit 1
 fi
 
 #VALIDACION DE PARAMETROS DE LA TABLA PARAMS
-if [ -z "$RUTA" ] || [ -z "$SHELL" ] || [ -z "$RUTA_PYTHON" ] || [ -z "$VAL_PYTHON_FILE_MAIN" ] ||
-	[ -z "$VAL_MASTER" ] || [ -z "$VAL_DRIVER_MEMORY" ] || [ -z "$VAL_EXECUTOR_MEMORY" ] || [ -z "$VAL_NUM_EXECUTORS" ] || [ -z "$VAL_NUM_EXECUTORS_CORES" ] ; then
+if [ -z "$RUTA" ] 
+|| [ -z "$SHELL" ] 
+|| [ -z "$RUTA_PYTHON" ] 
+|| [ -z "$VAL_PYTHON_FILE_MAIN" ] 
+|| [ -z "$VAL_MASTER" ] 
+|| [ -z "$VAL_DRIVER_MEMORY" ] 
+|| [ -z "$VAL_EXECUTOR_MEMORY" ] 
+|| [ -z "$VAL_NUM_EXECUTORS" ] 
+|| [ -z "$VAL_NUM_EXECUTORS_CORES" ] ; then
 	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros iniciales esta vacio o nulo (tabla params)"
 	exit 1
 fi
-
-
-
 
 #PARAMETROS CALCULADOS Y AUTOGENERADOS
 VAL_JDBCURL=jdbc:oracle:thin:@$TDHOST_PPGA:$TDPORT_PPGA/$TDSERVICE_PPGA
@@ -77,8 +84,6 @@ LOGS=$VAL_RUTA/Log
 LOGPATH=$VAL_RUTA/Log
 VAL_LOG=$LOGPATH/$EJECUCION_LOG.txt
 
-
-
 #------------------------------------------------------
 # DEFINICION DE FECHAS
 #------------------------------------------------------
@@ -93,7 +98,6 @@ path_actualizacion=$RUTA"/Bin/OTC_F_RESTA_1_MES.sh"
 #fechaInimenos1mes_1=`date '+%Y%m%d' -d "$fechaIniMes-1 month"`
 
 fechaInimenos1mes_1=`sh $path_actualizacion $fechaIniMes`       #Formato YYYYMMDD
-
 
 let fechaInimenos1mes=$fechaInimenos1mes_1*1
 fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
@@ -128,8 +132,6 @@ let fechamenos5=$fechamenos5_1*1
 
 fechamas1_2=`date '+%Y-%m-%d' -d "$fechamas1"`
 
-
-
 #------------------------------------------------------
 # REINGENIERIA SPARK
 #------------------------------------------------------
@@ -152,19 +154,15 @@ $RUTA_PYTHON/$VAL_PYTHON_FILE_MAIN \
 --vfechamas1_2 $fechamas1_2 \
 --vfechamas1 $fechamas1 2>&1 &>> $VAL_LOG
 
-
 #VALIDA EJECUCION DEL ARCHIVO SPARK
-VAL_ERRORES=`egrep 'OK - PROCESO PYSPARK TERMINADO' $VAL_LOG | wc -l`
-if [ $VAL_ERRORES -eq 0 ];then
-    error=3
-    echo "=== ERROR en el proceso $ENTIDAD" 2>&1 &>> $VAL_LOG
-	exit $error
-else
-    error=0
-	echo "==== Proceso $ENTIDAD terminado con EXITO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG
-fi
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion del archivo spark $VAL_PYTHON_FILE_MAIN es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso $ENTIDAD finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
+	else
+		echo "==== ERROR: - En la ejecucion del archivo spark $VAL_PYTHON_FILE_MAIN ====" 2>&1 &>> $VAL_LOG_EJECUCION
+		exit 1
+	fi
 
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Finaliza ejecucion del proceso $ENTIDAD" 2>&1 &>> $VAL_LOG
-
-fi
 

@@ -1,4 +1,4 @@
-#!/bin/bash
+set -e
 #########################################################################################################
 # Creado 13-Jun-2018 (LC) Version 1.0                                    
 # Las tildes hansido omitidas intencionalmente en el script              

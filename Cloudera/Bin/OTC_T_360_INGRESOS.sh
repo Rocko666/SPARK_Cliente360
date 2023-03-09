@@ -1,3 +1,4 @@
+set -e
 ##########################################################################
 #   Script de reingenieria de   OTC_T_360_INGRESOS
 ##########################################################################
@@ -52,7 +53,6 @@ VAL_USER=`mysql -N  <<<"select valor from params where ENTIDAD = 'PARAM_BEELINE'
 #PARAMETROS CALCULADOS O AUTOGENERADOS
 JDBCURL1=jdbc:oracle:thin:@$TDHOST:$TDPORT/$TDSERVICE
 
-
 #------------------------------------------------------
 # VARIABLES DE OPERACION Y AUTOGENERADAS
 #------------------------------------------------------
@@ -81,7 +81,6 @@ let fechamas1=$fechamas1_1*1
 fechamenos1mes_1=`date '+%Y%m%d' -d "$FECHAEJE-1 month"`
 
 let fechamenos1mes=$fechamenos1mes_1*1
-
 
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validacion de parametros iniciales, nulos y existencia de Rutas " 2>&1 &>> $VAL_LOG_EJECUCION
@@ -142,13 +141,14 @@ $RUTA_PYTHON/$VAL_PYTHON_FILE_MAIN \
 --vfechamas1_1=$fechamas1_1 2>&1 &>> $VAL_LOG_EJECUCION
 
 
+#VALIDA EJECUCION DEL ARCHIVO SPARK
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion del archivo spark $VAL_PYTHON_FILE_MAIN es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso $ENTIDAD finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
+	else
+		echo "==== ERROR: - En la ejecucion del archivo spark $VAL_PYTHON_FILE_MAIN ====" 2>&1 &>> $VAL_LOG_EJECUCION
+		exit 1
+	fi
 
-VAL_ERRORES=`egrep 'OK - PROCESO PYSPARK TERMINADO' $VAL_LOG_EJECUCION | wc -l`
-if [ $VAL_ERRORES -eq 0 ];then
-    error=3
-    echo "=== ERROR en el proceso $ENTIDAD" 2>&1 &>> $VAL_LOG_EJECUCION
-	exit $error
-else
-    error=0
-	echo "==== Proceso $ENTIDAD terminado con EXITO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
-fi
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Finaliza ejecucion del proceso $ENTIDAD" 2>&1 &>> $VAL_LOG
