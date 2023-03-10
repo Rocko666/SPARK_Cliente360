@@ -606,6 +606,166 @@ VStp='Paso [3]: Generando logica de negocio '
 print(etq_info(VStp))
 
 print(lne_dvs())
+VStp='Paso [3.001]: Something [{}]'.format(vTSomething)
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(vTC001)))
+    vSQL=qry_001(vTTransfHist, fecha_movimientos)
+    print(etq_sql(vSQL))
+    df001=spark.sql(vSQL)
+    if df001.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df001'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(vTC001)))
+            df001.write.mode('overwrite').saveAsTable(vTC001)
+            df001.printSchema()
+            print(etq_info(msg_t_total_registros_hive(vTC001,str(df001.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(vTC001,vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(vTC001,str(e))))
+    print(etq_info("Eliminar dataframe [{}]".format('df001')))
+    del df001
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+    
+print(lne_dvs())
+VStp='Paso [3.002]: Something [{}]'.format(vTSomething)
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(vTC002)))
+    vSQL=qry_002(vTTransfHist, fecha_movimientos)
+    print(etq_sql(vSQL))
+    df002=spark.sql(vSQL)
+    if df002.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df002'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(vTC002)))
+            df002.write.mode('overwrite').saveAsTable(vTC002)
+            df002.printSchema()
+            print(etq_info(msg_t_total_registros_hive(vTC002,str(df002.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(vTC002,vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(vTC002,str(e))))
+    print(etq_info("Eliminar dataframe [{}]".format('df002')))
+    del df002
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+    
+print(lne_dvs())
+VStp='Paso [3.003]: Something [{}]'.format(vTSomething)
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(vTC003)))
+    vSQL=qry_003(vTTransfHist, fecha_movimientos)
+    print(etq_sql(vSQL))
+    df003=spark.sql(vSQL)
+    if df003.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df003'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(vTC003)))
+            df003.write.mode('overwrite').saveAsTable(vTC003)
+            df003.printSchema()
+            print(etq_info(msg_t_total_registros_hive(vTC003,str(df003.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(vTC003,vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(vTC003,str(e))))
+    print(etq_info("Eliminar dataframe [{}]".format('df003')))
+    del df003
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+    
+print(lne_dvs())
+VStp='Paso [3.004]: Something [{}]'.format(vTSomething)
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(vTC004)))
+    vSQL=qry_004(vTTransfHist, fecha_movimientos)
+    print(etq_sql(vSQL))
+    df004=spark.sql(vSQL)
+    if df004.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df004'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(vTC004)))
+            df004.write.mode('overwrite').saveAsTable(vTC004)
+            df004.printSchema()
+            print(etq_info(msg_t_total_registros_hive(vTC004,str(df004.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(vTC004,vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(vTC004,str(e))))
+    print(etq_info("Eliminar dataframe [{}]".format('df004')))
+    del df004
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+    
+print(lne_dvs())
+VStp='Paso [3.005]: Something [{}]'.format(vTSomething)
+try:
+    ts_step = datetime.now()
+    print(etq_info(VStp))
+    print(lne_dvs())
+    print(etq_info(msg_i_create_hive_tmp(vTC005)))
+    vSQL=qry_005(vTTransfHist, fecha_movimientos)
+    print(etq_sql(vSQL))
+    df005=spark.sql(vSQL)
+    if df005.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df005'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now()
+            print(etq_info(msg_i_insert_hive(vTC005)))
+            df005.write.mode('overwrite').saveAsTable(vTC005)
+            df005.printSchema()
+            print(etq_info(msg_t_total_registros_hive(vTC005,str(df005.count())))) 
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(vTC005,vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(vTC005,str(e))))
+    print(etq_info("Eliminar dataframe [{}]".format('df005')))
+    del df005
+    te_step = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
+except Exception as e:
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
+    
+
+
+
+
+
+
+
+
+
+#########################################################
+print(lne_dvs())
 vStp='Paso [3.01]: Se inserta las altas del mes de la tabla [{}] en la tabla [{}] '.format(vTAltBI, vTAltBajHist)
 try:
     ts_step = datetime.now()
