@@ -165,7 +165,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)))))
-            df01.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)))
+            df01.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)))
             df01.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_01(vSSchHiveTmp)),str(df01.count())))) 
             te_step_tbl = datetime.now()
@@ -193,7 +193,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)))))
-            df02.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)))
+            df02.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)))
             df02.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_02(vSSchHiveTmp)),str(df02.count())))) 
             te_step_tbl = datetime.now()
@@ -223,7 +223,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_03(vSSchHiveTmp)))))
-            df03.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_03(vSSchHiveTmp)))
+            df03.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_03(vSSchHiveTmp)))
             df03.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_03(vSSchHiveTmp)),str(df03.count())))) 
             te_step_tbl = datetime.now()
@@ -251,7 +251,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_04(vSSchHiveTmp)))))
-            df04.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_04(vSSchHiveTmp)))
+            df04.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_04(vSSchHiveTmp)))
             df04.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_04(vSSchHiveTmp)),str(df04.count())))) 
             te_step_tbl = datetime.now()
@@ -279,7 +279,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_05(vSSchHiveTmp)))))
-            df05.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_05(vSSchHiveTmp)))
+            df05.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_05(vSSchHiveTmp)))
             df05.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_05(vSSchHiveTmp)),str(df05.count())))) 
             te_step_tbl = datetime.now()
@@ -307,7 +307,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_06(vSSchHiveTmp)))))
-            df06.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_06(vSSchHiveTmp)))
+            df06.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_06(vSSchHiveTmp)))
             df06.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_06(vSSchHiveTmp)),str(df06.count())))) 
             te_step_tbl = datetime.now()
@@ -335,7 +335,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_07(vSSchHiveTmp)))))
-            df07.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_07(vSSchHiveTmp)))
+            df07.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_07(vSSchHiveTmp)))
             df07.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_07(vSSchHiveTmp)),str(df07.count())))) 
             te_step_tbl = datetime.now()
@@ -363,7 +363,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)))))
-            df08.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)))
+            df08.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)))
             df08.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_08(vSSchHiveTmp)),str(df08.count())))) 
             te_step_tbl = datetime.now()
@@ -391,7 +391,7 @@ try:
     try:
         ts_step_tbl = datetime.now()
         print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)))))
-        df09.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)))
+        df09.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)))
         df09.printSchema()
         print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_09(vSSchHiveTmp)),str(df09.count())))) 
         te_step_tbl = datetime.now()
@@ -419,7 +419,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)))))
-            df10.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)))
+            df10.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)))
             df10.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_10(vSSchHiveTmp)),str(df10.count())))) 
             te_step_tbl = datetime.now()
@@ -447,7 +447,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)))))
-            df11.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)))
+            df11.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)))
             df11.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_11(vSSchHiveTmp)),str(df11.count())))) 
             te_step_tbl = datetime.now()
@@ -475,7 +475,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)))))
-            df12.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)))
+            df12.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)))
             df12.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_12(vSSchHiveTmp)),str(df12.count())))) 
             te_step_tbl = datetime.now()
@@ -503,7 +503,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)))))
-            df13.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)))
+            df13.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)))
             df13.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_13(vSSchHiveTmp)),str(df13.count())))) 
             te_step_tbl = datetime.now()
@@ -531,7 +531,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)))))
-            df14.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)))
+            df14.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)))
             df14.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_14(vSSchHiveTmp)),str(df14.count())))) 
             te_step_tbl = datetime.now()
@@ -559,7 +559,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)))))
-            df15.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)))
+            df15.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)))
             df15.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_15(vSSchHiveTmp)),str(df15.count())))) 
             te_step_tbl = datetime.now()
@@ -587,7 +587,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))))
-            df16.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))
+            df16.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)))
             df16.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_16(vSSchHiveTmp)),str(df16.count())))) 
             te_step_tbl = datetime.now()
@@ -618,7 +618,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)))))
-            df17.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)))
+            df17.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)))
             df17.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_recargas_17(vSSchHiveTmp)),str(df17.count())))) 
             te_step_tbl = datetime.now()
