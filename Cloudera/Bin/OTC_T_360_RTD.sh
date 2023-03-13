@@ -241,7 +241,7 @@ if [ "$ETAPA" = "3" ]; then
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Finalizar el proceso " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
-						   
+
 	#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
 	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El Proceso termina de manera exitosa " 2>&1 &>> $VAL_LOG_EJECUCION
 	`mysql -N  <<<"update params set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`

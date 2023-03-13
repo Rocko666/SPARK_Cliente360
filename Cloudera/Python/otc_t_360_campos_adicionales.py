@@ -76,8 +76,8 @@ try:
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
         .config("spark.yarn.queue", "default")\
-	.config("hive.enforce.bucketing", "false")\
-	.config("hive.enforce.sorting", "false")\
+        .config("hive.enforce.bucketing", "false")\
+        .config("hive.enforce.sorting", "false")\
         .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")

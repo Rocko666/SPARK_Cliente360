@@ -157,7 +157,6 @@ if [ "$ETAPA" = "1" ]; then
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1: Extraer datos desde hive " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 $VAL_RUTA_SPARK \
---queue capa_semantica \
 --jars /opt/cloudera/parcels/CDH/jars/hive-warehouse-connector-assembly-*.jar \
 --conf spark.sql.extensions=com.hortonworks.spark.sql.rule.Extensions \
 --conf spark.security.credentials.hiveserver2.enabled=false \
@@ -208,7 +207,7 @@ $RUTA_PYTHON/otc_t_360_movimientos_parque.py \
 error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
 	if [ $error_spark -eq 0 ];then
 	echo "==== OK - La ejecucion del archivo spark otc_t_360_movimientos_parque.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
-	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_MOVIMIENTOS_PARQUE finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
+	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso $ENTIDAD finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
 	else
 	echo "==== ERROR: - En la ejecucion del archivo spark otc_t_360_movimientos_parque.py ====" 2>&1 &>> $VAL_LOG_EJECUCION
 	exit 1

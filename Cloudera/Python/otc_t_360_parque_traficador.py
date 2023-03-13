@@ -76,9 +76,9 @@ try:
         .builder\
         .enableHiveSupport() \
         .config("spark.sql.broadcastTimeout", "36000") \
+        .config("spark.yarn.queue", "capa_semantica") \
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
-        .config("spark.yarn.queue", "default") \
         .config("hive.enforce.bucketing", "false")\
 	    .config("hive.enforce.sorting", "false")\
         .getOrCreate()
@@ -245,7 +245,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_otc_t_360_parque_traficador_05(vSSchHiveTmp)))))
-            df05.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_parque_traficador_05(vSSchHiveTmp)))
+            df05.write.mode('overwrite').saveAsTable(str(nme_tbl_otc_t_360_parque_traficador_05(vSSchHiveTmp)))
             df05.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_otc_t_360_parque_traficador_05(vSSchHiveTmp)),str(df05.count())))) 
             te_step_tbl = datetime.now()

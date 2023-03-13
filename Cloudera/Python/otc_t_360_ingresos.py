@@ -11,6 +11,7 @@ from pyspark.sql.functions import lit
 from pyspark.sql.functions import col
 from pyspark.sql.functions import concat
 from pyspark.sql.functions import to_date
+from pyspark_llap import HiveWarehouseSession
 from pyspark import SQLContext
 import argparse
 import time
@@ -48,7 +49,6 @@ try:
     parser.add_argument('--vfechaIniMes', required=True, type=str)
     parser.add_argument('--vfechamas1_1', required=True, type=str)
 
-
     parametros = parser.parse_args()
     vSEntidad=parametros.vSEntidad
     vTempSchema=parametros.vSSchHiveTmp
@@ -76,7 +76,7 @@ try:
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
-    print(etq_error(msg_e_ejecucion(VStp,str(e))))
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
 
@@ -92,17 +92,18 @@ try:
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
         .config("spark.yarn.queue", "default")\
-	.config("hive.enforce.bucketing", "false")\
-	.config("hive.enforce.sorting", "false")\
+        .config("hive.enforce.bucketing", "false")\
+        .config("hive.enforce.sorting", "false")\
         .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")
+    hive_hwc = HiveWarehouseSession.session(spark).build()
     app_id = spark._sc.applicationId
     print(etq_info("INFO: Mostrar application_id => {}".format(str(app_id))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
-    print(etq_error(msg_e_ejecucion(VStp,str(e))))
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
 
@@ -134,7 +135,7 @@ try:
 
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
-    print(etq_error(msg_e_ejecucion(VStp,str(e))))
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
 
@@ -167,7 +168,7 @@ try:
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
-    print(etq_error(msg_e_ejecucion(VStp,str(e))))
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
 
@@ -197,7 +198,7 @@ try:
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
-    print(etq_error(msg_e_ejecucion(VStp,str(e))))
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
 
 
@@ -227,7 +228,7 @@ try:
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
-    print(etq_error(msg_e_ejecucion(VStp,str(e))))
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
 
 
@@ -256,7 +257,7 @@ try:
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
-    print(etq_error(msg_e_ejecucion(VStp,str(e))))
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
 
 
@@ -285,7 +286,7 @@ try:
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
-    print(etq_error(msg_e_ejecucion(VStp,str(e))))
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
 
@@ -314,7 +315,7 @@ try:
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
-    print(etq_error(msg_e_ejecucion(VStp,str(e))))
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
 
 VStp='Paso [4.7]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_ingresos_07(vTempSchema))
@@ -342,7 +343,7 @@ try:
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
-    print(etq_error(msg_e_ejecucion(VStp,str(e))))
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
 
 
@@ -371,7 +372,7 @@ try:
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
-    print(etq_error(msg_e_ejecucion(VStp,str(e))))
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
 
 VStp='Paso [5]: Insertar registros del negocio en la tabla {}'.format(str(nme_tbl_otc_t_360_ingresos_09(vMainSchema)))
@@ -401,7 +402,7 @@ try:
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
 except Exception as e:
-    print(etq_error(msg_e_ejecucion(VStp,str(e))))
+    exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 
 print(lne_dvs())
 vStpFin='Paso [Final]: Eliminando dataframes ..'
@@ -422,8 +423,6 @@ try:
 except Exception as e:
     print(etq_error(msg_e_ejecucion(vStpFin,str(e))))
 print(lne_dvs())
-
-
 
 
 print('OK - PROCESO PYSPARK TERMINADO')

@@ -78,6 +78,7 @@ try:
     spark = SparkSession\
         .builder\
         .enableHiveSupport()\
+        .config("spark.yarn.queue", "capa_semantica") \
         .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")

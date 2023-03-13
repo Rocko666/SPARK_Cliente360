@@ -12,15 +12,17 @@ import argparse
 import time
 import sys
 import os
-# General cliente 360
-sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Configuraciones')
-from otc_t_rtd_oferta_sugerida_config.py import *
-sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Querys')
-from otc_t_rtd_oferta_sugerida_query.py import *
+
 # Genericos
 sys.path.insert(1,'/var/opt/tel_spark')
 from messages import *
 from functions import *
+
+# General cliente 360
+sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Configuraciones')
+from otc_t_rtd_oferta_sugerida_config import *
+sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Querys')
+from otc_t_rtd_oferta_sugerida_query import *
 
 timestart = datetime.now()
 print(etq_info("Inicio del proceso en PySpark..."))
@@ -82,8 +84,8 @@ try:
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
         .config("spark.yarn.queue", "default")\
-	.config("hive.enforce.bucketing", "false")\
-	.config("hive.enforce.sorting", "false")\
+        .config("hive.enforce.bucketing", "false")\
+        .config("hive.enforce.sorting", "false")\
         .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -134,7 +136,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_rtd_01(vSSchHiveTmp)))))
-            df01.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_rtd_01(vSSchHiveTmp)))
+            df01.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_rtd_01(vSSchHiveTmp)))
             df01.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_rtd_01(vSSchHiveTmp)),str(df01.count())))) 
             te_step_tbl = datetime.now()
@@ -218,7 +220,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_rtd_04(vSSchHiveTmp)))))
-            df04.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_rtd_04(vSSchHiveTmp)))
+            df04.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_rtd_04(vSSchHiveTmp)))
             df04.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_rtd_04(vSSchHiveTmp)),str(df04.count())))) 
             te_step_tbl = datetime.now()
@@ -249,7 +251,7 @@ try:
             print(etq_info(query_truncate))
             hc=HiveContext(spark)
             hc.sql(query_truncate)
-            df05.repartition(1).write.mode('append').insertInto(otc_t_rtd_oferta_sugerida)
+            df05.write.mode('append').insertInto(otc_t_rtd_oferta_sugerida)
             df05.printSchema()            
             print(etq_info(msg_t_total_registros_hive(otc_t_rtd_oferta_sugerida,str(df05.count())))) #BORRAR
             te_step_tbl = datetime.now()

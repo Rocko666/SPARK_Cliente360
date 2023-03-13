@@ -12,6 +12,8 @@ import argparse
 import time
 import sys
 import os
+from functools import reduce
+from pyspark.sql import DataFrame
 
 # Genericos
 sys.path.insert(1,'/var/opt/tel_spark')
@@ -90,8 +92,10 @@ try:
     print(lne_dvs())
     print(etq_info("Importando librerias personalizadas..."))
     sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Configuraciones')
+    #sys.path.insert(1,'/STAGE/versionamiento/CapaSemantica/CLIENTE_360/Python/Configuraciones')
     from otc_t_360_pivot_parque_config import *
     sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Querys')
+    #sys.path.insert(1,'/STAGE/versionamiento/CapaSemantica/CLIENTE_360/Python/Querys')
     from otc_t_360_pivot_parque_query import *
     print(lne_dvs())
     print(etq_info("Tablas termporales del proceso..."))
@@ -154,7 +158,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP15)))
-            df15.repartition(1).write.mode('overwrite').saveAsTable(vTPP15)
+            df15.write.mode('overwrite').saveAsTable(vTPP15)
             df15.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP15,str(df15.count())))) 
             te_step_tbl = datetime.now()
@@ -183,7 +187,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP16)))
-            df16.repartition(1).write.mode('overwrite').saveAsTable(vTPP16)
+            df16.write.mode('overwrite').saveAsTable(vTPP16)
             df16.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP16,str(df16.count())))) 
             te_step_tbl = datetime.now()
@@ -211,7 +215,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP17)))
-            df17.repartition(1).write.mode('overwrite').saveAsTable(vTPP17)
+            df17.write.mode('overwrite').saveAsTable(vTPP17)
             df17.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP17,str(df17.count())))) 
             te_step_tbl = datetime.now()
@@ -236,35 +240,50 @@ try:
     df18.printSchema()
     
     print(lne_dvs())
-    print(etq_sql(qyr_otc_t_360_parque_1_tmp_all_1(vTPP17, vIFechaProceso)))
-    df18a=spark.sql(qyr_otc_t_360_parque_1_tmp_all_1(vTPP17, vIFechaProceso))
-    df18a.printSchema()
-    
-    print(lne_dvs())
-    print(etq_sql(qyr_otc_t_360_parque_1_tmp_all_2(vTPP19, vIFechaProceso)))
-    df18b=spark.sql(qyr_otc_t_360_parque_1_tmp_all_2(vTPP19, vIFechaProceso))
-    df18b.printSchema()
-    
-    print(lne_dvs())
     print(etq_sql(qyr_not_in_list_1(vTPP15, vTPP16)))
     df18l1=spark.sql(qyr_not_in_list_1(vTPP15, vTPP16))
     df18l1.printSchema()
+    df18l1.write.mode('overwrite').saveAsTable(vSSchHiveTmp+".otc_t_pivot_1811")
     
+    print(lne_dvs())
+    print(etq_sql(qyr_otc_t_360_parque_1_tmp_all_1(vTPP17, vIFechaProceso,vSSchHiveTmp+".otc_t_pivot_1811")))
+    df18a=spark.sql(qyr_otc_t_360_parque_1_tmp_all_1(vTPP17, vIFechaProceso,vSSchHiveTmp+".otc_t_pivot_1811"))
+    df18a.printSchema()
+    print(etq_info("Guardando tabla tmp: (otc_t_pivot_18a)"))
+    df18a.write.mode('overwrite').saveAsTable(vSSchHiveTmp+".otc_t_pivot_18a")      
+        
     print(lne_dvs())
     print(etq_sql(qyr_not_in_list_2(vTPP15, vTPP16, vTPP17)))
     df18l2=spark.sql(qyr_not_in_list_2(vTPP15, vTPP16, vTPP17))
     df18l2.printSchema()
+    df18l2.write.mode('overwrite').saveAsTable(vSSchHiveTmp+".otc_t_pivot_1812")
+    
+    print(lne_dvs())
+    print(etq_sql(qyr_otc_t_360_parque_1_tmp_all_2(vTPP19, vIFechaProceso,vSSchHiveTmp+".otc_t_pivot_1812")))
+    df18b=spark.sql(qyr_otc_t_360_parque_1_tmp_all_2(vTPP19, vIFechaProceso,vSSchHiveTmp+".otc_t_pivot_1812"))
+    df18b.printSchema()
+    print(etq_info("Guardando tabla tmp: (otc_t_pivot_18b)"))
+    df18b.write.mode('overwrite').saveAsTable(vSSchHiveTmp+".otc_t_pivot_18b") 
+    
     if (df18.rdd.isEmpty()) | (df18a.rdd.isEmpty()) | (df18b.rdd.isEmpty()) | (df18l1.rdd.isEmpty()) | (df18l2.rdd.isEmpty()):
         exit(etq_nodata(msg_e_df_nodata(str('df18'))))
     else:
         try:
-            ts_step_tbl = datetime.now()
+            ts_step_tbl = datetime.now()            
+            #not_in_list_1 = list(df18l1.select('num_telefonico').toPandas()['num_telefonico'])
+            #print(len(not_in_list_1))
+            #not_in_list_2 = list(df18l2.select('num_telefonico').toPandas()['num_telefonico'])
+            #print(len(not_in_list_2))
+            #df18a=df18a.filter(df18a.num_telefonico.isin(not_in_list_1))
+                  
+            
+            #df18b=df18b.filter(df18b.num_telefonico.isin(not_in_list_2))
+                       
+            print(etq_info("Guardando tabla tmp: (otc_t_pivot_18)"))
+            df18.write.mode('overwrite').saveAsTable(vSSchHiveTmp+".otc_t_pivot_18")            
             print(etq_info(msg_i_insert_hive(vTPP18)))
-            not_in_list_1 = list(df18l1.select('num_telefonico').toPandas()['num_telefonico'])
-            not_in_list_2 = list(df18l2.select('num_telefonico').toPandas()['num_telefonico'])
-            df18a=df18a.filter(df18a.num_telefonico.isin(not_in_list_1))
-            df18b=df18b.filter(df18b.num_telefonico.isin(not_in_list_2))
-            df18final=df18.union(df18a.union(df18b))
+            df18final=spark.sql(qyr_union_pivot(vSSchHiveTmp+".otc_t_pivot_18",vSSchHiveTmp+".otc_t_pivot_18a",vSSchHiveTmp+".otc_t_pivot_18b"))
+            
             print('Inicia el overwrite de la tabla [{}] ').format(vTPP18)
             df18final.write.mode('overwrite').saveAsTable(vTPP18)
             df18final.printSchema()

@@ -120,6 +120,7 @@ try:
     spark = SparkSession\
         .builder\
         .enableHiveSupport() \
+        .config("spark.yarn.queue", "capa_semantica") \
         .config("spark.sql.broadcastTimeout", "36000") \
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
@@ -298,7 +299,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTMP06)))
-            df06.repartition(1).write.mode('overwrite').saveAsTable(vTMP06)
+            df06.write.mode('overwrite').saveAsTable(vTMP06)
             df06.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTMP06,str(df06.count())))) 
             te_step_tbl = datetime.now()
@@ -328,7 +329,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTMP07)))
-            df07.repartition(1).write.mode('overwrite').saveAsTable(vTMP07)
+            df07.write.mode('overwrite').saveAsTable(vTMP07)
             df07.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTMP07,str(df07.count())))) 
             te_step_tbl = datetime.now()
@@ -358,7 +359,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTMP08)))
-            df08.repartition(1).write.mode('overwrite').saveAsTable(vTMP08)
+            df08.write.mode('overwrite').saveAsTable(vTMP08)
             df08.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTMP08,str(df08.count())))) 
             te_step_tbl = datetime.now()
@@ -388,7 +389,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTMP09)))
-            df09.repartition(1).write.mode('overwrite').saveAsTable(vTMP09)
+            df09.write.mode('overwrite').saveAsTable(vTMP09)
             df09.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTMP09,str(df09.count())))) 
             te_step_tbl = datetime.now()
@@ -418,7 +419,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTMP10)))
-            df10.repartition(1).write.mode('overwrite').saveAsTable(vTMP10)
+            df10.write.mode('overwrite').saveAsTable(vTMP10)
             df10.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTMP10,str(df10.count())))) 
             te_step_tbl = datetime.now()
@@ -448,7 +449,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTMP11)))
-            df11.repartition(1).write.mode('overwrite').saveAsTable(vTMP11)
+            df11.write.mode('overwrite').saveAsTable(vTMP11)
             df11.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTMP11,str(df11.count())))) 
             te_step_tbl = datetime.now()
@@ -478,7 +479,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTMP12)))
-            df12.repartition(1).write.mode('overwrite').saveAsTable(vTMP12)
+            df12.write.mode('overwrite').saveAsTable(vTMP12)
             df12.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTMP12,str(df12.count())))) 
             te_step_tbl = datetime.now()
@@ -508,7 +509,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTMP13)))
-            df13.repartition(1).write.mode('overwrite').saveAsTable(vTMP13)
+            df13.write.mode('overwrite').saveAsTable(vTMP13)
             df13.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTMP13,str(df13.count())))) 
             te_step_tbl = datetime.now()
@@ -538,7 +539,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTMP14)))
-            df14.repartition(1).write.mode('overwrite').saveAsTable(vTMP14)
+            df14.write.mode('overwrite').saveAsTable(vTMP14)
             df14.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTMP14,str(df14.count())))) 
             te_step_tbl = datetime.now()

@@ -377,7 +377,7 @@ FROM
 
 
 #N18a
-def qyr_otc_t_360_parque_1_tmp_all_1(vTPP17, vIFechaProceso):
+def qyr_otc_t_360_parque_1_tmp_all_1_no(vTPP17, vIFechaProceso):
     qry='''
 SELECT 
 	c.telefono num_telefonico
@@ -412,7 +412,47 @@ FROM
 	{vTPP17} c
     '''.format(vTPP17=vTPP17, vIFechaProceso=vIFechaProceso)
     return qry
-    
+ 
+def qyr_otc_t_360_parque_1_tmp_all_1(vTPP17, vIFechaProceso,vTablaTmp):
+    qry='''
+SELECT 
+	c.telefono num_telefonico
+	, CAST(NULL AS string) codigo_plan
+	, c.fecha_alta
+	, CAST(NULL AS timestamp) fecha_last_status
+	, 'PREACTIVO' estado_abonado
+	, {vIFechaProceso} fecha_proceso
+	, CAST(NULL AS string) numero_abonado
+	, 'Prepago' linea_negocio
+	, CAST(NULL AS string) account_num
+	, CAST(NULL AS string) sub_segmento
+	, CAST(NULL AS string) tipo_doc_cliente
+	, CAST(NULL AS string) identificacion_cliente
+	, CAST(NULL AS string) cliente
+	, CAST(NULL AS string) customer_ref
+	, CAST(NULL AS int) counted_days
+	, 'PREPAGO' linea_negocio_homologado
+	, CAST(NULL AS string) categoria_plan
+	, CAST(NULL AS double) tarifa
+	, CAST(NULL AS string) nombre_plan
+	, 'TELEFONICA' marca
+	, '25' ciclo_fact
+	, CAST(NULL AS string) correo_cliente_pr
+	, CAST(NULL AS string) telefono_cliente_pr
+	, CAST(NULL AS string) imei
+	, CAST(NULL AS int) orden
+	, 'PREACTIVO' tipo_movimiento_mes
+	, CAST(NULL AS date) fecha_movimiento_mes
+	, 'NO' ES_PARQUE
+FROM
+	{vTPP17} c
+    LEFT OUTER JOIN {vTablaTmp} d
+    on c.telefono = d.num_telefonico
+    WHERE d.num_telefonico is null
+    '''.format(vTPP17=vTPP17, vIFechaProceso=vIFechaProceso,vTablaTmp=vTablaTmp)
+    return qry
+
+ 
 #N18l1
 def qyr_not_in_list_1(vTPP15, vTPP16):
     qry='''
@@ -431,7 +471,7 @@ UNION ALL
 #N18b
 ## union all  qyr_otc_t_360_parque_1_tmp_all WITH qyr_otc_t_360_parque_1_tmp_all_1
 ## 	WITH qyr_otc_t_360_parque_1_tmp_all_2
-def qyr_otc_t_360_parque_1_tmp_all_2(vTPP19, vIFechaProceso):
+def qyr_otc_t_360_parque_1_tmp_all_2_no(vTPP19, vIFechaProceso):
     qry='''
 SELECT 
 	d.num_telefonico num_telefonico
@@ -466,6 +506,45 @@ FROM
 	{vTPP19} d
     '''.format(vTPP19=vTPP19, vIFechaProceso=vIFechaProceso)
     return qry
+
+def qyr_otc_t_360_parque_1_tmp_all_2(vTPP19, vIFechaProceso,vTablaTmp):
+    qry='''
+SELECT 
+	d.num_telefonico num_telefonico
+	, CAST(NULL AS string) codigo_plan
+	, CAST(NULL AS timestamp) fecha_alta
+	, CAST(NULL AS timestamp) fecha_last_status
+	, 'RECARGADOR' estado_abonado
+	, {vIFechaProceso} fecha_proceso
+	, CAST(NULL AS string) numero_abonado
+	, 'Prepago' linea_negocio
+	, CAST(NULL AS string) account_num
+	, CAST(NULL AS string) sub_segmento
+	, CAST(NULL AS string) tipo_doc_cliente
+	, CAST(NULL AS string) identificacion_cliente
+	, CAST(NULL AS string) cliente
+	, CAST(NULL AS string) customer_ref
+	, 0 counted_days
+	, 'PREPAGO' linea_negocio_homologado
+	, CAST(NULL AS string) categoria_plan
+	, CAST(NULL AS double) tarifa
+	, CAST(NULL AS string) nombre_plan
+	, 'TELEFONICA' marca
+	, '25' ciclo_fact
+	, CAST(NULL AS string) correo_cliente_pr
+	, CAST(NULL AS string) telefono_cliente_pr
+	, CAST(NULL AS string) imei
+	, CAST(NULL AS int) orden
+	, 'RECARGADOR NO DEFINIDO' tipo_movimiento_mes
+	, CAST(NULL AS date) fecha_movimiento_mes
+	, 'NO' ES_PARQUE
+FROM
+	{vTPP19} d
+    LEFT OUTER JOIN {vTablaTmp} e
+    ON d.num_telefonico=e.num_telefonico
+    WHERE e.num_telefonico is null
+    '''.format(vTPP19=vTPP19, vIFechaProceso=vIFechaProceso,vTablaTmp=vTablaTmp)
+    return qry
     
 #N18l2
 def qyr_not_in_list_2(vTPP15, vTPP16, vTPP17):
@@ -487,6 +566,18 @@ UNION ALL
 	'''.format(vTPP15=vTPP15, vTPP16=vTPP16, vTPP17=vTPP17)
     return qry
 
+def qyr_union_pivot(vTabla, vTabla1, vTabla2):
+    qry='''
+    select *
+    from {vTabla}
+    union all
+    select *
+    from {vTabla1}
+    union all
+    select *
+    from {vTabla2}
+	'''.format(vTabla=vTabla, vTabla1=vTabla1, vTabla2=vTabla2)
+    return qry
 
 # N20
 def qyr_otc_t_360_parque_1_tmp(vTPP18, vTPP09):

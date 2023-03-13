@@ -77,10 +77,10 @@ day="01"
 fechaMes=$year$month
 fechaIniMes=$year$month$day                            #Formato YYYYMMDD
 fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
-let fechamas1=$fechamas1_1*1
+fechamas1=$(expr $fechamas1_1 \* 1)
 fechamenos1mes_1=`date '+%Y%m%d' -d "$FECHAEJE-1 month"`
 
-let fechamenos1mes=$fechamenos1mes_1*1
+fechamenos1mes=$(expr $fechamenos1mes_1 \* 1)
 
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validacion de parametros iniciales, nulos y existencia de Rutas " 2>&1 &>> $VAL_LOG_EJECUCION
@@ -118,6 +118,16 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Reingenieria del proceso OTC_T_360_INGRE
 ###########################################################################################################################################################
 
 $VAL_RUTA_SPARK \
+--jars /opt/cloudera/parcels/CDH/jars/hive-warehouse-connector-assembly-*.jar \
+--conf spark.sql.extensions=com.hortonworks.spark.sql.rule.Extensions \
+--conf spark.security.credentials.hiveserver2.enabled=false \
+--conf spark.sql.hive.hwc.execution.mode=spark \
+--conf spark.datasource.hive.warehouse.read.via.llap=false \
+--conf spark.datasource.hive.warehouse.load.staging.dir=/tmp \
+--conf spark.datasource.hive.warehouse.read.jdbc.mode=cluster \
+--conf spark.datasource.hive.warehouse.user.name="rgenerator" \
+--py-files /opt/cloudera/parcels/CDH/lib/hive_warehouse_connector/pyspark_hwc-1.0.0.7.1.7.1000-141.zip \
+--conf spark.sql.hive.hiveserver2.jdbc.url="jdbc:hive2://quisrvbigdata1.otecel.com.ec:2181,quisrvbigdata2.otecel.com.ec:2181,quisrvbigdata10.otecel.com.ec:2181,quisrvbigdata11.otecel.com.ec:2181/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=hiveserver2" \
 --conf spark.ui.enabled=false \
 --conf spark.shuffle.service.enabled=false \
 --conf spark.dynamicAllocation.enabled=false \
