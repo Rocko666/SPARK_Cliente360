@@ -15,7 +15,6 @@ from create import *
 sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Querys')
 from otc_t_360_parque_sr_query import *
 
-
 timestart = datetime.now()
 
 vSStep='Obteniendo parametros de la SHELL'
@@ -35,8 +34,8 @@ try:
     parser.add_argument('--vIFechaProceso', required=False, type=str,help='Parametro 1 de la query sql')
     parser.add_argument('--ventidad', required=False, type=str,help='Nombre del JOB')
     parser.add_argument('--vSQueue', required=False, type=str,help='Cola de ejecucion en HIVE')
-    parser.add_argument('--vHiveTab', required=False, type=str,help='Nombre del JOB')
-    parser.add_argument('--vHiveDB', required=False, type=str,help='Cola de ejecucion en HIVE')
+    parser.add_argument('--vHiveTab', required=False, type=str,help='Nombre tabla principal')
+    parser.add_argument('--vHiveDB', required=False, type=str,help='BD principal')
     parametros = parser.parse_args()
     vClass=parametros.vclass
     vUrlJdbc=parametros.vjdbcurl

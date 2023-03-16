@@ -11,11 +11,8 @@ def qry_altr_otc_t_360_cartera(vTCartera, FECHAEJE):
     '''.format(vTCartera=vTCartera, FECHAEJE=FECHAEJE)
     return qry
 
-def qry_insrt_otc_t_360_cartera(vTCartera, FECHAEJE, vTCarteraVencim, vT360General):
+def qry_insrt_otc_t_360_cartera(FECHAEJE, vTCarteraVencim, vT360General):
     qry='''
-INSERT 
-    INTO 
-    {vTCartera} PARTITION(fecha_proceso)
     SELECT 
         t1.cuenta_facturacion,
         t1.vencimiento,
@@ -43,5 +40,5 @@ INSERT
         where fecha_proceso={FECHAEJE} 
         group by account_num) t2
     on (t1.cuenta_facturacion=t2.account_num)
-    '''.format(vTCartera=vTCartera, FECHAEJE=FECHAEJE, vTCarteraVencim=vTCarteraVencim, vT360General=vT360General)
+    '''.format(FECHAEJE=FECHAEJE, vTCarteraVencim=vTCarteraVencim, vT360General=vT360General)
     return qry

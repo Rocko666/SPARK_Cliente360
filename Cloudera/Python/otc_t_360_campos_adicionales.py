@@ -42,7 +42,6 @@ try:
     parser.add_argument('--vfechamas1_2', required=True, type=str)
     parser.add_argument('--vfechamas1', required=True, type=str)
 
-
     parametros = parser.parse_args()
     vSEntidad=parametros.vSEntidad
     vTempSchema=parametros.vSSchHiveTmp
@@ -55,7 +54,6 @@ try:
     print(etq_info(log_p_parametros("FECHAEJE",FECHAEJE)))
     print(etq_info(log_p_parametros("fechamas1_2",fechamas1_2)))
     print(etq_info(log_p_parametros("fechamas1",fechamas1)))
-
 
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(VStp,vle_duracion(ts_step,te_step))))
@@ -75,9 +73,9 @@ try:
         .config("spark.sql.broadcastTimeout", "36000") \
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
-        .config("spark.yarn.queue", "default")\
-        .config("hive.enforce.bucketing", "false")\
-        .config("hive.enforce.sorting", "false")\
+        .config("spark.yarn.queue", "capa_semantica") \
+        .config("hive.enforce.bucketing", "false") \
+        .config("hive.enforce.sorting", "false") \
         .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -177,7 +175,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_01(vTempSchema)))))
-            df_01.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_01(vTempSchema)))
+            df_01.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_01(vTempSchema)))
             df_01.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_01(vTempSchema)),str(df_01.count()))))
             te_step_tbl = datetime.now()
@@ -264,7 +262,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_04(vTempSchema)))))
-            df_04.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_04(vTempSchema)))
+            df_04.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_04(vTempSchema)))
             df_04.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_04(vTempSchema)),str(df_04.count()))))
             te_step_tbl = datetime.now()
@@ -292,7 +290,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_05(vTempSchema)))))
-            df_05.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_05(vTempSchema)))
+            df_05.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_05(vTempSchema)))
             df_05.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_05(vTempSchema)),str(df_05.count()))))
             te_step_tbl = datetime.now()
@@ -304,7 +302,6 @@ try:
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
-
 
 VStp='Paso [4_06]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_06(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
@@ -321,7 +318,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_06(vTempSchema)))))
-            df_06.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_06(vTempSchema)))
+            df_06.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_06(vTempSchema)))
             df_06.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_06(vTempSchema)),str(df_06.count()))))
             te_step_tbl = datetime.now()
@@ -349,7 +346,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_07(vTempSchema)))))
-            df_07.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_07(vTempSchema)))
+            df_07.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_07(vTempSchema)))
             df_07.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_07(vTempSchema)),str(df_07.count()))))
             te_step_tbl = datetime.now()
@@ -361,7 +358,6 @@ try:
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
-
 
 VStp='Paso [4_08]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_08(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
@@ -378,7 +374,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_08(vTempSchema)))))
-            df_08.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_08(vTempSchema)))
+            df_08.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_08(vTempSchema)))
             df_08.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_08(vTempSchema)),str(df_08.count()))))
             te_step_tbl = datetime.now()
@@ -390,7 +386,6 @@ try:
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
-
 
 VStp='Paso [4_09]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_09(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
@@ -407,7 +402,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_09(vTempSchema)))))
-            df_09.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_09(vTempSchema)))
+            df_09.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_09(vTempSchema)))
             df_09.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_09(vTempSchema)),str(df_09.count()))))
             te_step_tbl = datetime.now()
@@ -419,7 +414,6 @@ try:
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
-
 
 VStp='Paso [4_10]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_10(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
@@ -436,7 +430,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_10(vTempSchema)))))
-            df_10.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_10(vTempSchema)))
+            df_10.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_10(vTempSchema)))
             df_10.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_10(vTempSchema)),str(df_10.count()))))
             te_step_tbl = datetime.now()
@@ -448,7 +442,6 @@ try:
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
-
 
 VStp='Paso [4_11]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_11(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
@@ -465,7 +458,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_11(vTempSchema)))))
-            df_11.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_11(vTempSchema)))
+            df_11.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_11(vTempSchema)))
             df_11.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_11(vTempSchema)),str(df_11.count()))))
             te_step_tbl = datetime.now()
@@ -493,7 +486,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_12(vTempSchema)))))
-            df_12.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_12(vTempSchema)))
+            df_12.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_12(vTempSchema)))
             df_12.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_12(vTempSchema)),str(df_12.count()))))
             te_step_tbl = datetime.now()
@@ -505,7 +498,6 @@ try:
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
-
 
 VStp='Paso [4_13]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_13(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
@@ -522,7 +514,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_13(vTempSchema)))))
-            df_13.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_13(vTempSchema)))
+            df_13.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_13(vTempSchema)))
             df_13.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_13(vTempSchema)),str(df_13.count()))))
             te_step_tbl = datetime.now()
@@ -534,7 +526,6 @@ try:
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
-
 
 VStp='Paso [4_14]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_14(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
@@ -620,7 +611,6 @@ except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
 
-
 VStp='Paso [4_17]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_17(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
 try:
@@ -649,7 +639,6 @@ except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
 
-
 VStp='Paso [4_18]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_18(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
 try:
@@ -665,7 +654,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_18(vTempSchema)))))
-            df_18.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_18(vTempSchema)))
+            df_18.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_18(vTempSchema)))
             df_18.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_18(vTempSchema)),str(df_18.count()))))
             te_step_tbl = datetime.now()
@@ -677,7 +666,6 @@ try:
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
-
 
 VStp='Paso [4_19]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_19(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
@@ -694,7 +682,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_19(vTempSchema)))))
-            df_19.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_19(vTempSchema)))
+            df_19.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_19(vTempSchema)))
             df_19.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_19(vTempSchema)),str(df_19.count()))))
             te_step_tbl = datetime.now()
@@ -722,7 +710,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_20(vTempSchema)))))
-            df_20.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_20(vTempSchema)))
+            df_20.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_20(vTempSchema)))
             df_20.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_20(vTempSchema)),str(df_20.count()))))
             te_step_tbl = datetime.now()
@@ -750,7 +738,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_21(vTempSchema)))))
-            df_21.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_21(vTempSchema)))
+            df_21.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_21(vTempSchema)))
             df_21.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_21(vTempSchema)),str(df_21.count()))))
             te_step_tbl = datetime.now()
@@ -762,7 +750,6 @@ try:
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
-
 
 VStp='Paso [4_22]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_22(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
@@ -779,7 +766,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_22(vTempSchema)))))
-            df_22.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_22(vTempSchema)))
+            df_22.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_22(vTempSchema)))
             df_22.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_22(vTempSchema)),str(df_22.count()))))
             te_step_tbl = datetime.now()
@@ -820,7 +807,6 @@ except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
 
-
 VStp='Paso [4_24]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_24(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
 try:
@@ -836,7 +822,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_24(vTempSchema)))))
-            df_24.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_24(vTempSchema)))
+            df_24.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_24(vTempSchema)))
             df_24.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_24(vTempSchema)),str(df_24.count()))))
             te_step_tbl = datetime.now()
@@ -864,7 +850,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_25(vTempSchema)))))
-            df_25.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_25(vTempSchema)))
+            df_25.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_25(vTempSchema)))
             df_25.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_25(vTempSchema)),str(df_25.count()))))
             te_step_tbl = datetime.now()
@@ -876,7 +862,6 @@ try:
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
-
 
 VStp='Paso [4_26]: Se crea tabla  {} '.format(nme_tbl_tmp_otc_t_360_campos_adicionales_26(vTempSchema))
 #******************************************************************************************************************************************************************************************************************************************************************************************************#
@@ -893,7 +878,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_26(vTempSchema)))))
-            df_26.repartition(1).write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_26(vTempSchema)))
+            df_26.write.mode('overwrite').saveAsTable(str(nme_tbl_tmp_otc_t_360_campos_adicionales_26(vTempSchema)))
             df_26.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(nme_tbl_tmp_otc_t_360_campos_adicionales_26(vTempSchema)),str(df_26.count()))))
             te_step_tbl = datetime.now()
@@ -905,8 +890,6 @@ try:
 except Exception as e:
     exit(etq_error(msg_e_ejecucion(VStp,str(e))))
 print(lne_dvs())
-
-
 
 vStpFin='Paso [Final]: Eliminando dataframes ..'
 print(lne_dvs())

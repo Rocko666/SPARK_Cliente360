@@ -274,15 +274,15 @@ $RUTA_PYTHON/otc_t_360_pivot_parque_2.py \
 -fec_inac_1 $fecha_inac_1 \
 -fec_tmstmp '$fecha_tmstmp' 2>&1 &>> $VAL_LOG_EJECUCION
 
-	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
+# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
 error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
 	if [ $error_spark -eq 0 ];then
 		echo "==== OK - La ejecucion del archivo spark otc_t_360_pivot_parque_2.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
 		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2 --> La carga de informacion fue extraida de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
 		ETAPA=3
-		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params_des
+		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
 		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: $SHELL --> Se procesa la ETAPA 2 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
-		`mysql -N  <<<"update params_des set valor='3' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+		`mysql -N  <<<"update params set valor='3' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 	else
 		echo "==== ERROR: - En la ejecucion del archivo spark otc_t_360_pivot_parque_2.py ====" 2>&1 &>> $VAL_LOG_EJECUCION
 		exit 1
@@ -331,9 +331,9 @@ if [ "$ETAPA" = "4" ]; then
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Finalizar el proceso " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 						   
-	#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params_des
+	#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
 	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El Proceso termina de manera exitosa " 2>&1 &>> $VAL_LOG_EJECUCION
-	`mysql -N  <<<"update params_des set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	`mysql -N  <<<"update params set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 
 	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_PIVOT_PARQUE finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
 fi

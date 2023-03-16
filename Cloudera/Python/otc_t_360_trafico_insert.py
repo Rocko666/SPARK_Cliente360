@@ -36,7 +36,6 @@ try:
     parser.add_argument('--vIFechaProceso', required=True, type=int)
     parser.add_argument('--vABREVIATURA_TEMP', required=True, type=str)
 
-
     parametros = parser.parse_args()
     vSEntidad=parametros.vSEntidad
     vMainSchema=parametros.vSSchHiveMain
@@ -68,9 +67,9 @@ try:
         .config("spark.sql.broadcastTimeout", "36000") \
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
-        .config("spark.yarn.queue", "default")\
-	.config("hive.enforce.bucketing", "false")\
-	.config("hive.enforce.sorting", "false")\
+        .config("spark.yarn.queue", "capa_semantica") \
+        .config("hive.enforce.bucketing", "false")\
+        .config("hive.enforce.sorting", "false")\
         .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -102,7 +101,7 @@ try:
             print(etq_info(query_truncate))
             hc=HiveContext(spark)
             hc.sql(query_truncate)
-            df01.repartition(1).write.mode('append').insertInto(tabla_trafico)
+            df01.write.mode('append').insertInto(tabla_trafico)
             df01.printSchema()
             print(etq_info(msg_t_total_registros_hive(tabla_trafico,str(df01.count())))) #BORRAR
             te_step_tbl = datetime.now()

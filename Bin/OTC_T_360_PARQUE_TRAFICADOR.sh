@@ -294,7 +294,7 @@ FROM
 WHERE
 	fecha >= $f_inicio
 	AND fecha <= $FECHAEJE
-	AND tip_prepago IN (
+AND tip_prepago IN (
 	SELECT
 		DISTINCT codigo
 	FROM

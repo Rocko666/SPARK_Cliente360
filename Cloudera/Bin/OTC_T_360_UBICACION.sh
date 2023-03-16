@@ -142,3 +142,4 @@ error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO E
 	fi
 fi
 
+VAL_LOG_EJECUCION=$LOGS/$EJECUCION_LOG.log

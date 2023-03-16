@@ -7,18 +7,14 @@ set -e
 # 2022-12-01	Rodrigo Sandoval (Softconsulting)   Migracion a Spark
 ##########################################################################
 
-
 ENTIDAD=OTC_T_360_TRAFICO
 
 #PARAMETROS QUE INGRESAN A LA SHELL
 FECHAEJE=$1
-PASO=$2
 ABREVIATURA_TEMP=_prod
 
 #PARAMETROS GENERICOS DE SPARK
 VAL_RUTA_SPARK=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENERICO' AND parametro = 'VAL_RUTA_SPARK';"`
-#VAL_KINIT=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENERICO' AND parametro = 'VAL_KINIT';"`
-#$VAL_KINIT
 
 #PARAMETROS PROPIOS DE LA TABLA params
 RUTA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RUTA';"`
@@ -42,12 +38,11 @@ VAL_EXECUTOR_MEMORY2=`mysql -N  <<<"select valor from params where ENTIDAD = '"$
 VAL_NUM_EXECUTORS2=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_NUM_EXECUTORS2';"`
 VAL_NUM_EXECUTORS_CORES2=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_NUM_EXECUTORS_CORES2';"`
 VAL_PYTHON_FILE_MAIN2=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_PYTHON_FILE_MAIN2';"`
-PASO=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'ETAPA';"`
+ETAPA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'ETAPA';"`
 
 #------------------------------------------------------
 # VARIABLES DE OPERACION Y AUTOGENERADAS
 #------------------------------------------------------
-
     EJECUCION=$ENTIDAD$FECHAEJE
     #DIA: Obtiene la fecha del sistema
     DIA=`date '+%Y%m%d'`
@@ -59,27 +54,21 @@ PASO=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND pa
     LOGS=$VAL_RUTA/Log
 	VAL_LOG_EJECUCION=$LOGS/$EJECUCION_LOG.log
 
-
 #------------------------------------------------------
 # DEFINICION DE FECHAS
 #------------------------------------------------------
-  eval year=`echo $FECHAEJE | cut -c1-4`
-  eval month=`echo $FECHAEJE | cut -c5-6`
-  day="01"
-  #fechamenos1mes=`date '+%Y%m%d' -d "$FECHAEJE-1 month"`
-  path_actualizacion=$RUTA"/Bin/OTC_F_RESTA_1_MES.sh"
-
-
-  fechamenos1mes=`sh $path_actualizacion $FECHAEJE`       #Formato YYYYMMDD
-
-  fechamas1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
-  let fechamenos1mes=$fechamenos1mes_1*1
-  fechamenos2mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-1 month"`
-  #fechamenos2mes_1=`sh $path_actualizacion $fechamenos1mes`       #Formato YYYYMMDD
-
-  let fechamenos2mes=$fechamenos2mes_1*1
-
-  fechaIniMes=$year$month$day
+eval year=`echo $FECHAEJE | cut -c1-4`
+eval month=`echo $FECHAEJE | cut -c5-6`
+day="01"
+#fechamenos1mes=`date '+%Y%m%d' -d "$FECHAEJE-1 month"`
+path_actualizacion=$RUTA"/Bin/OTC_F_RESTA_1_MES.sh"
+fechamenos1mes=`sh $path_actualizacion $FECHAEJE`       #Formato YYYYMMDD
+fechamas1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
+#let fechamenos1mes=$fechamenos1mes_1*1
+fechamenos2mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-1 month"`
+#fechamenos2mes_1=`sh $path_actualizacion $fechamenos1mes`       #Formato YYYYMMDD
+fechamenos2mes=$(expr $fechamenos2mes_1 \* 1)
+fechaIniMes=$year$month$day
 
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validacion de parametros iniciales, nulos y existencia de Rutas " 2>&1 &>> $VAL_LOG_EJECUCION
@@ -110,34 +99,45 @@ if 	[ -z "$FECHAEJE" ] ||
   exit $error
 fi
 
-if [ "$PASO" = "1" ]; then
+###########################################################################################################################################################
+if [ "$ETAPA" = "1" ]; then
+###########################################################################################################################################################
+echo "**********INICIO DE EJECUCION PYSPARK********" 2>&1 &>> $VAL_LOG_EJECUCION
 
-echo "**********INICIO DE EJECUCION PYSPARK********" 2>&1 &>> $LOGS/$EJECUCION.log
+$VAL_RUTA_SPARK \
+--conf spark.ui.enabled=false \
+--conf spark.shuffle.service.enabled=false \
+--conf spark.dynamicAllocation.enabled=false \
+--master yarn \
+--executor-memory 2G \
+--num-executors 8 \
+--executor-cores 2 \
+--driver-memory 2G \
+$RUTA/Python/$VAL_NOMBRE_PROCESO.py \
+-fec_menos_1_mes $fechamenos1mes \
+-fec_menos_2_mes $fechamenos2mes \
+-fec_eje $FECHAEJE \
+-fec_ini_mes $fechaIniMes 2>&1 &>> $VAL_LOG_EJECUCION
 
-$VAL_RUTA_SPARK --master yarn --executor-memory 2G --num-executors 80 --executor-cores 5 --driver-memory 2G $RUTA/Python/$VAL_NOMBRE_PROCESO.py -fec_menos_1_mes $fechamenos1mes -fec_menos_2_mes $fechamenos2mes -fec_eje $FECHAEJE -fec_ini_mes $fechaIniMes 2>&1 &>> $LOGS/$EJECUCION.log
-
-# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
-VAL_ERRORES=`grep 'Error PySpark:\|error:' $LOGS/$EJECUCION.log | wc -l`
-if [ $VAL_ERRORES -ne 0 ];then
-error=3
-echo "=== Error en la ejecucion SPARK AGRUPACIONES TRAFICO" 2>&1 &>> "$LOGS/$EJECUCION.log"
-exit $error
-else
-error=0
+#VALIDA EJECUCION DEL ARCHIVO SPARK
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion del archivo spark $VAL_NOMBRE_PROCESO.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1 --> La carga de informacion fue extraida de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
+		ETAPA=2
+		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA 1 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
+		`mysql -N  <<<"update params set valor='2' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	else		
+		echo "==== ERROR: - En la ejecucion del archivo spark $VAL_NOMBRE_PROCESO.py ====" 2>&1 &>> $VAL_LOG_EJECUCION
+		exit 1
+	fi
 fi
 
-echo "**********FIN DE EJECUCION PYSPARK********" 2>&1 &>> $LOGS/$EJECUCION.log
-
-##fin consultas SPARK
-PASO=2
-fi
-
-
-if [ "$PASO" = "2" ]; then
-
-echo "**********INICIO DE CONSULTAS HIVE********" 2>&1 &>> $LOGS/$EJECUCION.log
-
-
+###########################################################################################################################################################
+if [ "$ETAPA" = "2" ]; then
+###########################################################################################################################################################
+echo "**********INICIO DE CONSULTAS HIVE********" 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Reingenieria del proceso $ENTIDAD (Queries Hive)" 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
@@ -158,31 +158,26 @@ $RUTA_PYTHON/$VAL_PYTHON_FILE_MAIN \
 --vSTblHiveTmp=$HIVETABLE_TMP \
 --vABREVIATURA_TEMP=$ABREVIATURA_TEMP 2>&1 &>> $VAL_LOG_EJECUCION
 
-
-VAL_ERRORES=`egrep 'OK - PROCESO1 PYSPARK TERMINADO' $VAL_LOG_EJECUCION | wc -l`
-if [ $VAL_ERRORES -eq 0 ];then
-    error=3
-    echo "=== ERROR en el proceso 1 de $ENTIDAD" 2>&1 &>> $VAL_LOG_EJECUCION
-	exit $error
-else
-    error=0
-	echo "==== Proceso $ENTIDAD terminado con EXITO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
-
+#VALIDA EJECUCION DEL ARCHIVO SPARK
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion del archivo spark $VAL_PYTHON_FILE_MAIN es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2 --> La carga de informacion fue extraida de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
+		ETAPA=3
+		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: $SHELL --> Se procesa la ETAPA 2 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
+		`mysql -N  <<<"update params set valor='3' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	else
+		echo "==== ERROR: - En la ejecucion del archivo spark $VAL_PYTHON_FILE_MAIN ====" 2>&1 &>> $VAL_LOG_EJECUCION
+		exit 1
+	fi
 fi
 
-echo "**********FIN DE CONSULTAS HIVE********" 2>&1 &>> $LOGS/$EJECUCION.log
-
-PASO=3
-fi
-
-
-if [ "$PASO" = "3" ]; then
-
-
-
+###########################################################################################################################################################
+if [ "$ETAPA" = "3" ]; then
+###########################################################################################################################################################
 #EJECUCION DE PROCESO PYSPARK PARA IDENTIFICAR LA PREFERENCIA DE CONSUMO
-#
-echo "**********INICIO DE PROCESO PYSPARK PREFERENCIA DE CONSUMO********" 2>&1 &>> $LOGS/$EJECUCION.log
+echo "**********INICIO DE PROCESO PYSPARK PREFERENCIA DE CONSUMO********" 2>&1 &>> $VAL_LOG_EJECUCION
 
 $VAL_RUTA_SPARK \
 --conf spark.ui.enabled=false \
@@ -190,31 +185,31 @@ $VAL_RUTA_SPARK \
 --conf spark.dynamicAllocation.enabled=false \
 --master yarn \
 --executor-memory 2G \
---num-executors 80 \
---executor-cores 5 \
+--num-executors 8 \
+--executor-cores 3 \
 --driver-memory 2G \
 $RUTA/Python/CLIENTE_360_PREFERENCIA_CONSUMO.py \
--fec_eje $FECHAEJE 2>&1 &>> $LOGS/$EJECUCION.log
+-fec_eje $FECHAEJE 2>&1 &>> $VAL_LOG_EJECUCION
 
-
-# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
-VAL_ERRORES=`grep 'Error PySpark:\|error:' $LOGS/$EJECUCION.log | wc -l`
-if [ $VAL_ERRORES -ne 0 ];then
-error=3
-echo "=== Error en la ejecucion DATOS MINUTOS" 2>&1 &>> "$LOGS/$EJECUCION.log"
-exit $error
-else
-error=0
+#VALIDA EJECUCION DEL ARCHIVO SPARK
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion del archivo spark CLIENTE_360_PREFERENCIA_CONSUMO.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3 --> La carga de informacion fue extraida de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
+		ETAPA=4
+		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA 3 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
+		`mysql -N  <<<"update params set valor='4' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	else		
+		echo "==== ERROR: - En la ejecucion del archivo spark CLIENTE_360_PREFERENCIA_CONSUMO.py ====" 2>&1 &>> $VAL_LOG_EJECUCION
+		exit 1
+	fi
 fi
 
-echo "**********FIN DE PROCESO PYSPARK PREFERENCIA DE CONSUMO********" 2>&1 &>> $LOGS/$EJECUCION.log
-PASO=4
-fi
-
-if [ "$PASO" = "4" ]; then
-
-echo "**********INICIO DE PROCESO HIVE INSERT EN TABLA FINAL********" 2>&1 &>> $LOGS/$EJECUCION.log
-
+###########################################################################################################################################################
+if [ "$ETAPA" = "4" ]; then
+###########################################################################################################################################################
+echo "**********INICIO DE PROCESO HIVE INSERT EN TABLA FINAL********" 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Reingenieria del proceso $ENTIDAD (Insert Hive)" 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
@@ -236,25 +231,30 @@ $RUTA_PYTHON/$VAL_PYTHON_FILE_MAIN2 \
 --vIFechaProceso=$FECHAEJE \
 --vABREVIATURA_TEMP=$ABREVIATURA_TEMP 2>&1 &>> $VAL_LOG_EJECUCION
 
-
-VAL_ERRORES=`egrep 'OK - PROCESO2 PYSPARK TERMINADO' $VAL_LOG_EJECUCION | wc -l`
-if [ $VAL_ERRORES -eq 0 ];then
-    error=3
-    echo "=== ERROR en el proceso 2 de $ENTIDAD" 2>&1 &>> $VAL_LOG_EJECUCION
-	exit $error
-else
-    error=0
-	echo "==== Proceso $ENTIDAD terminado con EXITO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
-
+#VALIDA EJECUCION DEL ARCHIVO SPARK
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion del archivo spark $VAL_PYTHON_FILE_MAIN2 es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 4 --> La carga de informacion fue extraida de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
+		ETAPA=5
+		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA 4 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
+		`mysql -N  <<<"update params set valor='5' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	else		
+		echo "==== ERROR: - En la ejecucion del archivo spark $VAL_PYTHON_FILE_MAIN2 ====" 2>&1 &>> $VAL_LOG_EJECUCION
+		exit 1
+	fi
 fi
 
+if [ "$ETAPA" = "5" ]; then
+###########################################################################################################################################################
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 5: Finalizar el proceso " 2>&1 &>> $VAL_LOG_EJECUCION
+###########################################################################################################################################################
 
-echo "**********FIN DE PROCESO HIVE INSERT EN TABLA FINAL********" 2>&1 &>> $LOGS/$EJECUCION.log
+	#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
+	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El Proceso $ENTIDAD termina de manera exitosa " 2>&1 &>> $VAL_LOG_EJECUCION
+	`mysql -N  <<<"update params set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 
-PASO=1
-
-echo "**********PROCESO DE $ENTIDAD FINALIZADO CON EXITO********" 2>&1 &>> $LOGS/$EJECUCION.log
-
+	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso $ENTIDAD finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
 fi
-
 exit

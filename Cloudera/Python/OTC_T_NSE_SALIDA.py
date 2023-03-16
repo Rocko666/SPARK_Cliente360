@@ -22,7 +22,6 @@ from sklearn.cluster import KMeans
 
 t1 = datetime.now()
 
- 
 
 ## Date
 #esquema='db_desarrollo'

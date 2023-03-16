@@ -161,4 +161,4 @@ error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO E
 		exit 1
 	fi
 
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Finaliza ejecucion del proceso $ENTIDAD" 2>&1 &>> $VAL_LOG
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Finaliza ejecucion del proceso $ENTIDAD" 2>&1 &>> $VAL_LOG_EJECUCION

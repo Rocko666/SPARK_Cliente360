@@ -28,7 +28,6 @@ import sys
 reload(sys)
 sys.setdefaultencoding('utf8')
 
-
 #parser.add_argument('--bd', required=True, type=str)
 parser = argparse.ArgumentParser()
 parser.add_argument('--VAL_FECHA', required=True, type=str)
@@ -44,6 +43,7 @@ desde = time.time()
 
 spark = SparkSession \
     .builder \
+    .config("spark.yarn.queue", "capa_semantica") \
     .config("hive.exec.dynamic.partition.mode", "nonstrict") \
     .enableHiveSupport() \
     .getOrCreate()
@@ -58,7 +58,6 @@ spark.conf.set("hive.enforce.sorting", "false")
 
 print(vVAL_FECHA)
 print(vfecha_inicio)
-
 
 query11="""
 SELECT num_telefono FROM db_altamira.otc_t_bonos_activos a

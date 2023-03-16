@@ -126,19 +126,30 @@ def qry_otc_t_360_campos_adicionales_05():
 
 def qry_otc_t_360_campos_adicionales_06(FECHAEJE):
     query="""
-        select t1.* FROM
-        (SELECT a.p_fecha_factura as fecha_renovacion,
-        a.TELEFONO,
-        a.identificacion_cliente,
-        a.MOVIMIENTO,
-        row_number() over (partition by a.TELEFONO order by a.TELEFONO,a.p_fecha_factura desc) as orden
-        FROM db_cs_terminales.otc_t_terminales_simcards a where
-        (a.p_fecha_factura >= 20171015 and a.p_fecha_factura <= {FECHAEJE} )
-        and a.clasificacion = 'TERMINALES'
-        AND a.modelo_terminal NOT IN ('DIFERENCIA DE EQUIPOS','FINANCIAMIENTO')
-        and a.codigo_tipo_documento <> 25
-        AND a.MOVIMIENTO LIKE '%RENOVAC%N%') as t1
-        where t1.orden=1
+SELECT
+	t1.*
+FROM
+	(
+	SELECT
+		a.p_fecha_factura AS fecha_renovacion
+		, a.TELEFONO
+		, a.identificacion_cliente
+		, a.MOVIMIENTO
+		, ROW_NUMBER() OVER (PARTITION BY a.TELEFONO
+	ORDER BY
+		a.TELEFONO
+		, a.p_fecha_factura DESC) AS orden
+	FROM
+		db_cs_terminales.otc_t_terminales_simcards a
+	WHERE
+		(a.p_fecha_factura >= 20171015
+			AND a.p_fecha_factura <= {FECHAEJE} )
+		AND a.clasificacion = 'TERMINALES'
+		AND (a.modelo_terminal <> 'DIFERENCIA DE EQUIPOS' AND a.modelo_terminal <>'FINANCIAMIENTO')
+		AND a.codigo_tipo_documento <> 25
+		AND a.MOVIMIENTO LIKE '%RENOVAC%N%') AS t1
+WHERE
+	t1.orden = 1
         """
     #db_cs_terminales.otc_t_terminales_simcards
     query=query.format(FECHAEJE=FECHAEJE)

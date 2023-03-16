@@ -14,7 +14,7 @@ import time
 import sys
 import os
 
-# Genericos otc_t_360_movimientos_parque
+# Genericos otc_t_360_cartera
 sys.path.insert(1,'/var/opt/tel_spark')
 from messages import *
 from functions import *
@@ -60,6 +60,7 @@ try:
     spark = SparkSession\
         .builder\
         .enableHiveSupport() \
+        .config("spark.yarn.queue", "capa_semantica") \
         .config("spark.sql.broadcastTimeout", "36000") \
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
@@ -79,7 +80,6 @@ except Exception as e:
 print(lne_dvs())
 
 VStp='Paso [2]: Cargando configuraciones:'
-
 try:
     ts_step = datetime.now()
     print(etq_info(VStp))
@@ -106,14 +106,30 @@ try:
     ts_step = datetime.now()
     print(etq_info(vStp))
     print(lne_dvs())
-    print(etq_info("Inicio ejecucion de la DROP PARTITION en HIVE de la tabla[{}]".format(vTCartera)))
-    VSQLalter=qry_altr_otc_t_360_cartera(vTCartera, FECHAEJE)
-    print(etq_sql(VSQLalter))
-    hive_hwc.executeUpdate(VSQLalter)
-    print(lne_dvs())
-    print(etq_info(msg_i_insert_hive(vTCartera)))
-    VSQLinsrt=qry_insrt_otc_t_360_cartera(vTCartera, FECHAEJE, vTCarteraVencim, vT360General)
-    hive_hwc.executeUpdate(VSQLinsrt)
+    VSQLinsrt=qry_insrt_otc_t_360_cartera(FECHAEJE, vTCarteraVencim, vT360General)
+    print(etq_sql(VSQLinsrt))
+    df01 = spark.sql(VSQLinsrt)
+    ts_step_count = datetime.now()
+    vTotDf = df01.count()
+    te_step_count = datetime.now()
+    print(etq_info(msg_d_duracion_ejecucion('df01',vle_duracion(ts_step_count,te_step_count))))
+    if df01.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df01'))))
+    else:
+        try:
+            ts_step_tbl = datetime.now() 
+            print(etq_info("Inicio ejecucion de DROP PARTITION en HIVE de la tabla[{}]".format(vTCartera)))
+            VSQLalter=qry_altr_otc_t_360_cartera(vTCartera, FECHAEJE)
+            print(etq_sql(VSQLalter))
+            spark.sql(VSQLalter)
+            df01.write.mode('append').insertInto(vTCartera)
+            df01.printSchema()    
+            print(etq_info(msg_t_total_registros_hive(vTCartera,str(vTotDf))))
+            print(etq_info(msg_i_insert_hive(vTCartera)))
+            te_step_tbl = datetime.now()
+            print(etq_info(msg_d_duracion_hive(vTCartera,vle_duracion(ts_step_tbl,te_step_tbl))))
+        except Exception as e:       
+            exit(etq_error(msg_e_insert_hive(vTCartera,str(e))))
     te_step = datetime.now()
     print(etq_info(msg_d_duracion_ejecucion(vStp,vle_duracion(ts_step,te_step))))
 except Exception as e:

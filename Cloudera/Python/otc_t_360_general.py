@@ -739,7 +739,17 @@ try:
     ts_step = datetime.now()
     print(etq_info(vStp))
     print(lne_dvs())
-    VSQL=qry_tmp_otc_t_360_bonos_fidelizacion_row_temp(vIFechaMas1)
+    
+    df_part=spark.sql(qry_tmp_otc_t_360_bonos_fidelizacion_partt())    
+    if df_part.rdd.isEmpty():
+        exit(etq_nodata(msg_e_df_nodata(str('df_part'))))
+    
+    df2 = df_part.withColumn('fecha', F.split(F.col('partition'),'=')[1])
+    df3 = df2.filter(col('fecha') <= vIFechaMas1)
+    fecha_max = df3.select(F.max('fecha')).first()[0]
+    print(etq_info("Fecha Maxima de Tabla de bonos fidelizacion: "+str(fecha_max)))
+    
+    VSQL=qry_tmp_otc_t_360_bonos_fidelizacion_row_temp(fecha_max)
     print(etq_sql(VSQL))
     df0 = spark.sql(VSQL)
     ts_step_count = datetime.now()

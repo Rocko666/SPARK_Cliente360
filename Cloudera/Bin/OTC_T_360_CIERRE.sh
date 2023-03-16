@@ -29,21 +29,17 @@ fi
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros para ejecucion "
 ###################################################################################################################
 
-VAL_KINIT=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENERICO' AND parametro = 'VAL_KINIT';"`
-$VAL_KINIT
-
 ###################################################################################################################
 # PARAMETROS INICIALES Y DE ENTRADA
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validar parametros iniciales y de entrada" 2>&1 &>>$VAL_LOG
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validar parametros iniciales y de entrada" 
 ###################################################################################################################
 FECHAEJE=$1
 PASO=$2
-if [ -z "$FECHAEJE" ] ||
+if  [ -z "$FECHAEJE" ] ||
 	[ -z "$PASO" ]; then
-	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros iniciales/entrada estan vacios" 2>&1 &>>$VAL_LOG
+	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros iniciales/entrada estan vacios" 
 	exit 1
 fi
-
 
 ###################################################################################################################
 # VALIDAR PARAMETRO VAL_LOG
@@ -81,7 +77,7 @@ ESQUEMA_TEMP=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"
 VAL_PATH_QUERY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'PATH_QUERY';"`
 VAL_PATH_CONF=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'PATH_CONF';"`
 VAL_QUEUE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'QUEUE';"`
-# ESQUEMA_TEMP=db_temporales
+
 # PARAMETROS SHELL PRODUCTIVA
 PESOS_PARAMETROS=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (parametro = 'PESOS_PARAMETROS' );"`
 PESOS_NSE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (parametro = 'PESOS_NSE' );"`
@@ -91,7 +87,7 @@ ESQUEMA_TABLA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD
 ESQUEMA_TABLA_1=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (parametro = 'ESQUEMA_TABLA_1' );"`
 ESQUEMA_TABLA_2=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (parametro = 'ESQUEMA_TABLA_2' );"`
 ESQUEMA_TABLA_3=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (parametro = 'ESQUEMA_TABLA_3' );"`
-	
+
 VAL_TIPO_CARGA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'TIPO_CARGA';"`
 VAL_RUTA_PYTHON=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' AND parametro = 'RUTA_PYTHON';"` 
 VAL_FILE_PYTHON=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' AND parametro = 'FILE_PYTHON';"`
@@ -101,7 +97,7 @@ VAL_EXECUTOR_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$E
 VAL_NUM_EXECUTORS=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_NUM_EXECUTORS';"`
 VAL_NUM_EXECUTORS_CORES=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_NUM_EXECUTORS_CORES';"`
 
-if [ -z "$HIVEDB" ] ||
+if  [ -z "$HIVEDB" ] ||
 	[ -z "$RUTA" ] ||
     [ -z "$HIVETABLE" ] ||
 	[ -z "$ESQUEMA_TEMP" ] ||
@@ -128,71 +124,104 @@ if [ -z "$HIVEDB" ] ||
 	exit 1
 fi
 
-
 ###################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Obtener y validar parametros autogenerados..." 2>&1 &>> $VAL_LOG
 ###################################################################################################################
-
 eval year=`echo $FECHAEJE | cut -c1-4`
 eval month=`echo $FECHAEJE | cut -c5-6`
 day="01"
-if [ -z "$year" ] || [ -z "$month" ] || [ -z "$day" ];then 
-	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros iniciales es nulo o vacio" 2>&1 &>> $VAL_LOG
-	exit 1
-fi
-
 fechaMes=$year$month
-fechaIniMes=$year$month$day                            #Formato YYYYMMDD
+
+#VARIABLES DE RECARGAS
+fechaIniMes=$year$month$day                            #Formato YYYYMMDD  
+fecha_eje2=`date '+%Y%m%d' -d "$FECHAEJE"`
+
+#VARIABLES DE PIVOTE PARQUE
+fecha_proc=`date -d "${FECHAEJE} +1 day"  +"%Y%m%d"`
+fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
+let fechamas1=$fechamas1_1*1
+fechamenos5_1=`date '+%Y%m%d' -d "$FECHAEJE-10 day"`
+let fechamenos5=$fechamenos5_1*1
+fechaeje1=`date '+%Y-%m-%d' -d "$FECHAEJE"`
+fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+fecha_inac_1=`date '+%Y%m%d' -d "$fecha_inico_mes_1_1-1 day"`
+
+fecha_alt_ini=`date '+%Y-%m-%d' -d "$fecha_proc"`
+ultimo_dia_mes_ant=`date -d "${fechaIniMes} -1 day"  +"%Y%m%d"`
+fecha_alt_fin=`date '+%Y-%m-%d' -d "$ultimo_dia_mes_ant"`
+
+eval year_prev=`echo $ultimo_dia_mes_ant | cut -c1-4`
+eval month_prev=`echo $ultimo_dia_mes_ant | cut -c5-6`
+fechaIniMes_prev=$year_prev$month_prev$day                            #Formato YYYYMMDD
+
+fecha_alt_dos_meses_ant_fin=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+#primer_dia_dos_meses_ant=`date -d "${fecha_alt_dos_meses_ant_fin} -1 month"  +"%Y-%m-%d"`
+path_actualizacion=$RUTA"/Bin/OTC_F_RESTA_1_MES.sh"
+primer_dia_dos_meses_ant=`sh $path_actualizacion $fecha_alt_dos_meses_ant_fin`       #Formato YYYYMMDD
+
+ultimo_dia_tres_meses_ant=`date -d "${primer_dia_dos_meses_ant} -1 day"  +"%Y-%m-%d"`
+
+fecha_alt_dos_meses_ant_fin=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+fecha_alt_dos_meses_ant_ini=`date '+%Y-%m-%d' -d "$ultimo_dia_tres_meses_ant"`
+
+#VARIABLES MOVIMIENTOS DE PARQUE
+fecha_proceso=`date -d "$FECHAEJE" "+%Y-%m-%d"`
+f_check=`date -d "$FECHAEJE" "+%d"`
+fecha_movimientos=`date '+%Y-%m-%d' -d "$fecha_proceso+1 day"`
+fecha_movimientos_cp=`date '+%Y%m%d' -d "$fecha_proceso+1 day"`
+#p_date=$(hive -e "select max(fecha_proceso) from $ESQUEMA_TEMP.$TABLA_PIVOTANTE;")
+#p_date=`date -d "$p_date" "+%Y-%m-%d"`
+
+if [ $f_check == "01" ];
+then
+f_inicio=`date -d "$FECHAEJE -1 days" "+%Y-%m-01"`
+else
+f_inicio=`date -d "$FECHAEJE" "+%Y-%m-01"`
+echo $f_inicio
+fi
+echo $f_inicio" Fecha Inicio"
+echo $fecha_proceso" Fecha Ejecucion"
+echo $p_date" Fecha proceso Pivot360"
+
+#VARIABLES CAMPOS ADICIONALES
+fechamas1_2=`date '+%Y-%m-%d' -d "$fechamas1"`
+
+#VARIABLES GENERAL
 fecha_eje1=`date '+%Y-%m-%d' -d "$FECHAEJE"`
 let fecha_hoy=$fecha_eje1
-fecha_eje2=`date '+%Y%m%d' -d "$FECHAEJE"`
+#fecha_eje2=`date '+%Y%m%d' -d "$FECHAEJE"`
 let fecha_proc1=$fecha_eje2
-fecha_eje4=`date '+%d-%m-%Y' -d "$FECHAEJE"`
-
-if [ -z "$fechaMes" ] || [ -z "$fechaIniMes" ] || [ -z "$fecha_eje1" ] || [ -z "$fecha_eje2" ] || [ -z "$fecha_eje4" ];then 
-	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros calculados validacion [1] es nulo o vacio" 2>&1 &>> $VAL_LOG
-	exit 1
-fi
-
-let fecha_g=$fecha_eje4
-fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+# fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "$fechaIniMes"`
 let fechainiciomes=$fecha_inico_mes_1_1
 fecha_inico_mes_1_2=`date '+%Y%m%d' -d "$fechaIniMes"`
 let fechainiciomes=$fecha_inico_mes_1_2
 fecha_eje3=`date '+%Y%m%d' -d "$FECHAEJE-1 day"`
 let fecha_proc_menos1=$fecha_eje3
-fechamas1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
+# fechamas1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
 let fecha_mas_uno=$fechamas1
-let fechaInimenos1mes=$fechaInimenos1mes_1*1
-fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`						  
-let fechaInimenos1mes=$fechaInimenos1mes_1*1
-fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
-let fechamas11=$fechamas1_1*1
 
-if [ -z "$fecha_inico_mes_1_1" ] || [ -z "$fecha_inico_mes_1_2" ] || [ -z "$fecha_eje3" ] || [ -z "$fechamas1" ] || [ -z "$fechamas1_1" ];then 
-	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros calculados validacion [2] es nulo o vacio" 2>&1 &>> $VAL_LOG
-	exit 1
-fi
-
-#fechamenos1mes_1=`date '+%Y%m%d' -d "$FECHAEJE-1 month"`
-path_actualizacion=$RUTA"/Bin/OTC_F_RESTA_1_MES.sh"
-fechamenos1mes_1=`sh $path_actualizacion $FECHAEJE`       #Formato YYYYMMDD
-let fechamenos1mes=$fechamenos1mes_1*1
-#fechamenos2mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-1 month"`
-fechamenos2mes_1=`sh $path_actualizacion $fechamenos1mes`       #Formato YYYYMMDD
-let fechamenos2mes=$fechamenos2mes_1*1
-fechamenos6mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-6 month"`
-let fechamenos6mes=$fechamenos6mes_1*1  
 #fechaInimenos1mes_1=`date '+%Y%m%d' -d "$fechaIniMes-1 month"`
-#path_actualizacion=$RUTA"/Bin/OTC_F_RESTA_1_MES.sh"
 fechaInimenos1mes_1=`sh $path_actualizacion $fechaIniMes`       #Formato YYYYMMDD
+
 let fechaInimenos1mes=$fechaInimenos1mes_1*1
 fechaInimenos2mes_1=`date '+%Y%m%d' -d "$fechaIniMes-2 month"`
 let fechaInimenos2mes=$fechaInimenos2mes_1*1
 fechaInimenos3mes_1=`date '+%Y%m%d' -d "$fechaIniMes-3 month"`
 let fechaInimenos3mes=$fechaInimenos3mes_1*1
-fechamenos5_1=`date '+%Y%m%d' -d "$FECHAEJE-10 day"`
-let fechamenos5=$fechamenos5_1*1
+
+let fechamas11=$fechamas1_1*1
+#fechamenos1mes_1=`date '+%Y%m%d' -d "$FECHAEJE-1 month"`
+
+fechamenos1mes_1=`sh $path_actualizacion $FECHAEJE`       #Formato YYYYMMDD
+
+let fechamenos1mes=$fechamenos1mes_1*1
+#fechamenos2mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-1 month"`
+
+fechamenos2mes_1=`sh $path_actualizacion $fechamenos1mes`       #Formato YYYYMMDD
+
+fechamenos6mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-6 month"`
+
+
 
 if [ -z "$path_actualizacion" ] ||
         [ -z "$fechamenos1mes_1" ] ||
@@ -205,7 +234,6 @@ if [ -z "$path_actualizacion" ] ||
 	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros calculados validacion [3] es nulo o vacio" 2>&1 &>>$VAL_LOG
 	exit 1
 fi
-
 
 ###################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando el JOB: $ENTIDAD" 2>&1 &>> $VAL_LOG

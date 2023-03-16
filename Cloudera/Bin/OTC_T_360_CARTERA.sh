@@ -16,13 +16,12 @@ set -e
 ##############
 # VARIABLES #
 ##############
-
 ENTIDAD=OTC_T_360_CARTERA
 SPARK_GENERICO=SPARK_GENERICO
 VAL_HORA=`date '+%Y%m%d%H%M%S'`
 
 ###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros definidos en la tabla params" 2>&1 &>> $VAL_LOG_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros definidos en la tabla params" 
 ###########################################################################################################################################################
 SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'SHELL';"`
 VAL_RUTA=`mysql -N <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RUTA';"` 
@@ -37,10 +36,9 @@ VAL_ETP01_EXECUTOR_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD 
 VAL_ETP01_NUM_EXECUTORS=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_NUM_EXECUTORS';"`
 VAL_ETP01_NUM_EXECUTORS_CORES=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_ETP01_NUM_EXECUTORS_CORES';"`
 ETAPA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'ETAPA';"`
+
 ################### VARIABLES DEL SPARK GENERICO
 VAL_RUTA_SPARK=`mysql -N  <<<"select valor from params where ENTIDAD = '"$SPARK_GENERICO"' AND parametro = 'VAL_RUTA_SPARK';"`
-#VAL_KINIT=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENERICO' AND parametro = 'VAL_KINIT';"`
-#$VAL_KINIT
 
 VAL_LOG_EJECUCION=$VAL_RUTA_LOG/$ENTIDAD"_"$VAL_HORA.log
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando registro en el log.." 2>&1 &>> $VAL_LOG_EJECUCION
@@ -51,7 +49,7 @@ FECHAEJE=$1
 ###########################################################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validacion de parametros iniciales, nulos y existencia de Rutas " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
-if [ -z "$FECHAEJE" ] || 
+if  [ -z "$FECHAEJE" ] || 
 	[ -z "$ENTIDAD" ] ||
 	[ -z "$VAL_HORA" ] ||  
 	[ -z "$SHELL" ] || 
@@ -82,7 +80,6 @@ if [ "$ETAPA" = "1" ]; then
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1: Extraer datos desde hive " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 $VAL_RUTA_SPARK \
---queue capa_semantica \
 --jars /opt/cloudera/parcels/CDH/jars/hive-warehouse-connector-assembly-*.jar \
 --conf spark.sql.extensions=com.hortonworks.spark.sql.rule.Extensions \
 --conf spark.security.credentials.hiveserver2.enabled=false \
@@ -107,35 +104,14 @@ $RUTA_PYTHON/otc_t_360_cartera.py \
 --vT360General=$vT360General \
 --FECHAEJE=$FECHAEJE 2>&1 &>> $VAL_LOG_EJECUCION
 
-	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
-	VAL_ERRORES=`egrep 'NODATA:|serious problem|An error occurred while calling o102.partitions|Caused by:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG_EJECUCION | wc -l`
-	if [ $VAL_ERRORES -ne 0 ];then
-		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Problemas en la carga de informacion en las tablas del proceso" 2>&1 &>> $VAL_LOG_EJECUCION
-		exit 1    		
-	else		
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1 --> La carga de informacion fue extraida de manera EXITOSA" 2>&1 &>> $VAL_LOG_EJECUCION	
-		ETAPA=2
-		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA 1 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
-		`mysql -N  <<<"update params set valor='2' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	# Se valida el LOG de la ejecucion, si se encuentra errores se finaliza con error 
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion del archivo spark otc_t_360_cartera.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso $ENTIDAD finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
+	else
+		echo "==== ERROR: - En la ejecucion del archivo spark otc_t_360_cartera.py ====" 2>&1 &>> $VAL_LOG_EJECUCION
+		exit 1
 	fi
 fi
-
-
-if [ "$ETAPA" = "2" ]; then
-###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Finalizar el proceso " 2>&1 &>> $VAL_LOG_EJECUCION
-###########################################################################################################################################################
-						   
-	#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
-	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El Proceso termina de manera exitosa " 2>&1 &>> $VAL_LOG_EJECUCION
-	`mysql -N  <<<"update params set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
-
-	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_CARTERA finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
-fi
-
-
-
-
-
 

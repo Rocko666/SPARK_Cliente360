@@ -22,7 +22,7 @@ SPARK_GENERICO=SPARK_GENERICO
 VAL_HORA=`date '+%Y%m%d%H%M%S'`
 
 ###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros definidos en la tabla params" 2>&1 &>> $VAL_LOG_EJECUCION
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros definidos en la tabla params" 
 ###########################################################################################################################################################
 SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'SHELL';"`
 VAL_RUTA=`mysql -N <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RUTA';"` 
@@ -203,7 +203,7 @@ $RUTA_PYTHON/otc_t_360_movimientos_parque.py \
 --f_fin_abr=$f_fin_abr \
 --f_efectiva=$f_efectiva 2>&1 &>> $VAL_LOG_EJECUCION
 
-	# Se valida el LOG de la ejecucion, si se encuentra errores se finaliza con error >0
+# Se valida el LOG de la ejecucion, si se encuentra errores se finaliza con error 
 error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
 	if [ $error_spark -eq 0 ];then
 	echo "==== OK - La ejecucion del archivo spark otc_t_360_movimientos_parque.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION

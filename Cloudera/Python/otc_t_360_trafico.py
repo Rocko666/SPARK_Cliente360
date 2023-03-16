@@ -36,13 +36,11 @@ try:
     parser.add_argument('--vSTblHiveTmp', required=True, type=str)
     parser.add_argument('--vABREVIATURA_TEMP', required=True, type=str)
 
-
     parametros = parser.parse_args()
     vSEntidad=parametros.vSEntidad
     vTempSchema=parametros.vSSchHiveTmp
     vTempTable=parametros.vSTblHiveTmp
     ABREVIATURA_TEMP=parametros.vABREVIATURA_TEMP
-
 
     print(etq_info(log_p_parametros("Entidad",vSEntidad)))
     print(etq_info(log_p_parametros("Esquema Temporal",vTempSchema)))
@@ -67,9 +65,9 @@ try:
         .config("spark.sql.broadcastTimeout", "36000") \
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
-        .config("spark.yarn.queue", "default")\
-	.config("hive.enforce.bucketing", "false")\
-	.config("hive.enforce.sorting", "false")\
+        .config("spark.yarn.queue", "capa_semantica") \
+        .config("hive.enforce.bucketing", "false")\
+        .config("hive.enforce.sorting", "false")\
         .getOrCreate()
     sc = spark.sparkContext
     sc.setLogLevel("ERROR")
@@ -119,7 +117,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(str(tabla_trafico_temp))))
-            df01.repartition(1).write.mode('overwrite').saveAsTable(str(tabla_trafico_temp))
+            df01.write.mode('overwrite').saveAsTable(str(tabla_trafico_temp))
             df01.printSchema()
             print(etq_info(msg_t_total_registros_hive(str(tabla_trafico_temp),str(df01.count()))))
             te_step_tbl = datetime.now()

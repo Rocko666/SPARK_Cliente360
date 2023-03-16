@@ -5,17 +5,16 @@ set -e
 #																		 
 # Modificado por: Nathalie Herrera (nae105844)                           
 # Fecha de modificacion:   2021/06/24                                    
-# Motivo DescripciÃ²n:   Exclusion de los clientes con planes             
+# Motivo Descripcion:   Exclusion de los clientes con planes             
 #                       y del subsegmento movistar libre                 
 # Modificado por: Ricardo Jerez (nae102689)                              
 # Fecha de modificacion:   2022/10/14                                    
-# Motivo DescripciÃ²n:   Exclusion de los clientes con bonos activos      
+# Motivo Descripcion:   Exclusion de los clientes con bonos activos      
 #------------------------------------------------------------------------#
 # MODIFICACIONES																						
 # VAL_VAL_FECHA  		AUTOR     							DESCRIPCION MOTIVO													
 # 2023/02/26   	Cristian Ortiz (Softconsulting)		Refactoring cloudera
 #########################################################################################################
-
 
 ###################################################################################################################
 # PARAMETROS INICIALES Y DE ENTRADA
@@ -23,20 +22,12 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validar parametros iniciales y de entrad
 ###################################################################################################################
 ENTIDAD=OTC_T_360_PARQUE_SR
 VAL_FECHA=$1 # yyyyMMdd
-VAL_COLA_EJECUCION=default
 
-if [ -z "$ENTIDAD" ] || 
-	[ -z "$VAL_FECHA" ] ||
-    [ -z "$VAL_COLA_EJECUCION" ]; then
+if  [ -z "$ENTIDAD" ] || 
+	[ -z "$VAL_FECHA" ] ; then
 	echo " ERROR: Uno de los parametros iniciales/entrada estan vacios"
 	exit 1
 fi
-
-###################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros para ejecucion en cluster"
-###################################################################################################################
-VAL_KINIT=`mysql -N  <<<"select valor from params where ENTIDAD = 'SPARK_GENERICO' AND parametro = 'VAL_KINIT';"`
-$VAL_KINIT
 
 ###################################################################################################################
 # VALIDAR PARAMETRO VAL_LOG
@@ -46,7 +37,7 @@ RUTA_LOG=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AN
 VAL_DIA=`date '+%Y%m%d'` 
 VAL_HORA=`date '+%H%M%S'`
 VAL_LOG=$RUTA_LOG/$ENTIDAD"_"$VAL_DIA"_"$VAL_HORA.log
-if [ -z "$RUTA_LOG" ] ||
+if  [ -z "$RUTA_LOG" ] ||
 	[ -z "$VAL_DIA" ] ||
 	[ -z "$VAL_HORA" ] ||
 	[ -z "$VAL_LOG" ] ; then
@@ -62,7 +53,7 @@ VAL_RUTA_SPARK=`mysql -N  <<<"select valor from params where entidad = 'SPARK_GE
 VAL_RUTA_LIB=`mysql -N  <<<"select valor from params where entidad = 'SPARK_GENERICO'  AND parametro = 'VAL_RUTA_LIB';"`
 VAL_LIB=`mysql -N  <<<"select valor from params where entidad = 'SPARK_GENERICO'  AND parametro = 'VAL_NOM_JAR_ORC_11';"`
 
-if [ -z "$VAL_S_TDCLASS" ] ||
+if  [ -z "$VAL_S_TDCLASS" ] ||
     [ -z "$VAL_RUTA_SPARK" ] ||
     [ -z "$VAL_RUTA_LIB" ] ||
     [ -z "$VAL_LIB" ]; then
@@ -78,22 +69,28 @@ HIVETABLE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' A
 num_dias=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and  (parametro = 'num_dias');"`
 VAL_TIPO_CARGA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_TIPO_CARGA';"`
 VAL_RUTA_PYTHON=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"'  AND parametro = 'RUTA_PYTHON';"`
-VAL_RUTA_PYTHON_FILE=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"'  AND parametro = 'RUTA_PYTHON_FILE';"` 
+VAL_PYTHON_FILE=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"'  AND parametro = 'PYTHON_FILE';"` 
 VAL_MASTER=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_MASTER';"`
 VAL_MASTER_EXPORT=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_MASTER_EXPORT';"`
 VAL_DRIVER_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_DRIVER_MEMORY';"`
 VAL_EXECUTOR_MEMORY=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_EXECUTOR_MEMORY';"`
 VAL_NUM_EXECUTORS=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_NUM_EXECUTORS';"`
 VAL_NUM_EXECUTORS_CORES=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_NUM_EXECUTORS_CORES';"`
+VAL_COLA_EJECUCION=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'QUEUE';"`
 
-if [ -z "$VAL_TIPO_CARGA" ] ||
+if  [ -z "$HIVEDB" ] ||
+	[ -z "$HIVETABLE" ] ||
+	[ -z "$num_dias" ] ||
+	[ -z "$VAL_TIPO_CARGA" ] ||
 	[ -z "$VAL_RUTA_PYTHON" ] ||
-	[ -z "$VAL_RUTA_PYTHON_FILE" ] ||	
-	[ -z "$VAL_MASTER" ] ||
+	[ -z "$VAL_PYTHON_FILE" ] ||	
+	[ -z "$VAL_MASTER" ] ||	
+	[ -z "$VAL_MASTER_EXPORT" ] ||
 	[ -z "$VAL_DRIVER_MEMORY" ] ||
 	[ -z "$VAL_EXECUTOR_MEMORY" ] ||
 	[ -z "$VAL_NUM_EXECUTORS" ] ||
-	[ -z "$VAL_NUM_EXECUTORS_CORES" ] ; then
+	[ -z "$VAL_NUM_EXECUTORS_CORES" ] ||
+    [ -z "$VAL_COLA_EJECUCION" ]; then
 	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros de la tabla params es nulo o vacio" 2>&1 &>> $VAL_LOG
 	exit 1
 fi
@@ -109,7 +106,7 @@ VAL_S_ORC_HOST=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDA
 VAL_I_ORC_PORT=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'PORT';"`
 VAL_S_ORC_TABLE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'RTDTABLE';"`
 
-if [ -z "$VAL_S_ORC_SID" ] ||
+if  [ -z "$VAL_S_ORC_SID" ] ||
     [ -z "$VAL_S_ORC_USER" ] ||
     [ -z "$VAL_S_ORC_PSW" ] ||
     [ -z "$VAL_S_ORC_HOST" ] ||
@@ -132,16 +129,14 @@ fi
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Parametros calculados de fechas  " 2>&1 &>> $VAL_LOG
 ###########################################################################################################################################################
 fecha_inicio=$(date --date="${VAL_FECHA} -${num_dias} day" +%Y%m%d)
-	echo $VAL_FECHA" Fecha Ejecucion"
-
 ETAPA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'ETAPA';"`
 
-if [ -z "$ETAPA" ] || 
+if  [ -z "$ETAPA" ] || 
 	[ -z "$fecha_inicio" ] ||
 	[ -z "$VAL_FECHA" ] ; then
-  echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: $TIME [ERROR] $rc unos de los parametros calculados esta vacio o es nulo" 2>&1 &>> $VAL_LOG
-  error=1
-  exit $error
+	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: $TIME [ERROR] $rc unos de los parametros calculados esta vacio o es nulo" 2>&1 &>> $VAL_LOG
+	error=1
+	exit $error
 fi
 
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: fecha_inicio => " $fecha_inicio
@@ -149,6 +144,7 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Fecha Ejecucion => " $VAL_FECHA
 ###################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando la ejecucion del JOB: $ENTIDAD" 2>&1 &>> $VAL_LOG
 ###################################################################################################################
+
 ###########################################################################################################################################################
 if [ "$ETAPA" = "1" ]; then
 ###########################################################################################################################################################
@@ -169,21 +165,22 @@ $VAL_RUTA_PYTHON/otc_t_bonos_activos1.py \
 --fecha_inicio $fecha_inicio \
 --HIVEDB $HIVEDB \
 --HIVETABLE $HIVETABLE 2>&1 &>> $VAL_LOG
-# Se valida el LOG de la ejecucion, si se encuentra errores se finaliza con error >0
-	error_spark=`egrep 'Error:|ERROR:|NODATA:|requirement failed|Py4JJavaError|An error occurred|Caused by:|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $VAL_LOG | wc -l`
-	if [ $error_spark -ne 0 ];then
-		echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Problemas en la carga de informacion en las tablas del proceso" 2>&1 &>> $VAL_LOG
-		exit 1    		
-	else		
-		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1 --> Ejecucion EXITOSA " 2>&1 &>> $VAL_LOG	
+
+# Se valida el LOG de la ejecucion, si se encuentra errores se finaliza con error 
+error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
+	if [ $error_spark -eq 0 ];then
+		echo "==== OK - La ejecucion del archivo spark otc_t_bonos_activos1.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG
 		ETAPA=2
 		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
 		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA 1 con EXITO " 2>&1 &>> $VAL_LOG
 		`mysql -N  <<<"update params set valor='2' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+	else		
+		echo "==== ERROR: - En la ejecucion del archivo spark otc_t_bonos_activos1.py ====" 2>&1 &>> $VAL_LOG
+		exit 1
 	fi
 fi
 
-
+###################################################################################################################
 if [ "$ETAPA" = "2" ]; then
 ###################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando la exportacion a Oracle en spark: $ENTIDAD" 2>&1 &>> $VAL_LOG
@@ -200,7 +197,7 @@ $VAL_RUTA_SPARK \
 --num-executors $VAL_NUM_EXECUTORS \
 --executor-cores $VAL_NUM_EXECUTORS_CORES \
 --jars $VAL_RUTA_LIB/$VAL_LIB \
-$VAL_RUTA_PYTHON/$VAL_RUTA_PYTHON_FILE \
+$VAL_RUTA_PYTHON/$VAL_PYTHON_FILE \
 --vIFechaProceso=$VAL_FECHA \
 --vclass=$VAL_S_TDCLASS \
 --vjdbcurl=$VAL_S_JDBCURL \
@@ -214,17 +211,16 @@ $VAL_RUTA_PYTHON/$VAL_RUTA_PYTHON_FILE \
 --vSQueue=$VAL_COLA_EJECUCION 2>&1 &>> $VAL_LOG
 
 ###################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Validamos el LOG de la ejecucion, si encontramos fallas finalizamos con num_e > 0" 2>&1 &>> $VAL_LOG
+echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se valida el LOG de la ejecucion, si se encuentra errores se finaliza con error " 2>&1 &>> $VAL_LOG
 ###################################################################################################################
 VAL_ERRORES=`egrep 'error:|error|Error:|py4j.protocol.Py4JJavaError:|KeyProviderCache:|Caused by:|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $VAL_LOG | wc -l`
-if [ $VAL_ERRORES -eq 0 ];then
-    #SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
-    echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Finaliza proceso PARQUE SIN RECARGA OK  " 2>&1 &>> $VAL_LOG
-    `mysql -N  <<<"update params set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`    	
-else
-        echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Proceso PARQUE SIN RECARGA   KO" 2>&1 &>> $VAL_LOG
-        exit 1       
-fi
-
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Finaliza ejecucion del proceso $ENTIDAD " 2>&1 &>> $VAL_LOG
+	if [ $VAL_ERRORES -eq 0 ]; then
+		echo "==== OK - La ejecucion del archivo spark $VAL_PYTHON_FILE es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG
+		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
+		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso $ENTIDAD finaliza correctamente " 2>&1 &>> $VAL_LOG
+		`mysql -N  <<<"update params set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`    	
+	else
+		echo "==== ERROR: - En la ejecucion del archivo spark $VAL_PYTHON_FILE ====" 2>&1 &>> $VAL_LOG
+		exit 1   
+	fi
 fi

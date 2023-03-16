@@ -6,9 +6,13 @@ from pyspark.sql.types import StructType, DoubleType, DateType, StringType, Floa
 import argparse
 import sys
 import os
+
 # General cliente 360
-from config import *
-from query import *
+sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Configuraciones')
+from otc_t_rtd_oferta_sugerida_config import *
+sys.path.insert(1,'/RGenerator/reportes/Cliente360/Python/Querys')
+from otc_t_rtd_oferta_sugerida_query import *
+
 # Genericos
 sys.path.insert(1,'/var/opt/tel_spark')
 from messages import *

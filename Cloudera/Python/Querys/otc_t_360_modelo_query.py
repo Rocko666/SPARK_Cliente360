@@ -4,8 +4,6 @@ from datetime import datetime
 import os
 from pyspark.sql.functions import col, substring_index
 
-
-
 def qry_otc_t_360_modelo_01(fechaeje):
     query="""
         SELECT pv.num_telefonico,
@@ -37,17 +35,21 @@ def qry_otc_t_360_modelo_01(fechaeje):
         WHEN LENGTH(TRIM(pv.imei))=13 THEN SUBSTR(CONCAT('00',TRIM(pv.imei)),1,14)
         WHEN LENGTH(TRIM(pv.imei))=14 THEN SUBSTR(CONCAT('0',TRIM(pv.imei)),1,14)
         WHEN LENGTH(TRIM(pv.imei))>14 THEN SUBSTR(TRIM(pv.imei),1,14) ELSE '' END),0,8),8,0)
-
         """
-
-
     query=query.format(fechaeje)
-
     return query
 
+def qry_beeline_01(vTUrmDtacs):
+    query="""
+    CREATE TABLE 
+        {vTUrmDtacs} TBLPROPERTIES ('transactional'='false', 'orc.compress'='SNAPPY') AS 
+    SELECT * 
+        FROM db_urm.d_tacs
+        where operator_id!= 'operator_id'
+        """.format(vTUrmDtacs=vTUrmDtacs)
+    return query
 
-
-def qry_otc_t_360_modelo_02():
+def qry_otc_t_360_modelo_02(vTUrmDtacs):
     query="""
         SELECT
         a.num_telefonico,
@@ -55,11 +57,10 @@ def qry_otc_t_360_modelo_02():
         b.des_brand AS marca_tac_registrado,
         b.des_model AS modelo_tac_registrado
         FROM db_reportes.tmp_360_imei_prq a
-        LEFT JOIN db_urm.d_tacs b
+        LEFT JOIN {vTUrmDtacs} b
         ON a.tacs=b.TAC
-        """
+        """.format(vTUrmDtacs=vTUrmDtacs)
     return query
-
 
 def qry_otc_t_360_modelo_03(fechaeje):
     query="""
@@ -71,12 +72,8 @@ def qry_otc_t_360_modelo_03(fechaeje):
         WHERE 1=1
         AND a.fecha_proceso={}
         """
-
-
     query=query.format(fechaeje)
-
     return query
-
 
 def qry_otc_t_360_modelo_04():
     query="""
@@ -96,7 +93,6 @@ def qry_otc_t_360_modelo_04():
         """
     return query
 
-
 def qry_otc_t_360_modelo_05(fechaeje):
     query="""
         SELECT t1.* FROM
@@ -115,11 +111,9 @@ def qry_otc_t_360_modelo_05(fechaeje):
         """
         #db_reportes.tmp_360_imei_prq
     query=query.format(fechaeje)
-
     return query
 
-
-def qry_otc_t_360_modelo_06():
+def qry_otc_t_360_modelo_06(vTUrmDtacs):
     query="""
         SELECT telefono num_telefonico,SUBSTR(a.imei, 1, 8) tac,dt.des_brand AS marca,dt.des_model AS modelo
         ,CASE
@@ -134,14 +128,12 @@ def qry_otc_t_360_modelo_06():
         ,b.precio_usd AS precio_equipo
         ,b.gamma AS gamma
         FROM db_temporales.tmp_360_imei_vlrs a
-        LEFT JOIN db_urm.d_tacs dt ON dt.tac=SUBSTR(a.imei, 1, 8)
+        LEFT JOIN {vTUrmDtacs} dt ON dt.tac=SUBSTR(a.imei, 1, 8)
         LEFT JOIN db_ipaccess.otc_t_CB_GAMA_base b ON (SUBSTR(a.imei, 1, 8)=b.tac)
         WHERE 1=1
-        """
+        """.format(vTUrmDtacs=vTUrmDtacs)
     #db_temporales.tmp_360_imei_vlrs
-
     return query
-
 
 def qry_otc_t_360_modelo_07(fecha_ult_imei_ini,fechaeje):
     query="""
@@ -166,14 +158,10 @@ def qry_otc_t_360_modelo_07(fecha_ult_imei_ini,fechaeje):
         WHERE tt.orden =1
         """
     #db_reportes.tmp_360_imei_prq
-
-
     query=query.format(fecha_ult_imei_ini,fechaeje)
-
     return query
 
-
-def qry_otc_t_360_modelo_08():
+def qry_otc_t_360_modelo_08(vTUrmDtacs):
     query="""
         SELECT distinct c.num_telefonico,c.tac,a.des_brand AS marca,a.des_model AS modelo
         ,CASE
@@ -188,13 +176,11 @@ def qry_otc_t_360_modelo_08():
         ,b.precio_usd AS precio_equipo
         ,b.gamma AS gamma
         FROM db_reportes.otc_t_360_mod_imei_tmp c
-        LEFT JOIN db_urm.d_tacs a ON c.tac = a.tac
+        LEFT JOIN {vTUrmDtacs} a ON c.tac = a.tac
         LEFT JOIN db_ipaccess.otc_t_CB_GAMA_base b ON (a.tac=b.tac)
-        """
+        """.format(vTUrmDtacs=vTUrmDtacs)
     #db_reportes.otc_t_360_mod_imei_tmp
-
     return query
-
 
 def qry_otc_t_360_modelo_09():
     query="""
@@ -230,9 +216,7 @@ def qry_otc_t_360_modelo_09():
         """
     #db_reportes.otc_t_modelo_abonados_vlrs_tmp
     #db_reportes.otc_t_360_modelo_d_tacs_tmp
-
     return query
-
 
 def qry_otc_t_360_modelo_10():
     query="""
@@ -258,10 +242,7 @@ def qry_otc_t_360_modelo_10():
         #db_temporales.tmp_360_tac_imei_modelo
         #db_temporales.otc_t_360_modelo_tmp_union_tacs
         #db_reportes.otc_t_modelo_trafic_tech_tmp_1
-
-
     return query
-
 
 def qry_otc_t_360_modelo_11(fecha_next):
     query="""
@@ -282,13 +263,8 @@ def qry_otc_t_360_modelo_11(fecha_next):
         ON vw.num_telefonico = ph.name
         WHERE vw.fecha_proceso={}
         """
-
-
     query=query.format(fecha_next)
-
     return query
-
-
 
 def qry_otc_t_360_modelo_12():
     query="""
@@ -316,9 +292,7 @@ def qry_otc_t_360_modelo_12():
         WHERE estado_abonado<>'BAA') x
         WHERE x.num_rep=1
         """
-
     return query
-
 
 def qry_otc_t_360_modelo_13(fechaeje):
     query="""
@@ -346,13 +320,8 @@ def qry_otc_t_360_modelo_13(fechaeje):
         ON m.num_telefonico =a.phone_number
         """
         #db_temporales.otc_t_360_modelo_tmp_final
-
-
     query=query.format(fechaeje)
-
     return query
-
-
 
 def fun_ultimo_imei(fecha_ult_imei_ini,fechaeje):
     query="""
@@ -361,5 +330,4 @@ def fun_ultimo_imei(fecha_ult_imei_ini,fechaeje):
         WHERE fecha_carga>={} AND fecha_carga<={}
         """
     query=query.format(fecha_ult_imei_ini,fechaeje)
-
     return query
