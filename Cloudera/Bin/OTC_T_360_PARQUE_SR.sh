@@ -66,7 +66,7 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Obtener y validar parametros definidos e
 ###################################################################################################################
 HIVEDB=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'HIVEDB';"`
 HIVETABLE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'HIVETABLE';"`
-num_dias=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and  (parametro = 'num_dias');"`
+num_dias=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'num_dias';"`
 VAL_TIPO_CARGA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' AND parametro = 'VAL_TIPO_CARGA';"`
 VAL_RUTA_PYTHON=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"'  AND parametro = 'RUTA_PYTHON';"`
 VAL_PYTHON_FILE=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"'  AND parametro = 'PYTHON_FILE';"` 
@@ -120,7 +120,7 @@ fi
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Obtener y validar parametros autogenerados..." 2>&1 &>> $VAL_LOG
 ###################################################################################################################
 
-VAL_S_JDBCURL=jdbc:oracle:thin:@$VAL_S_ORC_HOST:$VAL_I_ORC_PORT:$VAL_S_ORC_SID
+VAL_S_JDBCURL=jdbc:oracle:thin:@$VAL_S_ORC_HOST:$VAL_I_ORC_PORT/$VAL_S_ORC_SID
 if [ -z "$VAL_S_JDBCURL" ] ; then
 	echo `date '+%Y-%m-%d %H:%M:%S'`" ERROR: Uno de los parametros autogenerados es nulo o vacio" 2>&1 &>> $VAL_LOG
 	exit 1
@@ -170,6 +170,11 @@ $VAL_RUTA_PYTHON/otc_t_bonos_activos1.py \
 error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
 	if [ $error_spark -eq 0 ];then
 		echo "==== OK - La ejecucion del archivo spark otc_t_bonos_activos1.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG
+		#Se borran los datos existentes antes de insertar los nuevos
+sqlplus $VAL_S_ORC_USER/$VAL_S_ORC_PSW@$VAL_S_ORC_HOST:$VAL_I_ORC_PORT/$VAL_S_ORC_SID <<EOF 
+TRUNCATE TABLE $VAL_S_ORC_TABLE;
+commit;
+EOF
 		ETAPA=2
 		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
 		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA 1 con EXITO " 2>&1 &>> $VAL_LOG
@@ -213,7 +218,7 @@ $VAL_RUTA_PYTHON/$VAL_PYTHON_FILE \
 ###################################################################################################################
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se valida el LOG de la ejecucion, si se encuentra errores se finaliza con error " 2>&1 &>> $VAL_LOG
 ###################################################################################################################
-VAL_ERRORES=`egrep 'error:|error|Error:|py4j.protocol.Py4JJavaError:|KeyProviderCache:|Caused by:|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $VAL_LOG | wc -l`
+VAL_ERRORES=`egrep 'NODATA:|ERROR:|FAILED:|Error|Table not found|Table already exists|Vertex|Permission denied|cannot resolve' $VAL_LOG | wc -l`
 	if [ $VAL_ERRORES -eq 0 ]; then
 		echo "==== OK - La ejecucion del archivo spark $VAL_PYTHON_FILE es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG
 		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params

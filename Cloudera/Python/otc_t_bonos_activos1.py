@@ -131,10 +131,10 @@ df_join_f = df_join_f.filter("num_telefono IS NULL")
 df_join_f = df_join_f.drop('num_telefono')
 df_join_f = df_join_f.drop('codigo_plan')
 df_join_f = df_join_f.select("num_telefonico","linea_negocio_homologado","bonos_combos","recargas")
-timestart_tbl01 = datetime.datetime.now()
+timestart_tbl01 = datetime.now()
 df_join_f.printSchema()
 df_join_f.write.mode("overwrite").format("orc").saveAsTable(vHIVEDB+"."+vHIVETABLE, mode = 'overwrite')
-timeend_tbl01 = datetime.datetime.now()
+timeend_tbl01 = datetime.now()
 duracion_tbl01 = timeend_tbl01 - timestart_tbl01
 print("Duracion create OTC_T_PARQUE_SIN_RECARGA {}".format(duracion_tbl01))
 
