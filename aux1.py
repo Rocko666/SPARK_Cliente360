@@ -14,11 +14,11 @@ coments =[
     "Crea tabla con combos del dia",
     "Crea tabla con consolidacion de todos los valores obtenidos"]
 
-for i in range(1, 122):
+for i in range(1, 11):
     number = str(i).zfill(3)
-    print(number)
     print(lne_dvs())
-    VStp='Paso [3.{number}]: Something [{}]'.format(vTSomething)
+    VStp='Paso [3.'+number+']: '+coments[int(number)-1]
+    print(VStp)
     try:
         ts_step = datetime.now()
         print(etq_info(VStp))

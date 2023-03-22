@@ -67,7 +67,7 @@ try:
         .config("spark.sql.broadcastTimeout", "36000") \
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
-        .config("spark.yarn.queue", "default") \
+        .config("spark.yarn.queue", "capa_semantica") \
         .config("hive.enforce.bucketing", "false")\
 	    .config("hive.enforce.sorting", "false")\
 	    .getOrCreate()

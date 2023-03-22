@@ -1,543 +1,398 @@
-#!/bin/bash
-##########################################################################
-#   script de carga de generica para entidades de urm con reejecuciã³n    #
-# creado 13-jun-2018 (lc) version 1.0                                    #
-# las tildes hansido omitidas intencionalmente en el script              #
-#------------------------------------------------------------------------#
-
-
-version=1.2.1000.2.6.5.0-292
-hadoop_classpath=$(hcat -classpath) export hadoop_classpath
-
-hive_home=/usr/hdp/current/hive-client
-hcat_home=/usr/hdp/current/hive-webhcat
-sqoop_home=/usr/hdp/current/sqoop-client
-
-export lib_jars=$hcat_home/share/hcatalog/hive-hcatalog-core-${version}.jar,${hive_home}/lib/hive-metastore-${version}.jar,$hive_home/lib/libthrift-0.9.3.jar,$hive_home/lib/hive-exec-${version}.jar,$hive_home/lib/libfb303-0.9.3.jar,$hive_home/lib/jdo-api-3.0.1.jar,$sqoop_home/lib/slf4j-api-1.7.7.jar,$hive_home/lib/hive-cli-${version}.jar
-
 
 ##########################################################################
 #------------------------------------------------------
-# variables configurables por proceso (modificar)
+# VARIABLES CONFIGURABLES POR PROCESO (MODIFICAR)
 #------------------------------------------------------
 	
 	
-  entidad=otc_t_360_cierre
-    # ambiente (1=produccion, 0=desarrollo)
-    ((ambiente=1))
-    fechaeje=$1 # yyyymmdd
-    # variable de control de que paso ejecutar
-	paso=$2
-	esquema_temp=db_temporales
+  ENTIDAD=OTC_T_360_CIERRE
+    # AMBIENTE (1=produccion, 0=desarrollo)
+    ((AMBIENTE=1))
+    FECHAEJE=$1 # yyyyMMdd
+    # Variable de control de que paso ejecutar
+	PASO=$2
+	ESQUEMA_TEMP=db_temporales
 	
-  cola_ejecucion=reportes
+  COLA_EJECUCION=reportes
 		
-#*****************************************************************************************************#
-#                                            â¡â¡ atencion !!                                           #
-#                                                                                                     #
-# configurar las siguientes  consultas de acuerdo al orden de la tabla params de la base de datos urm #
-# en el servidor 10.112.152.183                                                                       #
-#*****************************************************************************************************#
 
-	isnum() { awk -v a="$1" 'begin {print (a == a + 0)}'; }
-	
-	function isparamlistnum() #parametro es el grupo de valores separados por ;
-    {
-        local value
-		local isnumpar
-        for value in `echo "$1" | sed -e 's/;/\n/g'`
-        do
-		    isnumpar=`isnum "$value"`
-            if [  "$isnumpar" ==  "0" ]; then
-                ((rc=999))
-                echo " `date +%a" "%d"/"%m"/"%y" "%x` [error] $rc parametro $value $2 no son numericos"
-                exit $rc
-			fi
-        done	     
-	
-	}  
-
-	ruta="" # ruta es la carpeta del file system (urm-3.5.1) donde se va a trabajar 
-
-	
-	#verificar que la configuraciã³n de la entidad exista
-	if [ "$ambiente" = "1" ]; then
-		existeentidad=`mysql -n  <<<"select count(*) from params where entidad = '"$entidad"' and (ambiente='"$ambiente"');"` 
-	else
-		existeentidad=`mysql -n  <<<"select count(*) from params_des where entidad = '"$entidad"' and (ambiente='"$ambiente"');"` 
-	fi
-	 
-    if ! [ "$existeentidad" -gt 0 ]; then #-gt mayor a -lt menor a
-       echo " $time [error] $rc no existen parametros para la entidad $entidad"
-        ((rc=1))
-        exit $rc
-    fi
-	
-	# verificacion de fecha de ejecucion
-    if [ -z "$fechaeje" ]; then #valida que este en blanco el parametro
+	# Verificacion de fecha de ejecucion
+    if [ -z "$FECHAEJE" ]; then #valida que este en blanco el parametro
         ((rc=2))
-        echo " $time [error] $rc falta el parametro de fecha de ejecucion del programa"
+        echo " $TIME [ERROR] $rc Falta el parametro de fecha de ejecucion del programa"
         exit $rc
     fi
 	
 	
-	if [ "$ambiente" = "1" ]; then
-		# cargar datos desde la base
-		ruta=`mysql -n  <<<"select valor from params where entidad = '"$entidad"' and (ambiente='"$ambiente"') and parametro = 'ruta';"` 
-		#limpiar (1=si, 0=no)
-		temp=`mysql -n  <<<"select valor from params where entidad = '"$entidad"' and (ambiente='"$ambiente"') and parametro = 'limpiar';"`
-		if [ $temp = "1" ];then
-			((limpiar=1))
+	if [ "$AMBIENTE" = "1" ]; then
+		# Cargar Datos desde la base
+		RUTA=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
+		#Limpiar (1=si, 0=no)
+		TEMP=`mysql -N  <<<"select valor from params where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
+		if [ $TEMP = "1" ];then
+			((LIMPIAR=1))
 			else
-			((limpiar=0))
+			((LIMPIAR=0))
 		fi
-		name_shell=`mysql -n  <<<"select valor from params where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'shell');"`
- 	  ruta_log=`mysql -n  <<<"select valor from params where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'ruta_log');"`
-		esquema_tabla=`mysql -n  <<<"select valor from params where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'esquema_tabla' );"`
-		pesos_parametros=`mysql -n  <<<"select valor from params where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'pesos_parametros' );"`
-    pesos_nse=`mysql -n  <<<"select valor from params where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'pesos_nse' );"`
-	  tope_recargas=`mysql -n  <<<"select valor from params where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'tope_recargas' );"`
-    tope_tarifa_basica=`mysql -n  <<<"select valor from params where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'tope_tarifa_basica' );"`
+		NAME_SHELL=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
+ 	  RUTA_LOG=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`
+		ESQUEMA_TABLA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'ESQUEMA_TABLA' );"`
+		PESOS_PARAMETROS=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'PESOS_PARAMETROS' );"`
+    PESOS_NSE=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'PESOS_NSE' );"`
+	  TOPE_RECARGAS=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'TOPE_RECARGAS' );"`
+    TOPE_TARIFA_BASICA=`mysql -N  <<<"select valor from params where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'TOPE_TARIFA_BASICA' );"`
 		
 	else 
-		# cargar datos desde la base
-		ruta=`mysql -n  <<<"select valor from params_des where entidad = '"$entidad"' and (ambiente='"$ambiente"') and parametro = 'ruta';"` 
-		#limpiar (1=si, 0=no)
-		temp=`mysql -n  <<<"select valor from params_des where entidad = '"$entidad"' and (ambiente='"$ambiente"') and parametro = 'limpiar';"`
-		if [ $temp = "1" ];then
-			((limpiar=1))
+		# Cargar Datos desde la base
+		RUTA=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') AND parametro = 'RUTA';"` 
+		#Limpiar (1=si, 0=no)
+		TEMP=`mysql -N  <<<"select valor from params_des where entidad = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and parametro = 'LIMPIAR';"`
+		if [ $TEMP = "1" ];then
+			((LIMPIAR=1))
 			else
-			((limpiar=0))
+			((LIMPIAR=0))
 		fi
-		name_shell=`mysql -n  <<<"select valor from params_des where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'shell');"`
-		ruta_log=`mysql -n  <<<"select valor from params_des where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'ruta_log');"`		
-		esquema_tabla=`mysql -n  <<<"select valor from params_des where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'esquema_tabla' );"`
-		pesos_parametros=`mysql -n  <<<"select valor from params_des where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'pesos_parametros' );"`
-    pesos_nse=`mysql -n  <<<"select valor from params_des where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'pesos_nse' );"`
-	  tope_recargas=`mysql -n  <<<"select valor from params_des where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'tope_recargas' );"`
-    tope_tarifa_basica=`mysql -n  <<<"select valor from params_des where entidad = '"$entidad"' and (ambiente='"$ambiente"') and (parametro = 'tope_tarifa_basica' );"`
+		NAME_SHELL=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'SHELL');"`
+		RUTA_LOG=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'RUTA_LOG');"`		
+		ESQUEMA_TABLA=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'ESQUEMA_TABLA' );"`
+		PESOS_PARAMETROS=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'PESOS_PARAMETROS' );"`
+    PESOS_NSE=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'PESOS_NSE' );"`
+	  TOPE_RECARGAS=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'TOPE_RECARGAS' );"`
+    TOPE_TARIFA_BASICA=`mysql -N  <<<"select valor from params_des where ENTIDAD = '"$ENTIDAD"' and (ambiente='"$AMBIENTE"') and (parametro = 'TOPE_TARIFA_BASICA' );"`
 	fi	
 	
-	 #verificar si tuvo datos de la base
-    time=`date +%a" "%d"/"%m"/"%y" "%x`
-    if [ -z "$ruta" ]; then
+	 #Verificar si tuvo datos de la base
+    TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
+    if [ -z "$RUTA" ]; then
     ((rc=3))
-    echo " $time [error] $rc no se han obtenido los valores necesarios desde la base de datos"
+    echo " $TIME [ERROR] $rc No se han obtenido los valores necesarios desde la base de datos"
     exit $rc
     fi
 	
-	  if [ -z "$pesos_parametros" ]; then
+	  if [ -z "$PESOS_PARAMETROS" ]; then
         ((rc=999))
-        echo " `date +%a" "%d"/"%m"/"%y" "%x` [error] $rc falta el parametro de los pesos para calculo de nse global"
+        echo " `date +%a" "%d"/"%m"/"%Y" "%X` [ERROR] $rc Falta el parametro de los pesos para calculo de nse global"
         exit $rc
     else 
-        if [ `echo "$pesos_parametros" | sed -e 's/;/\n/g' |wc -l` -ne 7 ]; then
+        if [ `echo "$PESOS_PARAMETROS" | sed -e 's/;/\n/g' |wc -l` -ne 7 ]; then
             ((rc=999))
-			time=`date +%a" "%d"/"%m"/"%y" "%x`
-            echo " `date +%a" "%d"/"%m"/"%y" "%x` [error] $rc numero de pesos para calculo global incorrecto"
+			TIME=`date +%a" "%d"/"%m"/"%Y" "%X`
+            echo " `date +%a" "%d"/"%m"/"%Y" "%X` [ERROR] $rc Numero de pesos para calculo global incorrecto"
             exit $rc
 		fi
-		isparamlistnum $pesos_parametros "pesos_parametros"
+		isParamListNum $PESOS_PARAMETROS "PESOS_PARAMETROS"
     fi
 
 
-    if [ -z "$tope_recargas" ]; then
+    if [ -z "$TOPE_RECARGAS" ]; then
         ((rc=999))
-        echo " `date +%a" "%d"/"%m"/"%y" "%x` [error] $rc falta el parametro de dia tope recargas del programa"
+        echo " `date +%a" "%d"/"%m"/"%Y" "%X` [ERROR] $rc Falta el parametro de dia tope recargas del programa"
         exit $rc
     fi	
 
-    if [ -z "$tope_tarifa_basica" ]; then
+    if [ -z "$TOPE_TARIFA_BASICA" ]; then
         ((rc=999))
-        echo " `date +%a" "%d"/"%m"/"%y" "%x` [error] $rc falta el parametro de dia tope tarifa basica del programa"
+        echo " `date +%a" "%d"/"%m"/"%Y" "%X` [ERROR] $rc Falta el parametro de dia tope tarifa basica del programa"
         exit $rc
     fi		
 
-    nse_peso_global=(`echo "$pesos_parametros" | sed -e 's/;/\n/g'`)
+    nse_peso_global=(`echo "$PESOS_PARAMETROS" | sed -e 's/;/\n/g'`)
 	
-    nse_peso_global_nse=(`echo "$pesos_nse" | sed -e 's/;/\n/g'`)
+    nse_peso_global_nse=(`echo "$PESOS_NSE" | sed -e 's/;/\n/g'`)
 
-	# verificacion de re-ejecucion
-	if [ -z "$paso" ]; then
-		paso=0
-		echo " $time [info] $rc este es un proceso normal"
+	# Verificacion de re-ejecucion
+	if [ -z "$PASO" ]; then
+		PASO=0
+		echo " $TIME [INFO] $rc Este es un proceso normal"
 	else
-		echo " $time [info] $rc este es un proceso de re-ejecucion"
+		echo " $TIME [INFO] $rc Este es un proceso de re-ejecucion"
 
 	fi	
 
-#------------------------------------------------------
-# variables de operacion y autogeneradas
-#------------------------------------------------------
-   
-    ejecucion=$entidad$fechaeje
-    #dia: obtiene la fecha del sistema
-    dia=`date '+%y%m%d'` 
-    #hora: obtiene hora del sistema
-    hora=`date '+%h%m%s'` 
-    # rc es una variable que devuelve el codigo de error de ejecucion
-    ((rc=0)) 
-    #ejecucion_log entidad_fecha_hora nombre del archivo log
-	ejecucion_log=$ejecucion"_"$dia$hora		
-    #logs es la ruta de carpeta de logs por entidad
-    logs=$ruta_log/log
-	#logpath ruta base donde se guardan los logs
-    logpath=$ruta_log/log
 
 #------------------------------------------------------
-# definicion de funciones
+# DEFINICION DE FECHAS
 #------------------------------------------------------
-
-    # guarda los resultados en los archivos de correspondientes y registra las entradas en la base de datos de control    
-    function log() #funcion 4 argumentos (tipo, tarea, salida, mensaje)
-    {
-        if [ "$#" -lt 4 ]; then
-            echo "faltan argumentosen el llamado a la funcion"
-            return 1 # numero de argumentos no completo
-        else
-            if [ "$1" = 'e' -o "$1" = 'e' ]; then
-                tipolog=error
-            else
-                tipolog=info
-            fi
-                tarea="$2"
-		            men="$4"
-				        paso_ejec="$5"
-                fecha=`date +%y"-"%m"-"%d`
-                horas=`date +%h":"%m":"%s`
-                time=`date +%a" "%d"/"%m"/"%y" "%x`
-                msj=$(echo " $time [$tipolog] tarea: $tarea - $men ")
-                echo $msj >> $logs/$ejecucion_log.log
-                mysql -e "insert into logs values ('$entidad','$ejecucion','$tipolog','$fecha','$horas','$tarea',$3,'$men','$paso_ejec','$name_shell')"
-                echo $msj
-                return 0
-        fi
-    }
-	
-	
-    function stat() #funcion 4 argumentos (tarea, duracion, fuente, destino)
-    {
-        if [ "$#" -lt 4 ]; then
-            echo "faltan argumentosen el llamado a la funcion"
-            return 1 # numero de argumentos no completo
-        else
-                tarea="$1"
-		        duracion="$2"
-                fecha=`date +%y"-"%m"-"%d`
-                horas=`date +%h":"%m":"%s`
-                time=`date +%a" "%d"/"%m"/"%y" "%x`
-                msj=$(echo " $time [info] tarea: $tarea - duracion : $duracion ")
-                echo $msj >> $logs/$ejecucion_log.log
-                mysql -e "insert into stats values ('$entidad','$ejecucion','$tarea','$fecha $horas','$duracion',$3,'$4')"
-                echo $msj
-                return 0
-        fi
-    }
-#------------------------------------------------------
-# verificacion inicial 
-#------------------------------------------------------
-       
-        #verificar si existe la ruta de sistema 
-        if ! [ -e "$ruta" ]; then
-            ((rc=10))
-            echo "$time [error] $rc la ruta provista en el script no existe en el sistema o no tiene permisos sobre la misma. cree la ruta con los permisos adecuados y vuelva a ejecutar el programa"
-            exit $rc
-        else 
-            if ! [ -e "$logpath" ]; then
-				mkdir -p $ruta/$entidad/log
-					if ! [ $? -eq 0 ]; then
-						((rc=11))
-						echo " $time [error] $rc no se pudo crear la ruta de logs"
-						exit $rc
-					fi
-			fi
-        fi
-		
-
-
-#------------------------------------------------------
-# definicion de fechas
-#------------------------------------------------------
-eval year=`echo $fechaeje | cut -c1-4`
-eval month=`echo $fechaeje | cut -c5-6`
+eval year=`echo $FECHAEJE | cut -c1-4`
+eval month=`echo $FECHAEJE | cut -c5-6`
 day="01"
-fechames=$year$month
+fechaMes=$year$month
 
-#variables de recargas
-fechainimes=$year$month$day                            #formato yyyymmdd  
-fecha_eje2=`date '+%y%m%d' -d "$fechaeje"`
+#VARIABLES DE RECARGAS
+fechaIniMes=$year$month$day                            #Formato YYYYMMDD  
+fecha_eje2=`date '+%Y%m%d' -d "$FECHAEJE"`
 
-#variables de pivote parque
-fecha_proc=`date -d "${fechaeje} +1 day"  +"%y%m%d"`
-fechamas1_1=`date '+%y%m%d' -d "$fechaeje+1 day"`
+#VARIABLES DE PIVOTE PARQUE
+fecha_proc=`date -d "${FECHAEJE} +1 day"  +"%Y%m%d"`
+fechamas1_1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
 let fechamas1=$fechamas1_1*1
-fechamenos5_1=`date '+%y%m%d' -d "$fechaeje-10 day"`
+fechamenos5_1=`date '+%Y%m%d' -d "$FECHAEJE-10 day"`
 let fechamenos5=$fechamenos5_1*1
-fechaeje1=`date '+%y-%m-%d' -d "$fechaeje"`
-fecha_inico_mes_1_1=`date '+%y-%m-%d' -d "$fechainimes"`
-fecha_inac_1=`date '+%y%m%d' -d "$fecha_inico_mes_1_1-1 day"`
+fechaeje1=`date '+%Y-%m-%d' -d "$FECHAEJE"`
+fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+fecha_inac_1=`date '+%Y%m%d' -d "$fecha_inico_mes_1_1-1 day"`
 
-fecha_alt_ini=`date '+%y-%m-%d' -d "$fecha_proc"`
-ultimo_dia_mes_ant=`date -d "${fechainimes} -1 day"  +"%y%m%d"`
-fecha_alt_fin=`date '+%y-%m-%d' -d "$ultimo_dia_mes_ant"`
+fecha_alt_ini=`date '+%Y-%m-%d' -d "$fecha_proc"`
+ultimo_dia_mes_ant=`date -d "${fechaIniMes} -1 day"  +"%Y%m%d"`
+fecha_alt_fin=`date '+%Y-%m-%d' -d "$ultimo_dia_mes_ant"`
 
 eval year_prev=`echo $ultimo_dia_mes_ant | cut -c1-4`
 eval month_prev=`echo $ultimo_dia_mes_ant | cut -c5-6`
-fechainimes_prev=$year_prev$month_prev$day                            #formato yyyymmdd
+fechaIniMes_prev=$year_prev$month_prev$day                            #Formato YYYYMMDD
 
-fecha_alt_dos_meses_ant_fin=`date '+%y-%m-%d' -d "$fechainimes"`
-#primer_dia_dos_meses_ant=`date -d "${fecha_alt_dos_meses_ant_fin} -1 month"  +"%y-%m-%d"`
-path_actualizacion=$ruta"/bin/otc_f_resta_1_mes.sh"
-primer_dia_dos_meses_ant=`sh $path_actualizacion $fecha_alt_dos_meses_ant_fin`       #formato yyyymmdd
+fecha_alt_dos_meses_ant_fin=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+#primer_dia_dos_meses_ant=`date -d "${fecha_alt_dos_meses_ant_fin} -1 month"  +"%Y-%m-%d"`
+path_actualizacion=$RUTA"/Bin/OTC_F_RESTA_1_MES.sh"
+primer_dia_dos_meses_ant=`sh $path_actualizacion $fecha_alt_dos_meses_ant_fin`       #Formato YYYYMMDD
 
-ultimo_dia_tres_meses_ant=`date -d "${primer_dia_dos_meses_ant} -1 day"  +"%y-%m-%d"`
+ultimo_dia_tres_meses_ant=`date -d "${primer_dia_dos_meses_ant} -1 day"  +"%Y-%m-%d"`
 
-fecha_alt_dos_meses_ant_fin=`date '+%y-%m-%d' -d "$fechainimes"`
-fecha_alt_dos_meses_ant_ini=`date '+%y-%m-%d' -d "$ultimo_dia_tres_meses_ant"`
+fecha_alt_dos_meses_ant_fin=`date '+%Y-%m-%d' -d "$fechaIniMes"`
+fecha_alt_dos_meses_ant_ini=`date '+%Y-%m-%d' -d "$ultimo_dia_tres_meses_ant"`
 
-#variables movimientos de parque
-fecha_proceso=`date -d "$fechaeje" "+%y-%m-%d"`
-f_check=`date -d "$fechaeje" "+%d"`
-fecha_movimientos=`date '+%y-%m-%d' -d "$fecha_proceso+1 day"`
-fecha_movimientos_cp=`date '+%y%m%d' -d "$fecha_proceso+1 day"`
-#p_date=$(hive -e "select max(fecha_proceso) from $esquema_temp.$tabla_pivotante;")
-#p_date=`date -d "$p_date" "+%y-%m-%d"`
+#VARIABLES MOVIMIENTOS DE PARQUE
+fecha_proceso=`date -d "$FECHAEJE" "+%Y-%m-%d"`
+f_check=`date -d "$FECHAEJE" "+%d"`
+fecha_movimientos=`date '+%Y-%m-%d' -d "$fecha_proceso+1 day"`
+fecha_movimientos_cp=`date '+%Y%m%d' -d "$fecha_proceso+1 day"`
+#p_date=$(hive -e "select max(fecha_proceso) from $ESQUEMA_TEMP.$TABLA_PIVOTANTE;")
+#p_date=`date -d "$p_date" "+%Y-%m-%d"`
 
         if [ $f_check == "01" ];
         then
-       f_inicio=`date -d "$fechaeje -1 days" "+%y-%m-01"`
+       f_inicio=`date -d "$FECHAEJE -1 days" "+%Y-%m-01"`
        else
-        f_inicio=`date -d "$fechaeje" "+%y-%m-01"`
+        f_inicio=`date -d "$FECHAEJE" "+%Y-%m-01"`
         echo $f_inicio
        fi
-	echo $f_inicio" fecha inicio"
-	echo $fecha_proceso" fecha ejecucion"
-	echo $p_date" fecha proceso pivot360"
+	echo $f_inicio" Fecha Inicio"
+	echo $fecha_proceso" Fecha Ejecucion"
+	echo $p_date" Fecha proceso Pivot360"
 
-#variables campos adicionales
-fechamas1_2=`date '+%y-%m-%d' -d "$fechamas1"`
+#VARIABLES CAMPOS ADICIONALES
+fechamas1_2=`date '+%Y-%m-%d' -d "$fechamas1"`
 
   
-#variables general
-fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
+#VARIABLES GENERAL
+fecha_eje1=`date '+%Y-%m-%d' -d "$FECHAEJE"`
   let fecha_hoy=$fecha_eje1
-#fecha_eje2=`date '+%y%m%d' -d "$fechaeje"`
+#fecha_eje2=`date '+%Y%m%d' -d "$FECHAEJE"`
   let fecha_proc1=$fecha_eje2
- # fecha_inico_mes_1_1=`date '+%y-%m-%d' -d "$fechainimes"`
+ # fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "$fechaIniMes"`
  let fechainiciomes=$fecha_inico_mes_1_1
-  fecha_inico_mes_1_2=`date '+%y%m%d' -d "$fechainimes"`
+  fecha_inico_mes_1_2=`date '+%Y%m%d' -d "$fechaIniMes"`
   let fechainiciomes=$fecha_inico_mes_1_2
-  fecha_eje3=`date '+%y%m%d' -d "$fechaeje-1 day"`
+  fecha_eje3=`date '+%Y%m%d' -d "$FECHAEJE-1 day"`
   let fecha_proc_menos1=$fecha_eje3
- # fechamas1=`date '+%y%m%d' -d "$fechaeje+1 day"`
+ # fechamas1=`date '+%Y%m%d' -d "$FECHAEJE+1 day"`
   let fecha_mas_uno=$fechamas1
   
-  #fechainimenos1mes_1=`date '+%y%m%d' -d "$fechainimes-1 month"`
-  fechainimenos1mes_1=`sh $path_actualizacion $fechainimes`       #formato yyyymmdd
+  #fechaInimenos1mes_1=`date '+%Y%m%d' -d "$fechaIniMes-1 month"`
+  fechaInimenos1mes_1=`sh $path_actualizacion $fechaIniMes`       #Formato YYYYMMDD
   
   
-  let fechainimenos1mes=$fechainimenos1mes_1*1
-  fechainimenos2mes_1=`date '+%y%m%d' -d "$fechainimes-2 month"`
-  let fechainimenos2mes=$fechainimenos2mes_1*1
-  fechainimenos3mes_1=`date '+%y%m%d' -d "$fechainimes-3 month"`
-  let fechainimenos3mes=$fechainimenos3mes_1*1
+  let fechaInimenos1mes=$fechaInimenos1mes_1*1
+  fechaInimenos2mes_1=`date '+%Y%m%d' -d "$fechaIniMes-2 month"`
+  let fechaInimenos2mes=$fechaInimenos2mes_1*1
+  fechaInimenos3mes_1=`date '+%Y%m%d' -d "$fechaIniMes-3 month"`
+  let fechaInimenos3mes=$fechaInimenos3mes_1*1
     
   let fechamas11=$fechamas1_1*1
-  #fechamenos1mes_1=`date '+%y%m%d' -d "$fechaeje-1 month"`
+  #fechamenos1mes_1=`date '+%Y%m%d' -d "$FECHAEJE-1 month"`
 
-  fechamenos1mes_1=`sh $path_actualizacion $fechaeje`       #formato yyyymmdd
+  fechamenos1mes_1=`sh $path_actualizacion $FECHAEJE`       #Formato YYYYMMDD
 
 
   let fechamenos1mes=$fechamenos1mes_1*1
-  #fechamenos2mes_1=`date '+%y%m%d' -d "$fechamenos1mes-1 month"`
+  #fechamenos2mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-1 month"`
 
-  fechamenos2mes_1=`sh $path_actualizacion $fechamenos1mes`       #formato yyyymmdd
+  fechamenos2mes_1=`sh $path_actualizacion $fechamenos1mes`       #Formato YYYYMMDD
   
 
   let fechamenos2mes=$fechamenos2mes_1*1
-  fechamenos6mes_1=`date '+%y%m%d' -d "$fechamenos1mes-6 month"`
+  fechamenos6mes_1=`date '+%Y%m%d' -d "$fechamenos1mes-6 month"`
   let fechamenos6mes=$fechamenos6mes_1*1  
  
   
 #------------------------------------------------------
-# creacion de logs 
+# CREACION DE LOGS 
 #------------------------------------------------------
-    #verificar si hay parã¡metro de re-ejecuciã³n
-    if [ "$paso" = "0" ]; then
+    #Verificar si hay parÃ¡metro de re-ejecuciÃ³n
+    if [ "$PASO" = "0" ]; then
 
-        echo $dia-$hora" creacion de directorio para almacenamiento de logs" 
+        echo $DIA-$HORA" Creacion de directorio para almacenamiento de logs" 
         
-        #si ya existe la ruta en la que voy a trabajar, eliminarla
-        if  [ -e "$logs" ]; then
-            #eliminar el directorio logs si existiese
-            #rm -rf $logs
-			echo $dia-$hora" directorio "$logs " ya existe"			
+        #Si ya existe la ruta en la que voy a trabajar, eliminarla
+        if  [ -e "$LOGS" ]; then
+            #eliminar el directorio LOGS si existiese
+            #rm -rf $LOGS
+			echo $DIA-$HORA" Directorio "$LOGS " ya existe"			
 		else
-			#cree el directorio logs para la ubicacion ingresada		
-			mkdir -p $logs
-			#validacion de greacion completa
-            if  ! [ -e "$logs" ]; then
+			#Cree el directorio LOGS para la ubicacion ingresada		
+			mkdir -p $LOGS
+			#Validacion de greacion completa
+            if  ! [ -e "$LOGS" ]; then
             (( rc = 21)) 
-            echo $dia-$hora" error $rc : la ruta $logs no pudo ser creada" 
-			log e "crear directorio log" $rc  " $dia-$hora' error $rc: la ruta $logs no pudo ser creada'" $paso	
+            echo $DIA-$HORA" Error $rc : La ruta $LOGS no pudo ser creada" 
+			log e "CREAR DIRECTORIO LOG" $rc  " $DIA-$HORA' Error $rc: La ruta $LOGS no pudo ser creada'" $PASO	
             exit $rc
             fi
         fi
     
-        # creacion del archivo de log 
-        echo "# entidad: "$entidad" fecha: "$fechaeje $dia"-"$hora > $logs/$ejecucion_log.log
+        # CREACION DEL ARCHIVO DE LOG 
+        echo "# Entidad: "$ENTIDAD" Fecha: "$FECHAEJE $DIA"-"$HORA > $LOGS/$EJECUCION_LOG.log
         if [ $? -eq 0 ];	then
-            echo "# fecha de inicio: "$dia" "$hora >> $logs/$ejecucion_log.log
-            echo "---------------------------------------------------------------------" >> $logs/$ejecucion_log.log
+            echo "# Fecha de inicio: "$DIA" "$HORA >> $LOGS/$EJECUCION_LOG.log
+            echo "---------------------------------------------------------------------" >> $LOGS/$EJECUCION_LOG.log
         else
             (( rc = 22))
-            echo $dia-$hora" error $rc : fallo al crear el archivo de log $logs/$ejecucion_log.log"
-			log e "crear archivo log" $rc  " $dia-$hora' error $rc: fallo al crear el archivo de log $logs/$ejecucion_log.log'" $paso
+            echo $DIA-$HORA" Error $rc : Fallo al crear el archivo de log $LOGS/$EJECUCION_LOG.log"
+			log e "CREAR ARCHIVO LOG" $rc  " $DIA-$HORA' Error $rc: Fallo al crear el archivo de log $LOGS/$EJECUCION_LOG.log'" $PASO
             exit $rc
         fi
         
-        # creacion de archivo de error 
+        # CREACION DE ARCHIVO DE ERROR 
         
-        echo "# entidad: "$entidad" fecha: "$fechaeje $dia"-"$hora > $logs/$ejecucion_log.log
+        echo "# Entidad: "$ENTIDAD" Fecha: "$FECHAEJE $DIA"-"$HORA > $LOGS/$EJECUCION_LOG.log
         if [ $? -eq 0 ];	then
-            echo "# fecha de inicio: "$dia" "$hora >> $logs/$ejecucion_log.log
-            echo "---------------------------------------------------------------------" >> $logs/$ejecucion_log.log
+            echo "# Fecha de inicio: "$DIA" "$HORA >> $LOGS/$EJECUCION_LOG.log
+            echo "---------------------------------------------------------------------" >> $LOGS/$EJECUCION_LOG.log
         else
             (( rc = 23)) 
-            echo $dia-$hora" error $rc : fallo al crear el archivo de error $logs/$ejecucion_log.log"
-			log e "crear archivo log error" $rc  " $dia-$hora' error $rc: fallo al crear el archivo de error $logs/$ejecucion_log.log'" $paso
+            echo $DIA-$HORA" Error $rc : Fallo al crear el archivo de error $LOGS/$EJECUCION_LOG.log"
+			log e "CREAR ARCHIVO LOG ERROR" $rc  " $DIA-$HORA' Error $rc: Fallo al crear el archivo de error $LOGS/$EJECUCION_LOG.log'" $PASO
             exit $rc
         fi
-	paso=2
+	PASO=2
     fi
 	
 #------------------------------------------------------
-# ejecucion de consultas para la obtencion de recargas (esto sirve para la simulacion de churn)
+# EJECUCION DE CONSULTAS PARA LA OBTENCION DE RECARGAS (ESTO SIRVE PARA LA SIMULACION DE CHURN)
 #------------------------------------------------------
-#verificar si hay parã¡metro de re-ejecuciã³n
-    if [ "$paso" = "2" ]; then
-      inicio=$(date +%s)
+#Verificar si hay parÃ¡metro de re-ejecuciÃ³n
+    if [ "$PASO" = "2" ]; then
+      INICIO=$(date +%s)
    
-	log i "hive" $rc  " inicio ejecucion querys para recargas" $paso
+	log i "HIVE" $rc  " INICIO EJECUCION QUERYS PARA RECARGAS" $PASO
 		
 		/usr/bin/hive -e "set hive.cli.print.header=false;
 		set hive.vectorized.execution.enabled=false;
 		set hive.vectorized.execution.reduce.enabled=false;
-		set tez.queue.name=$cola_ejecucion;
+		set tez.queue.name=$COLA_EJECUCION;
 
-	drop table $esquema_temp.tmp_360_otc_t_recargas_dia_periodo_cierre;
-	create table $esquema_temp.tmp_360_otc_t_recargas_dia_periodo_cierre as
+	drop table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_CIERRE;
+	create table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_CIERRE as
 	select numero_telefono
-	, case when operadora='movistar' or operadora is null or operadora ='' then 'telefonica' else operadora end marca -- si 'movistar o nulla o blanco' entonces 'telefonica', sino poner la operadora
+	, case when operadora='MOVISTAR' or operadora is null or operadora ='' then 'TELEFONICA' else operadora end marca -- si 'MOVISTAR O NULLA O BLANCO' ENTONCES 'TELEFONICA', SINO PONER LA OPERADORA
 	, fecha_proceso --cada dia  del rango
-	, sum(valor_recarga_base)/1.12 valor_recargas --retitar el iva
+	, sum(valor_recarga_base)/1.12 valor_recargas --retitar el IVA
 	, count(1) cantidad_recargas
 	from db_cs_recargas.otc_t_cs_detalle_recargas a
-	inner join db_altamira.par_origen_recarga ori  -- usar el catãƒâ¡logo de recargas vãƒâ¡lidas
-	on ori.origenrecargaid= a.origen_recarga_aa
-	where (fecha_proceso >= $fechainimes and fecha_proceso <= $fecha_eje2)
-	and operadora in ('movistar')
-	and tipo_transaccion = 'activa' --transacciones validas
-	and estado_recarga = 'recarga' --asegurar que son recargas
-	and rec_pkt ='rec' group by numero_telefono
-	, case when operadora='movistar' or operadora is null or operadora ='' then 'telefonica' else operadora end   -- si 'movistar o nulla o blanco' entonces 'telefonica', sino poner la operadora
+	inner join db_altamira.par_origen_recarga ori  -- usar el catÃƒÂ¡logo de recargas vÃƒÂ¡lidas
+	on ori.ORIGENRECARGAID= a.origen_recarga_aa
+	where (fecha_proceso >= $fechaIniMes AND fecha_proceso <= $fecha_eje2)
+	AND operadora in ('MOVISTAR')
+	AND TIPO_TRANSACCION = 'ACTIVA' --transacciones validas
+	AND ESTADO_RECARGA = 'RECARGA' --asegurar que son recargas
+	AND rec_pkt ='REC' group by numero_telefono
+	, case when operadora='MOVISTAR' or operadora is null or operadora ='' then 'TELEFONICA' else operadora end   -- si 'MOVISTAR O NULLA O BLANCO' ENTONCES 'TELEFONICA', SINO PONER LA OPERADORA
 	, fecha_proceso;
 
 	--bonos y combos
-	drop table $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_cierre;
-	create table $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_cierre as
+	drop table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE;
+	create table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE as
 	select  fecha_proceso,r.numero_telefono as num_telefono,
-	case when r.operadora='movistar' then 'telefonica' else r.operadora end as marca
+	case when r.operadora='MOVISTAR' then 'TELEFONICA' else r.operadora end as marca
 	,b.tipo as combo_bono
-	,sum(r.valor_recarga_base)/1.12 coste--para quitar el valor del impuesto
-	,count(*) cantidad --combos o bonos segãƒâºn el tipo de la tabla db_reportes.cat_bonos_pdv , hacer el case correspondiente
+	,SUM(r.valor_recarga_base)/1.12 coste--Para quitar el valor del impuesto
+	,count(*) cantidad --combos o bonos segÃƒÂºn el tipo de la tabla db_reportes.cat_bonos_pdv , hacer el case correspondiente
 	,$fecha_eje2 as fecha_proc ------- parametro del ultimo dia del rango
-	from db_cs_recargas.otc_t_cs_detalle_recargas r
-	inner join (select distinct codigo_pm,tipo from db_reportes.cat_bonos_pdv ) b
+	from db_cs_recargas.otc_T_cs_detalle_recargas r
+	INNER join (select distinct codigo_pm,tipo from db_reportes.cat_bonos_pdv ) b
 	on (b.codigo_pm=r.codigo_paquete
 	and (r.codigo_paquete<>''
 	and r.codigo_paquete is not null))
-	-- solo los que se venden en pdv
-	where fecha_proceso>=$fechainimes --
+	-- solo los que se venden en PDV
+	where fecha_proceso>=$fechaIniMes --
 	and fecha_proceso<=$fecha_eje2  --(di  a n)
-	and r.rec_pkt='pkt' -- solo los que se venden en pdv
-	and plataforma in ('pm')
-	and tipo_transaccion = 'activa'
-	and estado_recarga = 'recarga'
-	and r.operadora='movistar'group by fecha_proceso, r.numero_telefono
-	,case when r.operadora='movistar' then 'telefonica' else r.operadora end
+	and r.rec_pkt='PKT' -- solo los que se venden en PDV
+	and plataforma in ('PM')
+	AND TIPO_TRANSACCION = 'ACTIVA'
+	AND ESTADO_RECARGA = 'RECARGA'
+	AND r.operadora='MOVISTAR'group by fecha_proceso, r.numero_telefono
+	,case when r.operadora='MOVISTAR' then 'TELEFONICA' else r.operadora end
 	,b.tipo;
 
 
-	drop table $esquema_temp.tmp_360_otc_t_universo_recargas_cierre;
-	create table $esquema_temp.tmp_360_otc_t_universo_recargas_cierre as
+	drop table $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_CIERRE;
+	create table $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_CIERRE AS
 	select b.numero_telefono
-	from $esquema_temp.tmp_360_otc_t_recargas_dia_periodo_cierre b 
+	from $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_CIERRE b 
 	union all 
 	select c.num_telefono
-	from $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_cierre c;
+	from $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE c;
 
-	drop table $esquema_temp.tmp_360_otc_t_universo_recargas_unicos_cierre;
-	create table $esquema_temp.tmp_360_otc_t_universo_recargas_unicos_cierre as
+	drop table $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_UNICOS_CIERRE;
+	create table $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_UNICOS_CIERRE as
 	select numero_telefono, 
 	count(1) as cant_t 
-	from $esquema_temp.tmp_360_otc_t_universo_recargas_cierre 
+	from $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_CIERRE 
 	group by numero_telefono;
 
 	--mes 0
-	drop table $esquema_temp.tmp_360_otc_t_recargas_acum_0_cierre;
-	create table $esquema_temp.tmp_360_otc_t_recargas_acum_0_cierre as
+	drop table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_0_CIERRE;
+	create table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_0_CIERRE as
 	select numero_telefono, sum(valor_recargas) costo_recargas_acum, sum(cantidad_recargas) cant_recargas_acum 
-	from $esquema_temp.tmp_360_otc_t_recargas_dia_periodo_cierre 
-	where fecha_proceso>= $fechainimes and fecha_proceso <= $fecha_eje2
+	from $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_CIERRE 
+	where fecha_proceso>= $fechaIniMes and fecha_proceso <= $fecha_eje2
 	group by numero_telefono;
 	
 	--dia ejecucion
-	drop table $esquema_temp.tmp_360_otc_t_recargas_dia_periodo_1_cierre;
-	create table $esquema_temp.tmp_360_otc_t_recargas_dia_periodo_1_cierre as
+	drop table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_1_CIERRE;
+	create table $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_1_CIERRE as
 	select numero_telefono, sum(valor_recargas) costo_recargas_dia, sum(cantidad_recargas) cant_recargas_dia
-	from $esquema_temp.tmp_360_otc_t_recargas_dia_periodo_cierre 
+	from $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_CIERRE 
 	where fecha_proceso= $fecha_eje2
 	group by numero_telefono;
 
 	
-	--bonos acumulados del mes
-	drop table $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_bono_cierre;
-	create table $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_bono_cierre as
+	--BONOS ACUMULADOS DEL MES
+	drop table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_BONO_CIERRE;
+	create table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_BONO_CIERRE as
 	select num_telefono, sum(coste) coste_paym_periodo, sum(cantidad) cant_paym_periodo 
-	from $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_cierre 
-	where combo_bono='bono'
+	from $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE 
+	WHERE combo_bono='BONO'
 	group by num_telefono;
 	
-	--bonos del dia
-	drop table $esquema_temp.tmp_360_otc_t_paquetes_payment_dia_bono_cierre;
-	create table $esquema_temp.tmp_360_otc_t_paquetes_payment_dia_bono_cierre as
+	--BONOS DEL DIA
+	drop table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_BONO_CIERRE;
+	create table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_BONO_CIERRE as
 	select num_telefono, sum(coste) coste_paym_periodo, sum(cantidad) cant_paym_periodo 
-	from $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_cierre 
-	where combo_bono='bono' and fecha_proceso=$fecha_eje2
+	from $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE 
+	WHERE combo_bono='BONO' AND fecha_proceso=$fecha_eje2
 	group by num_telefono;
 
 
-	--combos acumulados del mes
-	drop table $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_combo_cierre;
-	create table $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_combo_cierre as
+	--COMBOS ACUMULADOS DEL MES
+	drop table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_COMBO_CIERRE;
+	create table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_COMBO_CIERRE as
 	select num_telefono, sum(coste) coste_paym_periodo, sum(cantidad) cant_paym_periodo 
-	from $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_cierre 
-	where combo_bono='combo'
+	from $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE 
+	WHERE combo_bono='COMBO'
 	group by num_telefono;
 	
-	--combos del dia
-	drop table $esquema_temp.tmp_360_otc_t_paquetes_payment_dia_combo_cierre;
-	create table $esquema_temp.tmp_360_otc_t_paquetes_payment_dia_combo_cierre as
+	--COMBOS DEL DIA
+	drop table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_COMBO_CIERRE;
+	create table $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_COMBO_CIERRE as
 	select num_telefono, sum(coste) coste_paym_periodo, sum(cantidad) cant_paym_periodo 
-	from $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_cierre 
-	where combo_bono='combo' and fecha_proceso=$fecha_eje2
+	from $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_CIERRE 
+	WHERE combo_bono='COMBO' AND fecha_proceso=$fecha_eje2
 	group by num_telefono;
 
 
-	--consolidacion de todos los valores obtenidos
-	drop table $esquema_temp.tmp_otc_t_360_recargas_cierre;
-	create table $esquema_temp.tmp_otc_t_360_recargas_cierre as
+	--CONSOLIDACION DE TODOS LOS VALORES OBTENIDOS
+	drop table $ESQUEMA_TEMP.TMP_OTC_T_360_RECARGAS_CIERRE;
+	create table $ESQUEMA_TEMP.TMP_OTC_T_360_RECARGAS_CIERRE as
 	select a.numero_telefono
 	,coalesce(b.costo_recargas_acum,0) ingreso_recargas_m0
 	,coalesce(b.cant_recargas_acum,0) cantidad_recargas_m0
@@ -551,121 +406,121 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 	,coalesce(g.cant_paym_periodo,0) cantidad_bonos_dia
 	,coalesce(h.coste_paym_periodo,0) ingreso_combos_dia
 	,coalesce(h.cant_paym_periodo,0) cantidad_combos_dia
-	from $esquema_temp.tmp_360_otc_t_universo_recargas_unicos_cierre a	
-	left join $esquema_temp.tmp_360_otc_t_recargas_acum_0_cierre b
+	from $ESQUEMA_TEMP.TMP_360_OTC_T_UNIVERSO_RECARGAS_UNICOS_CIERRE a	
+	left join $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_ACUM_0_CIERRE b
 	on a.numero_telefono=b.numero_telefono	
-	left join $esquema_temp.tmp_360_otc_t_recargas_dia_periodo_1_cierre c 
+	left join $ESQUEMA_TEMP.TMP_360_OTC_T_RECARGAS_DIA_PERIODO_1_CIERRE c 
 	on a.numero_telefono=c.numero_telefono
-	left join $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_bono_cierre d
+	left join $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_BONO_CIERRE d
 	on a.numero_telefono=d.num_telefono
-	left join $esquema_temp.tmp_360_otc_t_paquetes_payment_acum_combo_cierre f
+	left join $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_ACUM_COMBO_CIERRE f
 	on a.numero_telefono=f.num_telefono
-	left join $esquema_temp.tmp_360_otc_t_paquetes_payment_dia_bono_cierre g
+	left join $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_BONO_CIERRE g
 	on a.numero_telefono=g.num_telefono
-	left join $esquema_temp.tmp_360_otc_t_paquetes_payment_dia_combo_cierre h
-	on a.numero_telefono=h.num_telefono;" 1>> $logs/$ejecucion_log.log 2>> $logs/$ejecucion_log.log
+	left join $ESQUEMA_TEMP.TMP_360_OTC_T_PAQUETES_PAYMENT_DIA_COMBO_CIERRE h
+	on a.numero_telefono=h.num_telefono;" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
-			# verificacion de creacion de archivo
+			# Verificacion de creacion de archivo
 			if [ $? -eq 0 ]; then
-				log i "hive" $rc  " fin de recargas" $paso
+				log i "HIVE" $rc  " Fin de RECARGAS" $PASO
 				else
 				(( rc = 102)) 
-				log e "hive" $rc  " fallo al ejecutar querys de recargas" $paso
+				log e "HIVE" $rc  " Fallo al ejecutar querys de RECARGAS" $PASO
 				exit $rc
 			fi
 			
-	log i "hive" $rc  " fin ejecucion querys para recargas" $paso
+	log i "HIVE" $rc  " FIN EJECUCION QUERYS PARA RECARGAS" $PASO
 		
-		fin=$(date +%s)
-		dif=$(echo "$fin - $inicio" | bc)
-		total=$(printf '%d:%d:%d\n' $(($dif/3600)) $(($dif%3600/60)) $(($dif%60)))
-		stat "insert tabla hive final" $total 0 0
-	paso=3
+		FIN=$(date +%s)
+		DIF=$(echo "$FIN - $INICIO" | bc)
+		TOTAL=$(printf '%d:%d:%d\n' $(($DIF/3600)) $(($DIF%3600/60)) $(($DIF%60)))
+		stat "Insert tabla hive final" $TOTAL 0 0
+	PASO=3
 	fi
 
 #------------------------------------------------------
-# ejecucion de consultas para la obtencion del parque pivote
+# EJECUCION DE CONSULTAS PARA LA OBTENCION DEL PARQUE PIVOTE
 #------------------------------------------------------
-    #verificar si hay parã¡metro de re-ejecuciã³n
-    if [ "$paso" = "3" ]; then
-      inicio=$(date +%s)
+    #Verificar si hay parÃ¡metro de re-ejecuciÃ³n
+    if [ "$PASO" = "3" ]; then
+      INICIO=$(date +%s)
    
-	log i "hive" $rc  " inicio ejecucion querys para el parque pivote o parque de partida" $paso
+	log i "HIVE" $rc  " INICIO EJECUCION QUERYS PARA EL PARQUE PIVOTE O PARQUE DE PARTIDA" $PASO
 		
 		/usr/bin/hive -e "set hive.cli.print.header=false;
 		set hive.vectorized.execution.enabled=false;
 		set hive.vectorized.execution.reduce.enabled=false;
-		set tez.queue.name=$cola_ejecucion;
+		set tez.queue.name=$COLA_EJECUCION;
 		
-		--se obtienen las altas desde el inicio del mes hasta la fecha de proceso	
-		drop table $esquema_temp.tmp_360_alta_cierre;
-		create table $esquema_temp.tmp_360_alta_cierre as		
+		--SE OBTIENEN LAS ALTAS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO	
+		drop table $ESQUEMA_TEMP.tmp_360_alta_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_alta_cierre as		
 		select a.telefono,a.numero_abonado,a.fecha_alta
 		from db_cs_altas.otc_t_altas_bi a	 
 		where a.p_fecha_proceso = $fecha_proc
-		and a.marca='telefonica';
+		AND a.marca='TELEFONICA';
 
-		--se obtienen las transferencias pos a pre desde el inicio del mes hasta la fecha de proceso
-		drop table $esquema_temp.tmp_360_transfer_in_pp_cierre;
-		create table $esquema_temp.tmp_360_transfer_in_pp_cierre as		
+		--SE OBTIENEN LAS TRANSFERENCIAS POS A PRE DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO
+		drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pp_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_transfer_in_pp_cierre as		
 		select a.telefono,a.fecha_transferencia
 		from db_cs_altas.otc_t_transfer_out_bi a
 		where a.p_fecha_proceso = $fecha_proc;
 
-		--se obtienen las transferencias pre a pos desde el inicio del mes hasta la fecha de proceso
-		drop table $esquema_temp.tmp_360_transfer_in_pos_cierre;
-		create table $esquema_temp.tmp_360_transfer_in_pos_cierre as		
+		--SE OBTIENEN LAS TRANSFERENCIAS PRE A POS DESDE EL INICIO DEL MES HASTA LA FECHA DE PROCESO
+		drop table $ESQUEMA_TEMP.tmp_360_transfer_in_pos_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_transfer_in_pos_cierre as		
 		select a.telefono,a.fecha_transferencia
 		from db_cs_altas.otc_t_transfer_in_bi a	 
 		where a.p_fecha_proceso = $fecha_proc;
 
-		--se obtienen los cambios de plan de tipo upsell
-		drop table $esquema_temp.tmp_360_upsell_cierre;
-		create table $esquema_temp.tmp_360_upsell_cierre as
+		--SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO UPSELL
+		drop table $ESQUEMA_TEMP.tmp_360_upsell_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_upsell_cierre as
 		select a.telefono,a.fecha_cambio_plan 
 		from db_cs_altas.otc_t_cambio_plan_bi a
-		where upper(a.tipo_movimiento)='upsell' and 
+		where UPPER(A.tipo_movimiento)='UPSELL' AND 
 		a.p_fecha_proceso = $fecha_proc;
 
-		--se obtienen los cambios de plan de tipo downsell
-		drop table $esquema_temp.tmp_360_downsell_cierre;
-		create table $esquema_temp.tmp_360_downsell_cierre as
+		--SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO DOWNSELL
+		drop table $ESQUEMA_TEMP.tmp_360_downsell_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_downsell_cierre as
 		select a.telefono,a.fecha_cambio_plan
 		from db_cs_altas.otc_t_cambio_plan_bi a
-		where upper(a.tipo_movimiento)='downsell' and
+		where UPPER(A.tipo_movimiento)='DOWNSELL' AND
 		a.p_fecha_proceso = $fecha_proc;
 
-		--se obtienen los cambios de plan de tipo crossell
-		drop table $esquema_temp.tmp_360_misma_tarifa_cierre;
-		create table $esquema_temp.tmp_360_misma_tarifa_cierre as
+		--SE OBTIENEN LOS CAMBIOS DE PLAN DE TIPO CROSSELL
+		drop table $ESQUEMA_TEMP.tmp_360_misma_tarifa_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_misma_tarifa_cierre as
 		select a.telefono,a.fecha_cambio_plan 
 		from db_cs_altas.otc_t_cambio_plan_bi a
-		where upper(a.tipo_movimiento)='misma_tarifa' and 
+		where UPPER(A.tipo_movimiento)='MISMA_TARIFA' AND 
 		a.p_fecha_proceso = $fecha_proc;
 
-		--se obtienen las bajas involuntarias, en el periodo del mes
-		drop table $esquema_temp.tmp_360_bajas_invo_cierre;
-		create table $esquema_temp.tmp_360_bajas_invo_cierre as
+		--SE OBTIENEN LAS BAJAS INVOLUNTARIAS, EN EL PERIODO DEL MES
+		drop table $ESQUEMA_TEMP.tmp_360_bajas_invo_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_bajas_invo_cierre as
 		select a.num_telefonico as telefono,a.fecha_proceso, count(1) as conteo
-		from db_cs_altas.otc_t_bajas_involuntarias a
-		where a.proces_date between $fechainimes and '$fechaeje'
-		and a.marca='telefonica'
+		from db_cs_altas.OTC_T_BAJAS_INVOLUNTARIAS a
+		where a.proces_date between $fechaIniMes and '$FECHAEJE'
+		and a.marca='TELEFONICA'
 		group by a.num_telefonico,a.fecha_proceso;
 
-		--se obtienen el parque prepago, de acuerdo a la m?ima fecha de churn menor a la fecha de ejecuci?
-		drop table $esquema_temp.tmp_360_otc_t_360_churn90_ori_cierre;
-		create table $esquema_temp.tmp_360_otc_t_360_churn90_ori_cierre as
-		select phone_id num_telefonico,counted_days 
-		from db_cs_altas.otc_t_churn_sp2 a
-		where a.proces_date in (select max(proces_date) proces_date from db_cs_altas.otc_t_churn_sp2 where proces_date>$fechamenos5 and proces_date < $fechamas1)
-		and a.marca='telefonica'
-		group by phone_id,counted_days;
+		--SE OBTIENEN EL PARQUE PREPAGO, DE ACUERDO A LA M?IMA FECHA DE CHURN MENOR A LA FECHA DE EJECUCI?
+		drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_ori_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_ori_cierre as
+		SELECT PHONE_ID num_telefonico,COUNTED_DAYS 
+		FROM db_cs_altas.OTC_T_CHURN_SP2 a
+		where a.PROCES_DATE in (SELECT max(PROCES_DATE) PROCES_DATE FROM db_cs_altas.OTC_T_CHURN_SP2 where PROCES_DATE>$fechamenos5 AND PROCES_DATE < $fechamas1)
+		and a.marca='TELEFONICA'
+		group by PHONE_ID,COUNTED_DAYS;
 
-		--emulamos un churn del d?, usando las compras de bonos, combos o recargas del d? de proceso
-		drop table $esquema_temp.tmp_360_otc_t_360_churn_dia_cierre;
-		create table $esquema_temp.tmp_360_otc_t_360_churn_dia_cierre as
-		select distinct numero_telefono as num_telefonico,0 as counted_days
-		from $esquema_temp.tmp_otc_t_360_recargas_cierre
+		--EMULAMOS UN CHURN DEL D?, USANDO LAS COMPRAS DE BONOS, COMBOS O RECARGAS DEL D? DE PROCESO
+		drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn_dia_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn_dia_cierre as
+		select distinct numero_telefono as num_telefonico,0 as COUNTED_DAYS
+		from $ESQUEMA_TEMP.TMP_OTC_T_360_RECARGAS_CIERRE
 		where ingreso_recargas_dia>0 or
 		cantidad_recarga_dia>0 or
 		ingreso_bonos_dia>0 or
@@ -673,34 +528,34 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 		ingreso_combos_dia>0 or
 		cantidad_combos_dia>0;
 
-		--composiciã“n de la nueva tabla de churn
-		drop table $esquema_temp.tmp_360_otc_t_360_churn90_tmp_cierre;
-		create table $esquema_temp.tmp_360_otc_t_360_churn90_tmp_cierre as
-		select t2.num_telefonico, t2.counted_days, 'dia' as fuente from $esquema_temp.tmp_360_otc_t_360_churn_dia_cierre t2
+		--COMPOSICIÃ“N DE LA NUEVA TABLA DE CHURN
+		drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp_cierre as
+		select t2.num_telefonico, t2.COUNTED_DAYS, 'dia' as fuente from $ESQUEMA_TEMP.tmp_360_otc_t_360_churn_dia_cierre t2
 		union all
-		select t1.num_telefonico, t1.counted_days, 'churn' as fuente from $esquema_temp.tmp_360_otc_t_360_churn90_ori_cierre t1
-		where t1.num_telefonico not in (select num_telefonico from $esquema_temp.tmp_360_otc_t_360_churn_dia_cierre);
+		select t1.num_telefonico, t1.COUNTED_DAYS, 'churn' as fuente from $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_ori_cierre t1
+		where t1.num_telefonico not in (select num_telefonico from $ESQUEMA_TEMP.tmp_360_otc_t_360_churn_dia_cierre);
 
 
-		--se obtiene por cuenta de facturaci? en banco atado
-		drop table $esquema_temp.tmp_360_otc_t_temp_banco_cliente360_tmp_cierre;
-		create table $esquema_temp.tmp_360_otc_t_temp_banco_cliente360_tmp_cierre as
-		select x.cta_facturacion,
-		x.cliente_fecha_alta, 
-		x.banco_emisor 
-		from (select 
-				a.cta_facturacion,
-				a.cliente_fecha_alta,
-				row_number() over (partition by a.cta_facturacion order by a.cta_facturacion, a.cliente_fecha_alta desc) as rownum,
-				b.mandate_attr_1 as banco_emisor
-				from db_rbm.otc_t_vw_cta_facturacion a,db_rbm.otc_t_prmandate b
-				where a.cta_facturacion = b.account_num
+		--SE OBTIENE POR CUENTA DE FACTURACI? EN BANCO ATADO
+		drop table $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP_cierre as
+		select x.CTA_FACTURACION,
+		x.CLIENTE_FECHA_ALTA, 
+		x.BANCO_EMISOR 
+		from (SELECT 
+				a.CTA_FACTURACION,
+				A.CLIENTE_FECHA_ALTA,
+				row_number() over (partition by A.CTA_FACTURACION order by A.CTA_FACTURACION, A.CLIENTE_FECHA_ALTA DESC) as rownum,
+				B.MANDATE_ATTR_1 AS BANCO_EMISOR
+				FROM db_rbm.otc_t_VW_CTA_FACTURACION A,db_rbm.otc_t_PRMANDATE B
+				WHERE A.CTA_FACTURACION = B.ACCOUNT_NUM
 				and to_date(b.active_from_dat)<='$fechaeje1') as x 
 		where rownum=1;
 
-		--se obtiene el parque actual de la tabla movi_parque
-				drop table $esquema_temp.tmp_360_otc_t_360_parque_2_tmp_cierre;
-				create table $esquema_temp.tmp_360_otc_t_360_parque_2_tmp_cierre as
+		--SE OBTIENE EL PARQUE ACTUAL DE LA TABLA MOVI_PARQUE
+				drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_parque_2_tmp_cierre;
+				create table $ESQUEMA_TEMP.tmp_360_otc_t_360_parque_2_tmp_cierre as
 					select distinct t.num_telefonico,
 					t.plan_codigo codigo_plan,
 					t.fecha_alta,
@@ -714,12 +569,12 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 					t.tipo_doc_cliente,
 					t.identificacion_cliente,
 					t.cliente,
-					nvl(cta.cliente_id,'') as customer_ref,
-					ch.counted_days,
+					nvl(cta.cliente_id,'') as CUSTOMER_REF,
+					ch.COUNTED_DAYS,
 					case 
-						when upper(linea_negocio) = 'prepago' then 'prepago'
-						when plan_codigo ='pmh' then 'home'
-						else 'pospago' end linea_negocio_homologado,
+						when upper(linea_negocio) = 'PREPAGO' then 'PREPAGO'
+						when plan_codigo ='PMH' then 'HOME'
+						else 'POSPAGO' end LINEA_NEGOCIO_HOMOLOGADO,
 					pct.categoria categoria_plan,
 					pct.tarifa_basica tarifa,
 					pct.des_plan_tarifario nombre_plan,
@@ -730,7 +585,7 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 					t.imei,
 					t.orden
 					from(
-						select num_telefonico,
+						SELECT num_telefonico,
 						plan_codigo,
 						fecha_alta,
 						fecha_baja,
@@ -738,7 +593,7 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 						case when (fecha_baja is null or fecha_baja = '') then current_timestamp() else fecha_baja end as fecha_baja_new,
 						estado_abonado,
 						--$fechamenos1_1 fecha_proceso,
-						$fechaeje fecha_proceso, 
+						$FECHAEJE fecha_proceso, 
 						numero_abonado,
 						linea_negocio,
 						account_num,
@@ -752,8 +607,8 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 						telefono_cliente_pr,
 						imei,
 						row_number() over (partition by num_telefonico order by (case when (fecha_baja is null or fecha_baja = '') then current_timestamp() else fecha_baja end) desc,fecha_alta desc,nvl(fecha_modif,fecha_alta) desc) as orden
-						from db_cs_altas.otc_t_nc_movi_parque_v1
-						where fecha_proceso = $fecha_proc
+						FROM db_cs_altas.otc_t_nc_movi_parque_v1
+						WHERE fecha_proceso = $fecha_proc
 					) t
 					left outer join (select cliente_id,
 										cta_facturacion
@@ -761,77 +616,77 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 										where cta_facturacion is not null
 										and cta_facturacion != ''
 										group by cliente_id,
-										cta_facturacion)cta
+										cta_facturacion)Cta
 						on cta.cta_facturacion=t.account_num
-					left join $esquema_temp.tmp_360_otc_t_360_churn90_tmp_cierre ch on ch.num_telefonico = t.num_telefonico
-					left join db_cs_altas.otc_t_ctl_planes_categoria_tarifa pct on pct.cod_plan_activo = t.plan_codigo
+					left join $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp_cierre ch on ch.num_telefonico = t.num_telefonico
+					left join db_cs_altas.otc_t_CTL_PLANES_CATEGORIA_TARIFA pct on pct.cod_plan_activo = t.plan_codigo
 					where t.orden=1
-					and upper(t.marca) = 'telefonica'
-					and t.estado_abonado not in ('baa')
+					and upper(t.marca) = 'TELEFONICA'
+					and t.estado_abonado not in ('BAA')
 					and t.fecha_alta<'$fecha_alt_ini' and (t.fecha_baja>'$fecha_alt_fin' or t.fecha_baja is null);
 
-				drop table $esquema_temp.tmp_360_otc_t_parque_act_cierre;
-				create table $esquema_temp.tmp_360_otc_t_parque_act_cierre as 
+				drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_act_cierre;
+				create table $ESQUEMA_TEMP.tmp_360_otc_t_parque_act_cierre as 
 				select a.*,
-				case when b.telefono is not null then 'alta'
-				when c.telefono is not null then 'upsell'
-				when d.telefono is not null then 'downsell'
-				when e.telefono is not null then 'misma_tarifa'
-				when f.telefono is not null then 'baja_involuntaria'
-				when g.telefono is not null then 'transfer_in'
-				when h.telefono is not null then 'transfer_in'
-				else 'parque'
+				case when b.telefono is not null then 'ALTA'
+				WHEN c.telefono is not null then 'UPSELL'
+				WHEN d.telefono is not null then 'DOWNSELL'
+				WHEN e.telefono is not null then 'MISMA_TARIFA'
+				WHEN f.telefono is not null then 'BAJA_INVOLUNTARIA'
+				WHEN g.telefono is not null then 'TRANSFER_IN'
+				WHEN h.telefono is not null then 'TRANSFER_IN'
+				ELSE 'PARQUE'
 				end as tipo_movimiento_mes ,
 				case when b.telefono is not null then  b.fecha_alta 
-				when c.telefono is not null then c.fecha_cambio_plan
-				when d.telefono is not null then d.fecha_cambio_plan
-				when e.telefono is not null then e.fecha_cambio_plan
-				when f.telefono is not null then f.fecha_proceso 
-				when g.telefono is not null then g.fecha_transferencia
-				when h.telefono is not null then h.fecha_transferencia
-				else  null
+				WHEN c.telefono is not null then c.fecha_cambio_plan
+				WHEN d.telefono is not null then d.fecha_cambio_plan
+				WHEN e.telefono is not null then e.fecha_cambio_plan
+				WHEN f.telefono is not null then f.fecha_proceso 
+				WHEN g.telefono is not null then g.fecha_transferencia
+				WHEN h.telefono is not null then h.fecha_transferencia
+				ELSE  null
 				end as fecha_movimiento_mes 
-				from $esquema_temp.tmp_360_otc_t_360_parque_2_tmp_cierre as a
-				left join $esquema_temp.tmp_360_alta_cierre as b
+				from $ESQUEMA_TEMP.tmp_360_otc_t_360_parque_2_tmp_cierre as a
+				left join $ESQUEMA_TEMP.tmp_360_alta_cierre as b
 				on a.num_telefonico=b.telefono
-				left join $esquema_temp.tmp_360_upsell_cierre as c
+				left join $ESQUEMA_TEMP.tmp_360_upsell_cierre as c
 				on a.num_telefonico=c.telefono
-				left join $esquema_temp.tmp_360_downsell_cierre as d
+				left join $ESQUEMA_TEMP.tmp_360_downsell_cierre as d
 				on a.num_telefonico=d.telefono
-				left join $esquema_temp.tmp_360_misma_tarifa_cierre as e
+				left join $ESQUEMA_TEMP.tmp_360_misma_tarifa_cierre as e
 				on a.num_telefonico=e.telefono
-				left join $esquema_temp.tmp_360_bajas_invo_cierre as f
+				left join $ESQUEMA_TEMP.tmp_360_bajas_invo_cierre as f
 				on a.num_telefonico=f.telefono
-				left join $esquema_temp.tmp_360_transfer_in_pp_cierre as g
+				left join $ESQUEMA_TEMP.tmp_360_transfer_in_pp_cierre as g
 				on a.num_telefonico=g.telefono
-				left join $esquema_temp.tmp_360_transfer_in_pos_cierre as h
+				left join $ESQUEMA_TEMP.tmp_360_transfer_in_pos_cierre as h
 				on a.num_telefonico=h.telefono;
 
-				drop table $esquema_temp.tmp_360_baja_tmp_cierre;
-				create table $esquema_temp.tmp_360_baja_tmp_cierre as		
+				drop table $ESQUEMA_TEMP.tmp_360_baja_tmp_cierre;
+				create table $ESQUEMA_TEMP.tmp_360_baja_tmp_cierre as		
 				select a.telefono,a.fecha_baja
 				from db_cs_altas.otc_t_bajas_bi a	 
 				where a.p_fecha_proceso = $fecha_proc
-				and a.marca='telefonica';
+				and a.marca='TELEFONICA';
 
-				drop table $esquema_temp.tmp_360_parque_inactivo_cierre;
-				create table $esquema_temp.tmp_360_parque_inactivo_cierre as
-				select telefono from $esquema_temp.tmp_360_baja_tmp_cierre
+				drop table $ESQUEMA_TEMP.tmp_360_parque_inactivo_cierre;
+				create table $ESQUEMA_TEMP.tmp_360_parque_inactivo_cierre as
+				select telefono from $ESQUEMA_TEMP.tmp_360_baja_tmp_cierre
 				union all
-				select telefono from $esquema_temp.tmp_360_transfer_in_pp_cierre
+				select telefono from $ESQUEMA_TEMP.tmp_360_transfer_in_pp_cierre
 				union all
-				select telefono from $esquema_temp.tmp_360_transfer_in_pos_cierre;
+				select telefono from $ESQUEMA_TEMP.tmp_360_transfer_in_pos_cierre;
 
-				drop table $esquema_temp.tmp_360_otc_t_360_churn90_tmp1_cierre;
-				create table $esquema_temp.tmp_360_otc_t_360_churn90_tmp1_cierre as
-				select phone_id num_telefonico,counted_days 
-				from db_cs_altas.otc_t_churn_sp2 a 
-				where proces_date='$fecha_inac_1'
-				and a.marca='telefonica'
-				group by phone_id,counted_days ;
+				drop table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp1_cierre;
+				create table $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp1_cierre as
+				SELECT PHONE_ID num_telefonico,COUNTED_DAYS 
+				FROM db_cs_altas.OTC_T_CHURN_SP2 a 
+				where PROCES_DATE='$fecha_inac_1'
+				and a.marca='TELEFONICA'
+				group by PHONE_ID,COUNTED_DAYS ;
 
-				drop table $esquema_temp.tmp_360_otc_t_parque_inac_cierre;
-				create table $esquema_temp.tmp_360_otc_t_parque_inac_cierre as
+				drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inac_cierre;
+				create table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inac_cierre as
 					select distinct t.num_telefonico,
 					t.plan_codigo codigo_plan,
 					t.fecha_alta,
@@ -845,12 +700,12 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 					t.tipo_doc_cliente,
 					t.identificacion_cliente,
 					t.cliente,
-					nvl(cta.cliente_id,'') as customer_ref,
-					ch.counted_days,
+					nvl(cta.cliente_id,'') as CUSTOMER_REF,
+					ch.COUNTED_DAYS,
 					case 
-						when upper(linea_negocio) = 'prepago' then 'prepago'
-						when plan_codigo ='pmh' then 'home'
-						else 'pospago' end linea_negocio_homologado,
+						when upper(linea_negocio) = 'PREPAGO' then 'PREPAGO'
+						when plan_codigo ='PMH' then 'HOME'
+						else 'POSPAGO' end LINEA_NEGOCIO_HOMOLOGADO,
 					pct.categoria categoria_plan,
 					pct.tarifa_basica tarifa,
 					pct.des_plan_tarifario nombre_plan,
@@ -861,14 +716,14 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 					t.imei,
 					t.orden
 					from(
-						select num_telefonico,
+						SELECT num_telefonico,
 						plan_codigo,
 						fecha_alta,
 						fecha_baja,
 						nvl(fecha_modif,fecha_alta) fecha_last_status,
 						case when (fecha_baja is null or fecha_baja = '') then current_timestamp() else fecha_baja end as fecha_baja_new,
-						'baa' estado_abonado,
-						$fechaeje as fecha_proceso,
+						'BAA' estado_abonado,
+						$FECHAEJE as fecha_proceso,
 						numero_abonado,
 						linea_negocio,
 						account_num,
@@ -882,65 +737,65 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 						telefono_cliente_pr,
 						imei,
 						row_number() over (partition by num_telefonico order by (case when (fecha_baja is null or fecha_baja = '') then current_timestamp() else fecha_baja end) desc,fecha_alta desc,nvl(fecha_modif,fecha_alta) desc) as orden
-						from db_cs_altas.otc_t_nc_movi_parque_v1
-						where fecha_proceso = '$fechainimes' 					) t
+						FROM db_cs_altas.otc_t_nc_movi_parque_v1
+						WHERE fecha_proceso = '$fechaIniMes' 					) t
 					left outer join (select cliente_id,
 										cta_facturacion
 										from db_rbm.otc_t_vw_cta_facturacion
 										where cta_facturacion is not null
 										and cta_facturacion != ''
 										group by cliente_id,
-										cta_facturacion)cta
+										cta_facturacion)Cta
 						on cta.cta_facturacion=t.account_num
-					left join $esquema_temp.tmp_360_otc_t_360_churn90_tmp1_cierre ch on ch.num_telefonico = t.num_telefonico
-					left join db_cs_altas.otc_t_ctl_planes_categoria_tarifa pct on pct.cod_plan_activo = t.plan_codigo
+					left join $ESQUEMA_TEMP.tmp_360_otc_t_360_churn90_tmp1_cierre ch on ch.num_telefonico = t.num_telefonico
+					left join db_cs_altas.otc_t_CTL_PLANES_CATEGORIA_TARIFA pct on pct.cod_plan_activo = t.plan_codigo
 					where t.orden=1
-					and upper(t.marca) = 'telefonica'
-					--and t.estado_abonado not in ('baa')
-					and (t.num_telefonico in (select telefono from $esquema_temp.tmp_360_parque_inactivo_cierre)
+					and upper(t.marca) = 'TELEFONICA'
+					--and t.estado_abonado not in ('BAA')
+					and (t.num_telefonico in (select telefono from $ESQUEMA_TEMP.tmp_360_parque_inactivo_cierre)
 					and t.fecha_alta<'$fecha_alt_dos_meses_ant_fin' and (t.fecha_baja>'$fecha_alt_dos_meses_ant_ini' or t.fecha_baja is null)) ;
 						
 		
 
-					drop table $esquema_temp.tmp_360_otc_t_parque_inact_cierre;
-					create table $esquema_temp.tmp_360_otc_t_parque_inact_cierre as 
+					drop table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact_cierre;
+					create table $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact_cierre as 
 					select a.*,
-					case when b.telefono is not null then 'baja'
-					when g.telefono is not null then 'transfer_out'
-					when h.telefono is not null then 'transfer_out'
-					else 'parque'
+					case when b.telefono is not null then 'BAJA'
+					WHEN g.telefono is not null then 'TRANSFER_OUT'
+					WHEN h.telefono is not null then 'TRANSFER_OUT'
+					ELSE 'PARQUE'
 					end as tipo_movimiento_mes ,
 					case when b.telefono is not null then  b.fecha_baja 
-					when g.telefono is not null then g.fecha_transferencia
-					when h.telefono is not null then h.fecha_transferencia
-					else  null
+					WHEN g.telefono is not null then g.fecha_transferencia
+					WHEN h.telefono is not null then h.fecha_transferencia
+					ELSE  null
 					end as fecha_movimiento_mes 
-					from $esquema_temp.tmp_360_otc_t_parque_inac_cierre as a
-					left join $esquema_temp.tmp_360_baja_tmp_cierre as b
+					from $ESQUEMA_TEMP.tmp_360_otc_t_parque_inac_cierre as a
+					left join $ESQUEMA_TEMP.tmp_360_baja_tmp_cierre as b
 					on a.num_telefonico=b.telefono
-					left join $esquema_temp.tmp_360_transfer_in_pp_cierre as g
+					left join $ESQUEMA_TEMP.tmp_360_transfer_in_pp_cierre as g
 					on a.num_telefonico=g.telefono
-					left join $esquema_temp.tmp_360_transfer_in_pos_cierre as h
+					left join $ESQUEMA_TEMP.tmp_360_transfer_in_pos_cierre as h
 					on a.num_telefonico=h.telefono;
 
-					--se obtienen las lineas preactivas		
-					drop table $esquema_temp.tmp_360_base_preactivos_cierre;
-					create table $esquema_temp.tmp_360_base_preactivos_cierre as
-					select substr(name,-9) as telefono,
-					modified_when as fecha_alta	
-					from db_rdb.otc_t_r_ri_mobile_phone_number
-					where first_owner = 9144665084013429189         -- movistar 
-					and is_virtual_number = 9144595945613377086      -- no es  virtual 
-					and logical_status = 9144596250213377982          --  bloqueado
-					and subscription_type = 9144545036013304990       --  prepago
-					and vip_category = 9144775807813698817             --   regular
-					and phone_number_type = 9144665319313429453 --   normal   
-					and assoc_sim_iccid is not null
+					--SE OBTIENEN LAS LINEAS PREACTIVAS		
+					drop table $ESQUEMA_TEMP.tmp_360_base_preactivos_cierre;
+					create table $ESQUEMA_TEMP.tmp_360_base_preactivos_cierre as
+					SELECT SUBSTR(NAME,-9) AS TELEFONO,
+					modified_when AS fecha_alta	
+					FROM db_rdb.otc_t_R_RI_MOBILE_PHONE_NUMBER
+					WHERE FIRST_OWNER = 9144665084013429189         -- MOVISTAR 
+					and IS_VIRTUAL_NUMBER = 9144595945613377086      -- NO ES  VIRTUAL 
+					and LOGICAL_STATUS = 9144596250213377982          --  BLOQUEADO
+					and SUBSCRIPTION_TYPE = 9144545036013304990       --  PREPAGO
+					and VIP_CATEGORY = 9144775807813698817             --   REGULAR
+					and PHONE_NUMBER_TYPE = 9144665319313429453 --   NORMAL   
+					and ASSOC_SIM_ICCID IS NOT NULL
 					and modified_when<'$fecha_alt_ini';
 		
-			drop table $esquema_temp.otc_t_360_parque_1_tmp_all_cierre;
-			create table $esquema_temp.otc_t_360_parque_1_tmp_all_cierre as
-			select 
+			drop table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all_cierre;
+			create table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all_cierre AS
+			SELECT 
 			b.num_telefonico,
 			b.codigo_plan,
 			b.fecha_alta,
@@ -968,8 +823,8 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 			b.orden,
 			b.tipo_movimiento_mes,
 			b.fecha_movimiento_mes, 
-			'no' as  es_parque from $esquema_temp.tmp_360_otc_t_parque_inact_cierre b
-			union all
+			'NO' AS  ES_PARQUE FROM $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact_cierre b
+			UNION ALL
 			select 
 			a.num_telefonico
 			,a.codigo_plan
@@ -997,22 +852,22 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 			,a.imei
 			,a.orden
 			,case 
-				when (a.linea_negocio_homologado = 'prepago' and (a.counted_days >90 and a.counted_days <=180)) then 'baja_involuntaria' 
-				when (a.linea_negocio_homologado = 'prepago' and (a.counted_days >180)) then 'no definido' 
+				when (a.linea_negocio_homologado = 'PREPAGO' AND (a.counted_days >90 AND a.counted_days <=180)) then 'BAJA_INVOLUNTARIA' 
+				when (a.linea_negocio_homologado = 'PREPAGO' AND (a.counted_days >180)) then 'NO DEFINIDO' 
 				else a.tipo_movimiento_mes end as tipo_movimiento_mes
 			,a.fecha_movimiento_mes
-			, case when (a.tipo_movimiento_mes in ('baja_involuntaria') or (a.linea_negocio_homologado = 'prepago' and a.counted_days >90)) then 'no' else 'si' end as es_parque
-			from  $esquema_temp.tmp_360_otc_t_parque_act_cierre a
-			union all
+			, case when (a.tipo_movimiento_mes in ('BAJA_INVOLUNTARIA') or (a.linea_negocio_homologado = 'PREPAGO' AND a.counted_days >90)) THEN 'NO' ELSE 'SI' END AS ES_PARQUE
+			from  $ESQUEMA_TEMP.tmp_360_otc_t_parque_act_cierre a
+			UNION ALL
 			select 
 			c.telefono num_telefonico
 			,cast(null as string) codigo_plan
 			,c.fecha_alta
 			,cast(null as timestamp) fecha_last_status
-			,'preactivo' estado_abonado
-			,$fechaeje fecha_proceso
+			,'PREACTIVO' estado_abonado
+			,$FECHAEJE fecha_proceso
 			,cast(null as string) numero_abonado
-			,'prepago' linea_negocio
+			,'Prepago' linea_negocio
 			,cast(null as string) account_num
 			,cast(null as string) sub_segmento
 			,cast(null as string) tipo_doc_cliente
@@ -1020,32 +875,32 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 			,cast(null as string) cliente
 			,cast(null as string) customer_ref
 			,cast(null as int) counted_days
-			,'prepago' linea_negocio_homologado
+			,'PREPAGO' linea_negocio_homologado
 			,cast(null as string) categoria_plan
 			,cast(null as double) tarifa
 			,cast(null as string) nombre_plan
-			,'telefonica' marca
+			,'TELEFONICA' marca
 			,'25' ciclo_fact
 			,cast(null as string) correo_cliente_pr
 			,cast(null as string) telefono_cliente_pr
 			,cast(null as string) imei
 			,cast(null as int) orden
-			,'preactivo' tipo_movimiento_mes
+			,'PREACTIVO' tipo_movimiento_mes
 			,cast(null as date) fecha_movimiento_mes
-			,'no' es_parque
-			from $esquema_temp.tmp_360_base_preactivos_cierre c
+			,'NO' ES_PARQUE
+			from $ESQUEMA_TEMP.tmp_360_base_preactivos_cierre c
 			where 
-			c.telefono not in (select x.num_telefonico from $esquema_temp.tmp_360_otc_t_parque_act_cierre x union all select y.num_telefonico from $esquema_temp.tmp_360_otc_t_parque_inact_cierre y)
+			c.telefono not in (select x.num_telefonico from $ESQUEMA_TEMP.tmp_360_otc_t_parque_act_cierre x union all select y.num_telefonico from $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact_cierre y)
 			union all
 			select 
 			d.num_telefonico num_telefonico
 			,cast(null as string) codigo_plan
 			,cast(null as timestamp) fecha_alta
 			,cast(null as timestamp) fecha_last_status
-			,'recargador' estado_abonado
-			,$fechaeje fecha_proceso
+			,'RECARGADOR' estado_abonado
+			,$FECHAEJE fecha_proceso
 			,cast(null as string) numero_abonado
-			,'prepago' linea_negocio
+			,'Prepago' linea_negocio
 			,cast(null as string) account_num
 			,cast(null as string) sub_segmento
 			,cast(null as string) tipo_doc_cliente
@@ -1053,24 +908,24 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 			,cast(null as string) cliente
 			,cast(null as string) customer_ref
 			,0 counted_days
-			,'prepago' linea_negocio_homologado
+			,'PREPAGO' linea_negocio_homologado
 			,cast(null as string) categoria_plan
 			,cast(null as double) tarifa
 			,cast(null as string) nombre_plan
-			,'telefonica' marca
+			,'TELEFONICA' marca
 			,'25' ciclo_fact
 			,cast(null as string) correo_cliente_pr
 			,cast(null as string) telefono_cliente_pr
 			,cast(null as string) imei
 			,cast(null as int) orden
-			,'recargador no definido' tipo_movimiento_mes
+			,'RECARGADOR NO DEFINIDO' tipo_movimiento_mes
 			,cast(null as date) fecha_movimiento_mes
-			,'no' es_parque
-			from $esquema_temp.tmp_360_otc_t_360_churn_dia_cierre d
-			where d.num_telefonico not in (select o.num_telefonico from $esquema_temp.tmp_360_otc_t_parque_act_cierre o union all select p.num_telefonico from $esquema_temp.tmp_360_otc_t_parque_inact_cierre p union all select q.telefono as num_telefonico from $esquema_temp.tmp_360_base_preactivos_cierre q);
+			,'NO' ES_PARQUE
+			from $ESQUEMA_TEMP.tmp_360_otc_t_360_churn_dia_cierre d
+			where d.num_telefonico not in (select o.num_telefonico from $ESQUEMA_TEMP.tmp_360_otc_t_parque_act_cierre o union all select p.num_telefonico from $ESQUEMA_TEMP.tmp_360_otc_t_parque_inact_cierre p union all select q.telefono as num_telefonico from $ESQUEMA_TEMP.tmp_360_base_preactivos_cierre q);
 
-					drop table $esquema_temp.otc_t_360_parque_1_tmp_cierre;
-					create table $esquema_temp.otc_t_360_parque_1_tmp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre as
 					select distinct
 					a.num_telefonico
 					,a.codigo_plan
@@ -1100,699 +955,699 @@ fecha_eje1=`date '+%y-%m-%d' -d "$fechaeje"`
 					,a.tipo_movimiento_mes
 					,a.fecha_movimiento_mes
 					,a.es_parque
-					,b.banco_emisor as banco 
-					from $esquema_temp.otc_t_360_parque_1_tmp_all_cierre a 
-					left join $esquema_temp.tmp_360_otc_t_temp_banco_cliente360_tmp_cierre b 
-					on a.account_num=b.cta_facturacion;" 1>> $logs/$ejecucion_log.log 2>> $logs/$ejecucion_log.log
+					,b.BANCO_EMISOR as banco 
+					from $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_all_cierre a 
+					left join $ESQUEMA_TEMP.tmp_360_OTC_T_TEMP_BANCO_CLIENTE360_TMP_cierre b 
+					on a.account_num=b.CTA_FACTURACION;" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
-			# verificacion de creacion de archivo
+			# Verificacion de creacion de archivo
 			if [ $? -eq 0 ]; then
-				log i "hive" $rc  " fin del pivote parque" $paso
+				log i "HIVE" $rc  " Fin del PIVOTE PARQUE" $PASO
 				else
 				(( rc = 103)) 
-				log e "hive" $rc  " fallo al ejecutar querys de pivote parque" $paso
+				log e "HIVE" $rc  " Fallo al ejecutar querys de PIVOTE PARQUE" $PASO
 				exit $rc
 			fi
 			
-	log i "hive" $rc  " fin ejecucion querys para el parque pivote o parque de partida" $paso
+	log i "HIVE" $rc  " FIN EJECUCION QUERYS PARA EL PARQUE PIVOTE O PARQUE DE PARTIDA" $PASO
 		
-		fin=$(date +%s)
-		dif=$(echo "$fin - $inicio" | bc)
-		total=$(printf '%d:%d:%d\n' $(($dif/3600)) $(($dif%3600/60)) $(($dif%60)))
-		stat "insert tabla hive final" $total 0 0
-	paso=4
+		FIN=$(date +%s)
+		DIF=$(echo "$FIN - $INICIO" | bc)
+		TOTAL=$(printf '%d:%d:%d\n' $(($DIF/3600)) $(($DIF%3600/60)) $(($DIF%60)))
+		stat "Insert tabla hive final" $TOTAL 0 0
+	PASO=4
 	fi
 
 #------------------------------------------------------
-# ejecucion de consultas para la obtencion de los movimientos de parque
+# EJECUCION DE CONSULTAS PARA LA OBTENCION DE LOS MOVIMIENTOS DE PARQUE
 #------------------------------------------------------
-    #verificar si hay parã¡metro de re-ejecuciã³n
-    if [ "$paso" = "4" ]; then
-      inicio=$(date +%s)
+    #Verificar si hay parÃ¡metro de re-ejecuciÃ³n
+    if [ "$PASO" = "4" ]; then
+      INICIO=$(date +%s)
    
-	log i "hive" $rc  " inicio ejecucion querys para los movimientos de parque" $paso
+	log i "HIVE" $rc  " INICIO EJECUCION QUERYS PARA LOS MOVIMIENTOS DE PARQUE" $PASO
 		
 		/usr/bin/hive -e "set hive.cli.print.header=false;
 		set hive.vectorized.execution.enabled=false;
 		set hive.vectorized.execution.reduce.enabled=false;
-		set tez.queue.name=$cola_ejecucion;
+		set tez.queue.name=$COLA_EJECUCION;
 
---elimina la data pre existente
-delete from $esquema_tabla.otc_t_alta_baja_hist where tipo='alta' and fecha between '$f_inicio' and '$fecha_proceso'  ;
+--ELIMINA LA DATA PRE EXISTENTE
+DELETE FROM $ESQUEMA_TABLA.OTC_T_ALTA_BAJA_HIST WHERE TIPO='ALTA' AND FECHA BETWEEN '$f_inicio' AND '$fecha_proceso'  ;
 
---inserta la data del mes
-insert into $esquema_tabla.otc_t_alta_baja_hist
-select 'alta' as tipo , telefono,
-fecha_alta as fecha, 
-canal_comercial as canal,
-sub_canal, 
-cast( null as string) as nuevo_sub_canal,
-portabilidad, 
-operadora_origen,
-'movistar (otecel)' as operadora_destino,
-cast( null as string) as motivo,		   
-nom_distribuidor as distribuidor , 
-oficina	  
-from db_cs_altas.otc_t_altas_bi where p_fecha_proceso='$fecha_movimientos_cp' and marca ='telefonica';
+--INSERTA LA DATA DEL MES
+INSERT INTO $ESQUEMA_TABLA.OTC_T_ALTA_BAJA_HIST
+SELECT 'ALTA' AS TIPO , TELEFONO,
+FECHA_ALTA AS FECHA, 
+CANAL_COMERCIAL AS CANAL,
+SUB_CANAL, 
+CAST( NULL AS STRING) as NUEVO_SUB_CANAL,
+PORTABILIDAD, 
+Operadora_origen,
+'MOVISTAR (OTECEL)' as Operadora_destino,
+CAST( NULL AS STRING) as motivo,		   
+NOM_DISTRIBUIDOR as DISTRIBUIDOR , 
+OFICINA	  
+FROM db_cs_altas.otc_t_altas_bi WHERE p_FECHA_PROCESO='$fecha_movimientos_cp' and marca ='TELEFONICA';
 
---elimina la data pre existente
-delete from $esquema_tabla.otc_t_alta_baja_hist where tipo='baja' and fecha  between '$f_inicio' and '$fecha_proceso'  ;
+--ELIMINA LA DATA PRE EXISTENTE
+DELETE FROM $ESQUEMA_TABLA.OTC_T_ALTA_BAJA_HIST WHERE TIPO='BAJA' AND FECHA  BETWEEN '$f_inicio' AND '$fecha_proceso'  ;
 
---inserta la data del mes
-insert into $esquema_tabla.otc_t_alta_baja_hist
-select 'baja' as tipo ,telefono,
-fecha_baja as fecha, 
-cast( null as string) as canal,
-cast( null as string) as    sub_canal, 
-cast( null as string) as nuevo_sub_canal,
-portabilidad, 
-'movistar (otecel)' as  operadora_origen,
-operadora_destino,
-motivo_baja as motivo,
-cast( null as string) as distribuidor , 
-cast( null as string) as oficina
-from db_cs_altas.otc_t_bajas_bi where p_fecha_proceso='$fecha_movimientos_cp' and marca ='telefonica';
+--INSERTA LA DATA DEL MES
+INSERT INTO $ESQUEMA_TABLA.OTC_T_ALTA_BAJA_HIST
+SELECT 'BAJA' AS TIPO ,TELEFONO,
+FECHA_BAJA AS FECHA, 
+CAST( NULL AS STRING) AS CANAL,
+CAST( NULL AS STRING) AS    SUB_CANAL, 
+CAST( NULL AS STRING) as NUEVO_SUB_CANAL,
+PORTABILIDAD, 
+'MOVISTAR (OTECEL)' AS  Operadora_origen,
+Operadora_destino,
+MOTIVO_BAJA as motivo,
+CAST( NULL AS STRING) as DISTRIBUIDOR , 
+CAST( NULL AS STRING) AS OFICINA
+FROM db_cs_altas.otc_t_BAJAS_bi WHERE p_FECHA_PROCESO='$fecha_movimientos_cp' and marca ='TELEFONICA';
 
---elimina la data pre existente del mes que se procesa
-delete from $esquema_tabla.otc_t_transfer_hist where tipo='pre_pos' and fecha  between '$f_inicio' and '$fecha_proceso'  ;
+--ELIMINA LA DATA PRE EXISTENTE DEL MES QUE SE PROCESA
+DELETE FROM $ESQUEMA_TABLA.OTC_T_TRANSFER_HIST WHERE TIPO='PRE_POS' AND FECHA  BETWEEN '$f_inicio' AND '$fecha_proceso'  ;
 
---inserta la data del mes
-insert into $esquema_tabla.otc_t_transfer_hist
-select 'pre_pos' as tipo,
-telefono,
-fecha_transferencia as fecha, 
-canal_usuario as canal,
-sub_canal, 
-cast( null as string) as nuevo_sub_canal,         
-nom_distribuidor_usuario as distribuidor, 
-oficina_usuario as oficina
-from db_cs_altas.otc_t_transfer_in_bi where p_fecha_proceso='$fecha_movimientos_cp';
+--INSERTA LA DATA DEL MES
+INSERT INTO $ESQUEMA_TABLA.OTC_T_TRANSFER_HIST
+SELECT 'PRE_POS' AS TIPO,
+TELEFONO,
+FECHA_TRANSFERENCIA AS FECHA, 
+CANAL_USUARIO as CANAL,
+SUB_CANAL, 
+CAST( NULL AS STRING) AS NUEVO_SUB_CANAL,         
+NOM_DISTRIBUIDOR_USUARIO AS DISTRIBUIDOR, 
+OFICINA_USUARIO AS OFICINA
+FROM db_cs_altas.otc_t_transfer_in_bi WHERE p_FECHA_PROCESO='$fecha_movimientos_cp';
 
---elimina la data pre existente
-delete from $esquema_tabla.otc_t_transfer_hist where tipo='pos_pre' and fecha  between '$f_inicio' and '$fecha_proceso'  ;
+--ELIMINA LA DATA PRE EXISTENTE
+DELETE FROM $ESQUEMA_TABLA.OTC_T_TRANSFER_HIST WHERE TIPO='POS_PRE' AND FECHA  BETWEEN '$f_inicio' AND '$fecha_proceso'  ;
 
---inserta la data del mes
-insert into $esquema_tabla.otc_t_transfer_hist
-select 'pos_pre' as tipo,
-telefono,
-fecha_transferencia as fecha, 
-canal_usuario as canal,
-sub_canal, 
-cast( null as string) as nuevo_sub_canal,         
-nom_distribuidor_usuario as distribuidor, 
-oficina_usuario as oficina
-from db_cs_altas.otc_t_transfer_out_bi where p_fecha_proceso='$fecha_movimientos_cp';
+--INSERTA LA DATA DEL MES
+INSERT INTO $ESQUEMA_TABLA.OTC_T_TRANSFER_HIST
+SELECT 'POS_PRE' AS TIPO,
+TELEFONO,
+FECHA_TRANSFERENCIA AS FECHA, 
+CANAL_USUARIO as CANAL,
+SUB_CANAL, 
+CAST( NULL AS STRING) AS NUEVO_SUB_CANAL,         
+NOM_DISTRIBUIDOR_USUARIO AS DISTRIBUIDOR, 
+OFICINA_USUARIO AS OFICINA
+FROM db_cs_altas.otc_t_transfer_OUT_bi WHERE p_FECHA_PROCESO='$fecha_movimientos_cp';
 
---elimina la data pre existente	
-delete from $esquema_tabla.otc_t_cambio_plan_hist where fecha between '$f_inicio' and '$fecha_proceso';
+--ELIMINA LA DATA PRE EXISTENTE	
+DELETE FROM $ESQUEMA_TABLA.OTC_T_CAMBIO_PLAN_HIST WHERE FECHA BETWEEN '$f_inicio' AND '$fecha_proceso';
 
---inserta la data del mes
-insert into $esquema_tabla.otc_t_cambio_plan_hist
-select tipo_movimiento as tipo,
-telefono,
-fecha_cambio_plan as fecha,
-canal,
-sub_canal,
-cast( null as string) as nuevo_sub_canal, 
-nom_distribuidor as distribuidor ,
-oficina, 
-codigo_plan_anterior as cod_plan_anterior, 
-descripcion_plan_anterior as des_plan_anterior, 
-tarifa_ov_plan_ant as  tb_descuento, 
-descuento_tarifa_plan_ant as tb_override, 
-delta as delta
-from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_cp;
+--INSERTA LA DATA DEL MES
+INSERT INTO $ESQUEMA_TABLA.OTC_T_CAMBIO_PLAN_HIST
+SELECT TIPO_MOVIMIENTO AS TIPO,
+TELEFONO,
+FECHA_CAMBIO_PLAN AS FECHA,
+CANAL,
+SUB_CANAL,
+CAST( NULL AS STRING) AS NUEVO_SUB_CANAL, 
+NOM_DISTRIBUIDOR AS DISTRIBUIDOR ,
+OFICINA, 
+CODIGO_PLAN_ANTERIOR AS COD_PLAN_ANTERIOR, 
+DESCRIPCION_PLAN_ANTERIOR AS DES_PLAN_ANTERIOR, 
+TARIFA_OV_PLAN_ANT AS  TB_DESCUENTO, 
+DESCUENTO_TARIFA_PLAN_ANT AS TB_OVERRIDE, 
+DELTA AS DELTA
+FROM db_cs_altas.otc_t_cambio_plan_bi WHERE p_FECHA_PROCESO=$fecha_movimientos_cp;
 
 			
-		--obtiene el ã›å’timo evento del alta en toda la historia hasta la fecha de proceso
-		drop table db_reportes.otc_t_alta_hist_unic_cierre;
-		create table db_reportes.otc_t_alta_hist_unic_cierre as
-		select
-		xx.tipo , 
-		xx.telefono,
-		xx.fecha, 
-		xx.canal,
-		xx.sub_canal, 
-		xx.nuevo_sub_canal,
-		xx.portabilidad, 
-		xx.operadora_origen,
-		xx.operadora_destino,
-		xx.motivo,		   
-		xx.distribuidor , 
-		xx.oficina
+		--OBTIENE EL Ã›Å’TIMO EVENTO DEL ALTA EN TODA LA HISTORIA HASTA LA FECHA DE PROCESO
+		DROP TABLE db_reportes.OTC_T_ALTA_HIST_UNIC_CIERRE;
+		CREATE TABLE db_reportes.OTC_T_ALTA_HIST_UNIC_CIERRE AS
+		SELECT
+		XX.TIPO , 
+		XX.TELEFONO,
+		XX.FECHA, 
+		XX.CANAL,
+		XX.SUB_CANAL, 
+		XX.NUEVO_SUB_CANAL,
+		XX.PORTABILIDAD, 
+		XX.Operadora_origen,
+		XX.Operadora_destino,
+		XX.motivo,		   
+		XX.DISTRIBUIDOR , 
+		XX.OFICINA
 		from
 		(
-		select
-		aa.tipo , 
-		aa.telefono,
-		aa.fecha, 
-		aa.canal,
-		aa.sub_canal, 
-		aa.nuevo_sub_canal,
-		aa.portabilidad, 
-		aa.operadora_origen,
-		aa.operadora_destino,
-		aa.motivo,		   
-		aa.distribuidor , 
-		aa.oficina
-		, row_number() over (partition by aa.tipo,aa.telefono order by  aa.fecha desc) as rnum
-		from db_reportes.otc_t_alta_baja_hist as aa
-		where fecha <'$fecha_movimientos'
-		and tipo='alta'
-		) xx
-		where xx.rnum = 1
+		SELECT
+		AA.TIPO , 
+		AA.TELEFONO,
+		AA.FECHA, 
+		AA.CANAL,
+		AA.SUB_CANAL, 
+		AA.NUEVO_SUB_CANAL,
+		AA.PORTABILIDAD, 
+		AA.Operadora_origen,
+		AA.Operadora_destino,
+		AA.motivo,		   
+		AA.DISTRIBUIDOR , 
+		AA.OFICINA
+		, ROW_NUMBER() OVER (PARTITION BY aa.TIPO,aa.TELEFONO ORDER BY  aa.FECHA DESC) AS RNUM
+		FROM db_reportes.OTC_T_ALTA_BAJA_HIST AS AA
+		WHERE FECHA <'$fecha_movimientos'
+		AND TIPO='ALTA'
+		) XX
+		where XX.rnum = 1
 		;
 
-		--obtiene el ã›å’timo evento de las bajas en toda la historia hasta la fecha de proceso
-		drop table db_reportes.otc_t_baja_hist_unic_cierre;
-		create table db_reportes.otc_t_baja_hist_unic_cierre as
-		select
-		xx.tipo , 
-		xx.telefono,
-		xx.fecha, 
-		xx.canal,
-		xx.sub_canal, 
-		xx.nuevo_sub_canal,
-		xx.portabilidad, 
-		xx.operadora_origen,
-		xx.operadora_destino,
-		xx.motivo,		   
-		xx.distribuidor , 
-		xx.oficina
+		--OBTIENE EL Ã›Å’TIMO EVENTO DE LAS BAJAS EN TODA LA HISTORIA HASTA LA FECHA DE PROCESO
+		DROP TABLE db_reportes.OTC_T_BAJA_HIST_UNIC_CIERRE;
+		CREATE TABLE db_reportes.OTC_T_BAJA_HIST_UNIC_CIERRE AS
+		SELECT
+		XX.TIPO , 
+		XX.TELEFONO,
+		XX.FECHA, 
+		XX.CANAL,
+		XX.SUB_CANAL, 
+		XX.NUEVO_SUB_CANAL,
+		XX.PORTABILIDAD, 
+		XX.Operadora_origen,
+		XX.Operadora_destino,
+		XX.motivo,		   
+		XX.DISTRIBUIDOR , 
+		XX.OFICINA
 		from
 		(
-		select
-		aa.tipo , 
-		aa.telefono,
-		aa.fecha, 
-		aa.canal,
-		aa.sub_canal, 
-		aa.nuevo_sub_canal,
-		aa.portabilidad, 
-		aa.operadora_origen,
-		aa.operadora_destino,
-		aa.motivo,		   
-		aa.distribuidor , 
-		aa.oficina
-		, row_number() over (partition by aa.tipo,aa.telefono order by  aa.fecha desc) as rnum
-		from db_reportes.otc_t_alta_baja_hist as aa
-		where fecha <'$fecha_movimientos'
-		and tipo='baja'
-		) xx
-		where xx.rnum = 1
+		SELECT
+		AA.TIPO , 
+		AA.TELEFONO,
+		AA.FECHA, 
+		AA.CANAL,
+		AA.SUB_CANAL, 
+		AA.NUEVO_SUB_CANAL,
+		AA.PORTABILIDAD, 
+		AA.Operadora_origen,
+		AA.Operadora_destino,
+		AA.motivo,		   
+		AA.DISTRIBUIDOR , 
+		AA.OFICINA
+		, ROW_NUMBER() OVER (PARTITION BY aa.TIPO,aa.TELEFONO ORDER BY  aa.FECHA DESC) AS RNUM
+		FROM db_reportes.OTC_T_ALTA_BAJA_HIST AS AA
+		WHERE FECHA <'$fecha_movimientos'
+		AND TIPO='BAJA'
+		) XX
+		where XX.rnum = 1
 		;
 
-		--obtiene el ã›å’timo evento de las transferencias out en toda la historia hasta la fecha de proceso
-		drop table db_reportes.otc_t_pos_pre_hist_unic_cierre;
-		create table db_reportes.otc_t_pos_pre_hist_unic_cierre as
+		--OBTIENE EL Ã›Å’TIMO EVENTO DE LAS TRANSFERENCIAS OUT EN TODA LA HISTORIA HASTA LA FECHA DE PROCESO
+		DROP TABLE db_reportes.OTC_T_POS_PRE_HIST_UNIC_CIERRE;
+		CREATE TABLE db_reportes.OTC_T_POS_PRE_HIST_UNIC_CIERRE AS
 		select
-		xx.tipo , 
-		xx.telefono,
-		xx.fecha, 
-		xx.canal,
-		xx.sub_canal, 
-		xx.nuevo_sub_canal,
-		xx.distribuidor , 
-		xx.oficina
+		XX.TIPO , 
+		XX.TELEFONO,
+		XX.FECHA, 
+		XX.CANAL,
+		XX.SUB_CANAL, 
+		XX.NUEVO_SUB_CANAL,
+		XX.DISTRIBUIDOR , 
+		XX.OFICINA
 		from
 		(
-		select
-		aa.tipo , 
-		aa.telefono,
-		aa.fecha, 
-		aa.canal,
-		aa.sub_canal, 
-		aa.nuevo_sub_canal,
-		aa.distribuidor , 
-		aa.oficina
-		, row_number() over (partition by aa.tipo,aa.telefono order by  aa.fecha desc) as rnum
-		from db_reportes.otc_t_transfer_hist as aa
-		where fecha <'$fecha_movimientos'
-		and tipo='pos_pre'
-		) xx
-		where xx.rnum = 1
+		SELECT
+		AA.TIPO , 
+		AA.TELEFONO,
+		AA.FECHA, 
+		AA.CANAL,
+		AA.SUB_CANAL, 
+		AA.NUEVO_SUB_CANAL,
+		AA.DISTRIBUIDOR , 
+		AA.OFICINA
+		, ROW_NUMBER() OVER (PARTITION BY aa.TIPO,aa.TELEFONO ORDER BY  aa.FECHA DESC) AS RNUM
+		FROM db_reportes.OTC_T_TRANSFER_HIST AS AA
+		WHERE FECHA <'$fecha_movimientos'
+		AND TIPO='POS_PRE'
+		) XX
+		where XX.rnum = 1
 		;
 
-		--obtiene el ã›å’timo evento de las transferencias in  en toda la historia hasta la fecha de proceso
-		drop table db_reportes.otc_t_pre_pos_hist_unic_cierre;
-		create table db_reportes.otc_t_pre_pos_hist_unic_cierre as
+		--OBTIENE EL Ã›Å’TIMO EVENTO DE LAS TRANSFERENCIAS IN  EN TODA LA HISTORIA HASTA LA FECHA DE PROCESO
+		DROP TABLE db_reportes.OTC_T_PRE_POS_HIST_UNIC_CIERRE;
+		CREATE TABLE db_reportes.OTC_T_PRE_POS_HIST_UNIC_CIERRE AS
 		select
-		xx.tipo , 
-		xx.telefono,
-		xx.fecha, 
-		xx.canal,
-		xx.sub_canal, 
-		xx.nuevo_sub_canal,
-		xx.distribuidor , 
-		xx.oficina
+		XX.TIPO , 
+		XX.TELEFONO,
+		XX.FECHA, 
+		XX.CANAL,
+		XX.SUB_CANAL, 
+		XX.NUEVO_SUB_CANAL,
+		XX.DISTRIBUIDOR , 
+		XX.OFICINA
 		from
 		(
-		select
-		aa.tipo , 
-		aa.telefono,
-		aa.fecha, 
-		aa.canal,
-		aa.sub_canal, 
-		aa.nuevo_sub_canal,
-		aa.distribuidor , 
-		aa.oficina
-		, row_number() over (partition by aa.tipo,aa.telefono order by  aa.fecha desc) as rnum
-		from db_reportes.otc_t_transfer_hist as aa
-		where fecha <'$fecha_movimientos'
-		and tipo='pre_pos'
-		) xx
-		where xx.rnum = 1
+		SELECT
+		AA.TIPO , 
+		AA.TELEFONO,
+		AA.FECHA, 
+		AA.CANAL,
+		AA.SUB_CANAL, 
+		AA.NUEVO_SUB_CANAL,
+		AA.DISTRIBUIDOR , 
+		AA.OFICINA
+		, ROW_NUMBER() OVER (PARTITION BY aa.TIPO,aa.TELEFONO ORDER BY  aa.FECHA DESC) AS RNUM
+		FROM db_reportes.OTC_T_TRANSFER_HIST AS AA
+		WHERE FECHA <'$fecha_movimientos'
+		AND TIPO='PRE_POS'
+		) XX
+		where XX.rnum = 1
 		;
 
-		--obtiene el ã›å’timo evento de los cambios de plan en toda la historia hasta la fecha de proceso
-		drop table db_reportes.otc_t_cambio_plan_hist_unic_cierre;
-		create table db_reportes.otc_t_cambio_plan_hist_unic_cierre as
-		select
-		xx.tipo , 
-		xx.telefono,
-		xx.fecha, 
-		xx.canal,
-		xx.sub_canal, 
-		xx.nuevo_sub_canal,
-		xx.distribuidor , 
-		xx.oficina,
-		xx.cod_plan_anterior, 
-		xx.des_plan_anterior, 
-		xx.tb_descuento, 
-		xx.tb_override, 
-		xx.delta
+		--OBTIENE EL Ã›Å’TIMO EVENTO DE LOS CAMBIOS DE PLAN EN TODA LA HISTORIA HASTA LA FECHA DE PROCESO
+		DROP TABLE db_reportes.OTC_T_CAMBIO_PLAN_HIST_UNIC_CIERRE;
+		CREATE TABLE db_reportes.OTC_T_CAMBIO_PLAN_HIST_UNIC_CIERRE AS
+		SELECT
+		XX.TIPO , 
+		XX.TELEFONO,
+		XX.FECHA, 
+		XX.CANAL,
+		XX.SUB_CANAL, 
+		XX.NUEVO_SUB_CANAL,
+		XX.DISTRIBUIDOR , 
+		XX.OFICINA,
+		XX.COD_PLAN_ANTERIOR, 
+		XX.DES_PLAN_ANTERIOR, 
+		XX.TB_DESCUENTO, 
+		XX.TB_OVERRIDE, 
+		XX.DELTA
 		from
 		(
-		select
-		aa.tipo , 
-		aa.telefono,
-		aa.fecha, 
-		aa.canal,
-		aa.sub_canal, 
-		aa.nuevo_sub_canal,
-		aa.distribuidor , 
-		aa.oficina,
-		aa.cod_plan_anterior, 
-		aa.des_plan_anterior, 
-		aa.tb_descuento, 
-		aa.tb_override, 
-		aa.delta
-		, row_number() over (partition by aa.telefono order by  aa.fecha desc) as rnum
-		from db_reportes.otc_t_cambio_plan_hist as aa
-		where fecha <'$fecha_movimientos'
-		) xx
-		where xx.rnum = 1;
+		SELECT
+		AA.TIPO , 
+		AA.TELEFONO,
+		AA.FECHA, 
+		AA.CANAL,
+		AA.SUB_CANAL, 
+		AA.NUEVO_SUB_CANAL,
+		AA.DISTRIBUIDOR , 
+		AA.OFICINA,
+		AA.COD_PLAN_ANTERIOR, 
+		AA.DES_PLAN_ANTERIOR, 
+		AA.TB_DESCUENTO, 
+		AA.TB_OVERRIDE, 
+		AA.DELTA
+		, ROW_NUMBER() OVER (PARTITION BY aa.TELEFONO ORDER BY  aa.FECHA DESC) AS RNUM
+		FROM db_reportes.OTC_T_CAMBIO_PLAN_HIST AS AA
+		WHERE FECHA <'$fecha_movimientos'
+		) XX
+		where XX.rnum = 1;
 
-		--realizamos el cruce con cada tabla usando la tabla pivot (tabla resultante de pivot_parque) y agreando los campos de cada tabla renombrandolos de acuerdo al moviemiento que corresponda.
-		--esta es la primera tabla resultante que servira para alimentar la estructura otc_t_360_general.
+		--REALIZAMOS EL CRUCE CON CADA TABLA USANDO LA TABLA PIVOT (TABLA RESULTANTE DE PIVOT_PARQUE) Y AGREANDO LOS CAMPOS DE CADA TABLA RENOMBRANDOLOS DE ACUERDO AL MOVIEMIENTO QUE CORRESPONDA.
+		--ESTA ES LA PRIMERA TABLA RESULTANTE QUE SERVIRA PARA ALIMENTAR LA ESTRUCTURA OTC_T_360_GENERAL.
 
-		drop table $esquema_temp.otc_t_360_parque_1_tmp_t_mov_cierre;
-		create table $esquema_temp.otc_t_360_parque_1_tmp_t_mov_cierre as 
-		select
-		num_telefonico,
-		codigo_plan,
-		fecha_alta,
-		fecha_last_status,
-		estado_abonado,
-		fecha_proceso,
-		numero_abonado,
-		linea_negocio,
-		account_num,
-		sub_segmento,
-		tipo_doc_cliente,
-		identificacion_cliente,
-		cliente,
-		customer_ref,
-		counted_days,
-		linea_negocio_homologado,
-		categoria_plan,
-		tarifa,
-		nombre_plan,
-		marca,
-		ciclo_fact,
-		correo_cliente_pr,
-		telefono_cliente_pr,
-		imei,
-		orden,
-		tipo_movimiento_mes,
-		fecha_movimiento_mes,
-		es_parque,
-		banco,
-		a.fecha as fecha_alta_historica,
-		a.canal as canal_alta,
-		a.sub_canal as sub_canal_alta,
-		a.nuevo_sub_canal as nuevo_sub_canal_alta,
-		a.distribuidor as distribuidor_alta,
-		a.oficina as oficina_alta,
-		portabilidad,
-		operadora_origen,
-		operadora_destino,
-		motivo,
-		c.fecha as fecha_pre_pos,
-		c.canal as canal_pre_pos,
-		c.sub_canal as sub_canal_pre_pos,
-		c.nuevo_sub_canal as nuevo_sub_canal_pre_pos,
-		c.distribuidor as distribuidor_pre_pos,
-		c.oficina as oficina_pre_pos,
-		d.fecha as fecha_pos_pre,
-		d.canal as canal_pos_pre,
-		d.sub_canal as sub_canal_pos_pre,
-		d.nuevo_sub_canal as nuevo_sub_canal_pos_pre,
-		d.distribuidor as distribuidor_pos_pre,
-		d.oficina as oficina_pos_pre,
-		e.fecha as fecha_cambio_plan,
-		e.canal as canal_cambio_plan,
-		e.sub_canal as sub_canal_cambio_plan,
-		e.nuevo_sub_canal as nuevo_sub_canal_cambio_plan,
-		e.distribuidor as distribuidor_cambio_plan,
-		e.oficina as oficina_cambio_plan,
-		cod_plan_anterior,
-		des_plan_anterior,
-		tb_descuento,
-		tb_override,
-		delta
-		from $esquema_temp.otc_t_360_parque_1_tmp_cierre as z
-		left join  db_reportes.otc_t_alta_hist_unic_cierre as a
-		on (num_telefonico=a.telefono)
-		left join  db_reportes.otc_t_pre_pos_hist_unic_cierre as c
-		on (num_telefonico=c.telefono)
-		and (linea_negocio_homologado <>'prepago')
-		left join  db_reportes.otc_t_pos_pre_hist_unic_cierre as d
-		on (num_telefonico=d.telefono)
-		and (linea_negocio_homologado='prepago')
-		left join  db_reportes.otc_t_cambio_plan_hist_unic_cierre as e
-		on (num_telefonico=e.telefono)
-		and (linea_negocio_homologado <>'prepago');
+		DROP TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_t_mov_CIERRE;
+		CREATE TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_t_mov_CIERRE AS 
+		SELECT
+		NUM_TELEFONICO,
+		CODIGO_PLAN,
+		FECHA_ALTA,
+		FECHA_LAST_STATUS,
+		ESTADO_ABONADO,
+		FECHA_PROCESO,
+		NUMERO_ABONADO,
+		LINEA_NEGOCIO,
+		ACCOUNT_NUM,
+		SUB_SEGMENTO,
+		TIPO_DOC_CLIENTE,
+		IDENTIFICACION_CLIENTE,
+		CLIENTE,
+		CUSTOMER_REF,
+		COUNTED_DAYS,
+		LINEA_NEGOCIO_HOMOLOGADO,
+		CATEGORIA_PLAN,
+		TARIFA,
+		NOMBRE_PLAN,
+		MARCA,
+		CICLO_FACT,
+		CORREO_CLIENTE_PR,
+		TELEFONO_CLIENTE_PR,
+		IMEI,
+		ORDEN,
+		TIPO_MOVIMIENTO_MES,
+		FECHA_MOVIMIENTO_MES,
+		ES_PARQUE,
+		BANCO,
+		A.FECHA AS FECHA_ALTA_HISTORICA,
+		A.CANAL AS CANAL_ALTA,
+		A.SUB_CANAL AS SUB_CANAL_ALTA,
+		A.NUEVO_SUB_CANAL AS NUEVO_SUB_CANAL_ALTA,
+		A.DISTRIBUIDOR AS DISTRIBUIDOR_ALTA,
+		A.OFICINA AS OFICINA_ALTA,
+		PORTABILIDAD,
+		OPERADORA_ORIGEN,
+		OPERADORA_DESTINO,
+		MOTIVO,
+		C.FECHA AS FECHA_PRE_POS,
+		C.CANAL AS CANAL_PRE_POS,
+		C.SUB_CANAL AS SUB_CANAL_PRE_POS,
+		C.NUEVO_SUB_CANAL AS NUEVO_SUB_CANAL_PRE_POS,
+		C.DISTRIBUIDOR AS DISTRIBUIDOR_PRE_POS,
+		C.OFICINA AS OFICINA_PRE_POS,
+		D.FECHA AS FECHA_POS_PRE,
+		D.CANAL AS CANAL_POS_PRE,
+		D.SUB_CANAL AS SUB_CANAL_POS_PRE,
+		D.NUEVO_SUB_CANAL AS NUEVO_SUB_CANAL_POS_PRE,
+		D.DISTRIBUIDOR AS DISTRIBUIDOR_POS_PRE,
+		D.OFICINA AS OFICINA_POS_PRE,
+		E.FECHA AS FECHA_CAMBIO_PLAN,
+		E.CANAL AS CANAL_CAMBIO_PLAN,
+		E.SUB_CANAL AS SUB_CANAL_CAMBIO_PLAN,
+		E.NUEVO_SUB_CANAL AS NUEVO_SUB_CANAL_CAMBIO_PLAN,
+		E.DISTRIBUIDOR AS DISTRIBUIDOR_CAMBIO_PLAN,
+		E.OFICINA AS OFICINA_CAMBIO_PLAN,
+		COD_PLAN_ANTERIOR,
+		DES_PLAN_ANTERIOR,
+		TB_DESCUENTO,
+		TB_OVERRIDE,
+		DELTA
+		FROM $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre as Z
+		LEFT JOIN  db_reportes.OTC_T_ALTA_HIST_UNIC_CIERRE AS A
+		ON (NUM_TELEFONICO=A.TELEFONO)
+		LEFT JOIN  db_reportes.OTC_T_PRE_POS_HIST_UNIC_CIERRE AS C
+		ON (NUM_TELEFONICO=C.TELEFONO)
+		AND (LINEA_NEGOCIO_HOMOLOGADO <>'PREPAGO')
+		LEFT JOIN  db_reportes.OTC_T_POS_PRE_HIST_UNIC_CIERRE AS D
+		ON (NUM_TELEFONICO=D.TELEFONO)
+		AND (LINEA_NEGOCIO_HOMOLOGADO='PREPAGO')
+		LEFT JOIN  db_reportes.OTC_T_CAMBIO_PLAN_HIST_UNIC_CIERRE AS E
+		ON (NUM_TELEFONICO=E.TELEFONO)
+		AND (LINEA_NEGOCIO_HOMOLOGADO <>'PREPAGO');
 
 
-		--creamos tabla temporal union para obtener ultimo movimiento del mes por num_telefono
-		drop table $esquema_temp.otc_t_360_parque_1_mov_mes_tmp_cierre;
-		create table $esquema_temp.otc_t_360_parque_1_mov_mes_tmp_cierre as 
-		select
-		tipo,
-		telefono,
-		fecha as fecha_movimiento_mes,
-		canal as canal_movimiento_mes,
-		sub_canal as sub_canal_movimiento_mes,
-		nuevo_sub_canal as nuevo_sub_canal_movimiento_mes,
-		distribuidor as distribuidor_movimiento_mes,
-		oficina as oficina_movimiento_mes,
-		portabilidad as portabilidad_movimiento_mes,
-		operadora_origen as operadora_origen_movimiento_mes,
-		operadora_destino as operadora_destino_movimiento_mes,
-		motivo as motivo_movimiento_mes,
-		cod_plan_anterior as cod_plan_anterior_movimiento_mes,
-		des_plan_anterior as des_plan_anterior_movimiento_mes,
-		tb_descuento as tb_descuento_movimiento_mes,
-		tb_override as tb_override_movimiento_mes,
-		delta as delta_movimiento_mes 
-		from (
-		select tipo,
-		telefono,
-		fecha,
-		canal,
-		sub_canal,
-		nuevo_sub_canal,
-		distribuidor,
-		oficina,
-		portabilidad,
-		operadora_origen,
-		operadora_destino,
-		motivo,
-		cod_plan_anterior,
-		des_plan_anterior,
-		tb_descuento,
-		tb_override,
-		delta,
-		row_number() over (partition by telefono order by  fecha desc) as rnum
-		from (		
-		select tipo,
-		telefono,
-		fecha,
-		canal,
-		sub_canal,
-		nuevo_sub_canal,
-		distribuidor,
-		oficina,
-		cast( null as string) as portabilidad,
-		cast( null as string) as operadora_origen,
-		cast( null as string) as operadora_destino,
-		cast( null as string) as motivo,
-		cod_plan_anterior,
-		des_plan_anterior,
-		tb_descuento,
-		tb_override,
-		delta
-		from db_reportes.otc_t_cambio_plan_hist_unic_cierre
-		where fecha  between '$f_inicio' and '$fecha_proceso' 
-		union all 
-		select
-		tipo,
-		telefono,
-		fecha,
-		canal,
-		sub_canal,
-		nuevo_sub_canal,
-		distribuidor,
-		oficina,
-		cast( null as string) as portabilidad,
-		cast( null as string) as operadora_origen,
-		cast( null as string) as operadora_destino,
-		cast( null as string) as motivo,
-		cast( null as string) as cod_plan_anterior,
-		cast( null as string) as des_plan_anterior,
-		cast( null as double) as tb_descuento,
-		cast( null as double) as tb_override,
-		cast( null as double) as delta
-		from db_reportes.otc_t_pos_pre_hist_unic_cierre
-		where fecha  between '$f_inicio' and '$fecha_proceso' 
-		union all 
-		select
-		tipo,
-		telefono,
-		fecha,
-		canal,
-		sub_canal,
-		nuevo_sub_canal,
-		distribuidor,
-		oficina,
-		cast( null as string) as portabilidad,
-		cast( null as string) as operadora_origen,
-		cast( null as string) as operadora_destino,
-		cast( null as string) as motivo,
-		cast( null as string) as cod_plan_anterior,
-		cast( null as string) as des_plan_anterior,
-		cast( null as double) as tb_descuento,
-		cast( null as double) as tb_override,
-		cast( null as double) as delta
-		from db_reportes.otc_t_pre_pos_hist_unic_cierre
-		where fecha  between '$f_inicio' and '$fecha_proceso' 
-		union all 
-		select
-		tipo,
-		telefono,
-		fecha,
-		canal,
-		sub_canal,
-		nuevo_sub_canal,
-		distribuidor,
-		oficina,
-		portabilidad,
-		operadora_origen,
-		operadora_destino,
-		motivo,
-		cast( null as string) as cod_plan_anterior,
-		cast( null as string) as des_plan_anterior,
-		cast( null as double) as tb_descuento,
-		cast( null as double) as tb_override,
-		cast( null as double) as delta
-		from db_reportes.otc_t_baja_hist_unic_cierre
-		where fecha  between '$f_inicio' and '$fecha_proceso' 
-		union all 
-		select
-		tipo,
-		telefono,
-		fecha,
-		canal,
-		sub_canal,
-		nuevo_sub_canal,
-		distribuidor,
-		oficina,
-		portabilidad,
-		operadora_origen,
-		operadora_destino,
-		motivo,
-		cast( null as string) as cod_plan_anterior,
-		cast( null as string) as des_plan_anterior,
-		cast( null as double) as tb_descuento,
-		cast( null as double) as tb_override,
-		cast( null as double) as delta
-		from db_reportes.otc_t_alta_hist_unic_cierre
-		where fecha  between '$f_inicio' and '$fecha_proceso' 
-		) zz ) tt
-		where rnum=1;
+		--CREAMOS TABLA TEMPORAL UNION PARA OBTENER ULTIMO MOVIMIENTO DEL MES POR NUM_TELEFONO
+		DROP TABLE $ESQUEMA_TEMP.OTC_T_360_PARQUE_1_MOV_MES_TMP_CIERRE;
+		CREATE TABLE $ESQUEMA_TEMP.OTC_T_360_PARQUE_1_MOV_MES_TMP_CIERRE AS 
+		SELECT
+		TIPO,
+		TELEFONO,
+		FECHA AS FECHA_MOVIMIENTO_MES,
+		CANAL AS CANAL_MOVIMIENTO_MES,
+		SUB_CANAL AS SUB_CANAL_MOVIMIENTO_MES,
+		NUEVO_SUB_CANAL AS NUEVO_SUB_CANAL_MOVIMIENTO_MES,
+		DISTRIBUIDOR AS DISTRIBUIDOR_MOVIMIENTO_MES,
+		OFICINA AS OFICINA_MOVIMIENTO_MES,
+		PORTABILIDAD AS PORTABILIDAD_MOVIMIENTO_MES,
+		OPERADORA_ORIGEN AS OPERADORA_ORIGEN_MOVIMIENTO_MES,
+		OPERADORA_DESTINO AS OPERADORA_DESTINO_MOVIMIENTO_MES,
+		MOTIVO AS MOTIVO_MOVIMIENTO_MES,
+		COD_PLAN_ANTERIOR AS COD_PLAN_ANTERIOR_MOVIMIENTO_MES,
+		DES_PLAN_ANTERIOR AS DES_PLAN_ANTERIOR_MOVIMIENTO_MES,
+		TB_DESCUENTO AS TB_DESCUENTO_MOVIMIENTO_MES,
+		TB_OVERRIDE AS TB_OVERRIDE_MOVIMIENTO_MES,
+		DELTA AS DELTA_MOVIMIENTO_MES 
+		FROM (
+		SELECT TIPO,
+		TELEFONO,
+		FECHA,
+		CANAL,
+		SUB_CANAL,
+		NUEVO_SUB_CANAL,
+		DISTRIBUIDOR,
+		OFICINA,
+		PORTABILIDAD,
+		OPERADORA_ORIGEN,
+		OPERADORA_DESTINO,
+		MOTIVO,
+		COD_PLAN_ANTERIOR,
+		DES_PLAN_ANTERIOR,
+		TB_DESCUENTO,
+		TB_OVERRIDE,
+		DELTA,
+		ROW_NUMBER() OVER (PARTITION BY TELEFONO ORDER BY  FECHA DESC) AS RNUM
+		FROM (		
+		SELECT TIPO,
+		TELEFONO,
+		FECHA,
+		CANAL,
+		SUB_CANAL,
+		NUEVO_SUB_CANAL,
+		DISTRIBUIDOR,
+		OFICINA,
+		CAST( NULL AS STRING) AS PORTABILIDAD,
+		CAST( NULL AS STRING) AS OPERADORA_ORIGEN,
+		CAST( NULL AS STRING) AS OPERADORA_DESTINO,
+		CAST( NULL AS STRING) AS MOTIVO,
+		COD_PLAN_ANTERIOR,
+		DES_PLAN_ANTERIOR,
+		TB_DESCUENTO,
+		TB_OVERRIDE,
+		DELTA
+		FROM db_reportes.OTC_T_CAMBIO_PLAN_HIST_UNIC_CIERRE
+		WHERE FECHA  BETWEEN '$f_inicio' AND '$fecha_proceso' 
+		UNION ALL 
+		SELECT
+		TIPO,
+		TELEFONO,
+		FECHA,
+		CANAL,
+		SUB_CANAL,
+		NUEVO_SUB_CANAL,
+		DISTRIBUIDOR,
+		OFICINA,
+		CAST( NULL AS STRING) AS PORTABILIDAD,
+		CAST( NULL AS STRING) AS OPERADORA_ORIGEN,
+		CAST( NULL AS STRING) AS OPERADORA_DESTINO,
+		CAST( NULL AS STRING) AS MOTIVO,
+		CAST( NULL AS STRING) AS COD_PLAN_ANTERIOR,
+		CAST( NULL AS STRING) AS DES_PLAN_ANTERIOR,
+		CAST( NULL AS DOUBLE) AS TB_DESCUENTO,
+		CAST( NULL AS DOUBLE) AS TB_OVERRIDE,
+		CAST( NULL AS DOUBLE) AS DELTA
+		FROM db_reportes.OTC_T_POS_PRE_HIST_UNIC_CIERRE
+		WHERE FECHA  BETWEEN '$f_inicio' AND '$fecha_proceso' 
+		UNION ALL 
+		SELECT
+		TIPO,
+		TELEFONO,
+		FECHA,
+		CANAL,
+		SUB_CANAL,
+		NUEVO_SUB_CANAL,
+		DISTRIBUIDOR,
+		OFICINA,
+		CAST( NULL AS STRING) AS PORTABILIDAD,
+		CAST( NULL AS STRING) AS OPERADORA_ORIGEN,
+		CAST( NULL AS STRING) AS OPERADORA_DESTINO,
+		CAST( NULL AS STRING) AS MOTIVO,
+		CAST( NULL AS STRING) AS COD_PLAN_ANTERIOR,
+		CAST( NULL AS STRING) AS DES_PLAN_ANTERIOR,
+		CAST( NULL AS DOUBLE) AS TB_DESCUENTO,
+		CAST( NULL AS DOUBLE) AS TB_OVERRIDE,
+		CAST( NULL AS DOUBLE) AS DELTA
+		FROM db_reportes.OTC_T_PRE_POS_HIST_UNIC_CIERRE
+		WHERE FECHA  BETWEEN '$f_inicio' AND '$fecha_proceso' 
+		UNION ALL 
+		SELECT
+		TIPO,
+		TELEFONO,
+		FECHA,
+		CANAL,
+		SUB_CANAL,
+		NUEVO_SUB_CANAL,
+		DISTRIBUIDOR,
+		OFICINA,
+		PORTABILIDAD,
+		OPERADORA_ORIGEN,
+		OPERADORA_DESTINO,
+		MOTIVO,
+		CAST( NULL AS STRING) AS COD_PLAN_ANTERIOR,
+		CAST( NULL AS STRING) AS DES_PLAN_ANTERIOR,
+		CAST( NULL AS DOUBLE) AS TB_DESCUENTO,
+		CAST( NULL AS DOUBLE) AS TB_OVERRIDE,
+		CAST( NULL AS DOUBLE) AS DELTA
+		FROM db_reportes.OTC_T_BAJA_HIST_UNIC_CIERRE
+		WHERE FECHA  BETWEEN '$f_inicio' AND '$fecha_proceso' 
+		UNION ALL 
+		SELECT
+		TIPO,
+		TELEFONO,
+		FECHA,
+		CANAL,
+		SUB_CANAL,
+		NUEVO_SUB_CANAL,
+		DISTRIBUIDOR,
+		OFICINA,
+		PORTABILIDAD,
+		OPERADORA_ORIGEN,
+		OPERADORA_DESTINO,
+		MOTIVO,
+		CAST( NULL AS STRING) AS COD_PLAN_ANTERIOR,
+		CAST( NULL AS STRING) AS DES_PLAN_ANTERIOR,
+		CAST( NULL AS DOUBLE) AS TB_DESCUENTO,
+		CAST( NULL AS DOUBLE) AS TB_OVERRIDE,
+		CAST( NULL AS DOUBLE) AS DELTA
+		FROM db_reportes.OTC_T_ALTA_HIST_UNIC_CIERRE
+		WHERE FECHA  BETWEEN '$f_inicio' AND '$fecha_proceso' 
+		) ZZ ) TT
+		WHERE RNUM=1;
 			
-		drop table $esquema_temp.otc_t_360_parque_1_mov_seg_tmp_cierre;	
-		create table $esquema_temp.otc_t_360_parque_1_mov_seg_tmp_cierre as 
-		select	tipo as origen_alta_segmento,
-		telefono,
-		fecha as fecha_alta_segmento,
-		canal as canal_alta_segmento,
-		sub_canal as sub_canal_alta_segmento,
-		nuevo_sub_canal as nuevo_sub_canal_alta_segmento,
-		distribuidor as distribuidor_alta_segmento,
-		oficina as oficina_alta_segmento,
-		portabilidad as portabilidad_alta_segmento,
-		operadora_origen as operadora_origen_alta_segmento,
-		operadora_destino as operadora_destino_alta_segmento,
-		motivo as motivo_alta_segmento
-		from (
-		select tipo,
-		telefono,
-		fecha,
-		canal,
-		sub_canal,
-		nuevo_sub_canal,
-		distribuidor,
-		oficina,
-		portabilidad,
-		operadora_origen,
-		operadora_destino,
-		motivo,
-		row_number() over (partition by telefono order by  fecha desc) as rnum
-		from (		
-		select
-		tipo,
-		telefono,
-		fecha,
-		canal,
-		sub_canal,
-		nuevo_sub_canal,
-		distribuidor,
-		oficina,
-		cast( null as string) as portabilidad,
-		cast( null as string) as operadora_origen,
-		cast( null as string) as operadora_destino,
-		cast( null as string) as motivo		
-		from db_reportes.otc_t_pos_pre_hist_unic_cierre
-		union all 
-		select
-		tipo,
-		telefono,
-		fecha,
-		canal,
-		sub_canal,
-		nuevo_sub_canal,
-		distribuidor,
-		oficina,
-		cast( null as string) as portabilidad,
-		cast( null as string) as operadora_origen,
-		cast( null as string) as operadora_destino,
-		cast( null as string) as motivo
-		from db_reportes.otc_t_pre_pos_hist_unic_cierre
-		union all 
-		select
-		tipo,
-		telefono,
-		fecha,
-		canal,
-		sub_canal,
-		nuevo_sub_canal,
-		distribuidor,
-		oficina,
-		portabilidad,
-		operadora_origen,
-		operadora_destino,
-		motivo
-		from db_reportes.otc_t_alta_hist_unic_cierre
-		) zz ) tt
-		where rnum=1;			
+		DROP TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_mov_seg_tmp_CIERRE;	
+		CREATE TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_mov_seg_tmp_CIERRE AS 
+		SELECT	TIPO AS ORIGEN_ALTA_SEGMENTO,
+		TELEFONO,
+		FECHA AS FECHA_ALTA_SEGMENTO,
+		CANAL AS CANAL_ALTA_SEGMENTO,
+		SUB_CANAL AS SUB_CANAL_ALTA_SEGMENTO,
+		NUEVO_SUB_CANAL AS NUEVO_SUB_CANAL_ALTA_SEGMENTO,
+		DISTRIBUIDOR AS DISTRIBUIDOR_ALTA_SEGMENTO,
+		OFICINA AS OFICINA_ALTA_SEGMENTO,
+		PORTABILIDAD AS PORTABILIDAD_ALTA_SEGMENTO,
+		OPERADORA_ORIGEN AS OPERADORA_ORIGEN_ALTA_SEGMENTO,
+		OPERADORA_DESTINO AS OPERADORA_DESTINO_ALTA_SEGMENTO,
+		MOTIVO AS MOTIVO_ALTA_SEGMENTO
+		FROM (
+		SELECT TIPO,
+		TELEFONO,
+		FECHA,
+		CANAL,
+		SUB_CANAL,
+		NUEVO_SUB_CANAL,
+		DISTRIBUIDOR,
+		OFICINA,
+		PORTABILIDAD,
+		OPERADORA_ORIGEN,
+		OPERADORA_DESTINO,
+		MOTIVO,
+		ROW_NUMBER() OVER (PARTITION BY TELEFONO ORDER BY  FECHA DESC) AS RNUM
+		FROM (		
+		SELECT
+		TIPO,
+		TELEFONO,
+		FECHA,
+		CANAL,
+		SUB_CANAL,
+		NUEVO_SUB_CANAL,
+		DISTRIBUIDOR,
+		OFICINA,
+		CAST( NULL AS STRING) AS PORTABILIDAD,
+		CAST( NULL AS STRING) AS OPERADORA_ORIGEN,
+		CAST( NULL AS STRING) AS OPERADORA_DESTINO,
+		CAST( NULL AS STRING) AS MOTIVO		
+		FROM db_reportes.OTC_T_POS_PRE_HIST_UNIC_CIERRE
+		UNION ALL 
+		SELECT
+		TIPO,
+		TELEFONO,
+		FECHA,
+		CANAL,
+		SUB_CANAL,
+		NUEVO_SUB_CANAL,
+		DISTRIBUIDOR,
+		OFICINA,
+		CAST( NULL AS STRING) AS PORTABILIDAD,
+		CAST( NULL AS STRING) AS OPERADORA_ORIGEN,
+		CAST( NULL AS STRING) AS OPERADORA_DESTINO,
+		CAST( NULL AS STRING) AS MOTIVO
+		FROM db_reportes.OTC_T_PRE_POS_HIST_UNIC_CIERRE
+		UNION ALL 
+		SELECT
+		TIPO,
+		TELEFONO,
+		FECHA,
+		CANAL,
+		SUB_CANAL,
+		NUEVO_SUB_CANAL,
+		DISTRIBUIDOR,
+		OFICINA,
+		PORTABILIDAD,
+		OPERADORA_ORIGEN,
+		OPERADORA_DESTINO,
+		MOTIVO
+		FROM db_reportes.OTC_T_ALTA_HIST_UNIC_CIERRE
+		) ZZ ) TT
+		WHERE RNUM=1;			
 
-		drop table $esquema_temp.otc_t_360_parque_1_tmp_t_mov_mes_cierre;
-		create table $esquema_temp.otc_t_360_parque_1_tmp_t_mov_mes_cierre as
-		select
-		num_telefonico,
-		codigo_plan,
-		fecha_alta,
-		fecha_last_status,
-		estado_abonado,
-		fecha_proceso,
-		numero_abonado,
-		linea_negocio,
-		account_num,
-		sub_segmento,
-		tipo_doc_cliente,
-		identificacion_cliente,
-		cliente,
-		customer_ref,
-		counted_days,
-		linea_negocio_homologado,
-		categoria_plan,
-		tarifa,
-		nombre_plan,
-		marca,
-		ciclo_fact,
-		correo_cliente_pr,
-		telefono_cliente_pr,
-		imei,
-		orden,
-		tipo_movimiento_mes,
-		b.fecha_movimiento_mes,
-		es_parque,
-		banco,
-		canal_movimiento_mes,
-		sub_canal_movimiento_mes,
-		nuevo_sub_canal_movimiento_mes,
-		distribuidor_movimiento_mes,
-		oficina_movimiento_mes,
-		portabilidad_movimiento_mes,
-		operadora_origen_movimiento_mes,
-		operadora_destino_movimiento_mes,
-		motivo_movimiento_mes,
-		cod_plan_anterior_movimiento_mes,
-		des_plan_anterior_movimiento_mes,
-		tb_descuento_movimiento_mes,
-		tb_override_movimiento_mes,
-		delta_movimiento_mes
-		from $esquema_temp.otc_t_360_parque_1_tmp_cierre as b
-		left join  $esquema_temp.otc_t_360_parque_1_mov_mes_tmp_cierre as a
-		on (num_telefonico=a.telefono)
-		and b.fecha_movimiento_mes=a.fecha_movimiento_mes;" 1>> $logs/$ejecucion_log.log 2>> $logs/$ejecucion_log.log
+		DROP TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_t_mov_mes_CIERRE;
+		CREATE TABLE $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_t_mov_mes_CIERRE AS
+		SELECT
+		NUM_TELEFONICO,
+		CODIGO_PLAN,
+		FECHA_ALTA,
+		FECHA_LAST_STATUS,
+		ESTADO_ABONADO,
+		FECHA_PROCESO,
+		NUMERO_ABONADO,
+		LINEA_NEGOCIO,
+		ACCOUNT_NUM,
+		SUB_SEGMENTO,
+		TIPO_DOC_CLIENTE,
+		IDENTIFICACION_CLIENTE,
+		CLIENTE,
+		CUSTOMER_REF,
+		COUNTED_DAYS,
+		LINEA_NEGOCIO_HOMOLOGADO,
+		CATEGORIA_PLAN,
+		TARIFA,
+		NOMBRE_PLAN,
+		MARCA,
+		CICLO_FACT,
+		CORREO_CLIENTE_PR,
+		TELEFONO_CLIENTE_PR,
+		IMEI,
+		ORDEN,
+		TIPO_MOVIMIENTO_MES,
+		B.FECHA_MOVIMIENTO_MES,
+		ES_PARQUE,
+		BANCO,
+		CANAL_MOVIMIENTO_MES,
+		SUB_CANAL_MOVIMIENTO_MES,
+		NUEVO_SUB_CANAL_MOVIMIENTO_MES,
+		DISTRIBUIDOR_MOVIMIENTO_MES,
+		OFICINA_MOVIMIENTO_MES,
+		PORTABILIDAD_MOVIMIENTO_MES,
+		OPERADORA_ORIGEN_MOVIMIENTO_MES,
+		OPERADORA_DESTINO_MOVIMIENTO_MES,
+		MOTIVO_MOVIMIENTO_MES,
+		COD_PLAN_ANTERIOR_MOVIMIENTO_MES,
+		DES_PLAN_ANTERIOR_MOVIMIENTO_MES,
+		TB_DESCUENTO_MOVIMIENTO_MES,
+		TB_OVERRIDE_MOVIMIENTO_MES,
+		DELTA_MOVIMIENTO_MES
+		FROM $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre AS B
+		LEFT JOIN  $ESQUEMA_TEMP.OTC_T_360_PARQUE_1_MOV_MES_TMP_CIERRE AS A
+		ON (NUM_TELEFONICO=A.TELEFONO)
+		AND B.FECHA_MOVIMIENTO_MES=A.FECHA_MOVIMIENTO_MES;" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
-			# verificacion de creacion de archivo
+			# Verificacion de creacion de archivo
 			if [ $? -eq 0 ]; then
-				log i "hive" $rc  " fin de los movimientos de parque" $paso
+				log i "HIVE" $rc  " Fin de los MOVIMIENTOS DE PARQUE" $PASO
 				else
 				(( rc = 104)) 
-				log e "hive" $rc  " fallo al ejecutar movimientos de parque" $paso
+				log e "HIVE" $rc  " Fallo al ejecutar MOVIMIENTOS DE PARQUE" $PASO
 				exit $rc
 			fi
 			
-	log i "hive" $rc  " fin ejecucion querys para los movimientos de parque" $paso
+	log i "HIVE" $rc  " FIN EJECUCION QUERYS PARA LOS MOVIMIENTOS DE PARQUE" $PASO
 		
-		fin=$(date +%s)
-		dif=$(echo "$fin - $inicio" | bc)
-		total=$(printf '%d:%d:%d\n' $(($dif/3600)) $(($dif%3600/60)) $(($dif%60)))
-		stat "insert tabla hive final" $total 0 0
-	paso=5
+		FIN=$(date +%s)
+		DIF=$(echo "$FIN - $INICIO" | bc)
+		TOTAL=$(printf '%d:%d:%d\n' $(($DIF/3600)) $(($DIF%3600/60)) $(($DIF%60)))
+		stat "Insert tabla hive final" $TOTAL 0 0
+	PASO=5
 	fi
 	
 #------------------------------------------------------
-# ejecucion de consultas para la incorporaciã“n del nuevo parque con el parque de otc_t_360_general del pre cierre o de la ejecuciã“n normal
+# EJECUCION DE CONSULTAS PARA LA INCORPORACIÃ“N DEL NUEVO PARQUE CON EL PARQUE DE OTC_T_360_GENERAL DEL PRE CIERRE O DE LA EJECUCIÃ“N NORMAL
 #------------------------------------------------------
-    #verificar si hay parã¡metro de re-ejecuciã³n
-    if [ "$paso" = "5" ]; then
-      inicio=$(date +%s)
+    #Verificar si hay parÃ¡metro de re-ejecuciÃ³n
+    if [ "$PASO" = "5" ]; then
+      INICIO=$(date +%s)
    
-	log i "hive" $rc  " inicio ejecucion querys de obtenciã“n del parque global" $paso
+	log i "HIVE" $rc  " INICIO EJECUCION QUERYS DE OBTENCIÃ“N DEL PARQUE GLOBAL" $PASO
 		
 		/usr/bin/hive -e "set hive.cli.print.header=false;
 		set hive.vectorized.execution.enabled=false;
 		set hive.vectorized.execution.reduce.enabled=false;		
-		set tez.queue.name=$cola_ejecucion;
+		set tez.queue.name=$COLA_EJECUCION;
 		
-		drop table $esquema_temp.tmp_360_prq_glb;
-		create table $esquema_temp.tmp_360_prq_glb as
+		drop table $ESQUEMA_TEMP.tmp_360_prq_glb;
+		create table $ESQUEMA_TEMP.tmp_360_prq_glb as
 		select fecha_activacion,
 			telefono,
 			account_no,
@@ -1820,338 +1675,338 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 			marca,
 			fecha_proceso
 			from db_cs_altas.otc_t_prq_glb_bi
-			where fecha_proceso=$fechaeje
-			and marca='telefonica';" 1>> $logs/$ejecucion_log.log 2>> $logs/$ejecucion_log.log
+			where fecha_proceso=$FECHAEJE
+			and marca='TELEFONICA';" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
-			# verificacion de creacion de archivo
+			# Verificacion de creacion de archivo
 			if [ $? -eq 0 ]; then
-				log i "hive" $rc  " fin querys de obtenciã“n del parque global" $paso
+				log i "HIVE" $rc  " Fin QUERYS DE OBTENCIÃ“N DEL PARQUE GLOBAL" $PASO
 				else
 				(( rc = 105)) 
-				log e "hive" $rc  " fallo querys de obtenciã“n del parque global" $paso
+				log e "HIVE" $rc  " Fallo QUERYS DE OBTENCIÃ“N DEL PARQUE GLOBAL" $PASO
 				exit $rc
 			fi
 			
-	log i "hive" $rc  " fin ejecucion querys de obtenciã“n del parque global" $paso
+	log i "HIVE" $rc  " FIN EJECUCION QUERYS DE OBTENCIÃ“N DEL PARQUE GLOBAL" $PASO
 		
-		fin=$(date +%s)
-		dif=$(echo "$fin - $inicio" | bc)
-		total=$(printf '%d:%d:%d\n' $(($dif/3600)) $(($dif%3600/60)) $(($dif%60)))
-		stat "insert tabla hive final" $total 0 0
-	paso=6
+		FIN=$(date +%s)
+		DIF=$(echo "$FIN - $INICIO" | bc)
+		TOTAL=$(printf '%d:%d:%d\n' $(($DIF/3600)) $(($DIF%3600/60)) $(($DIF%60)))
+		stat "Insert tabla hive final" $TOTAL 0 0
+	PASO=6
 	fi
 	
 	
 #------------------------------------------------------
-# ejecucion de consultas para campos adicionales
+# EJECUCION DE CONSULTAS PARA CAMPOS ADICIONALES
 #------------------------------------------------------
-    #verificar si hay parã¡metro de re-ejecuciã³n
-    if [ "$paso" = "6" ]; then
-      inicio=$(date +%s)
+    #Verificar si hay parÃ¡metro de re-ejecuciÃ³n
+    if [ "$PASO" = "6" ]; then
+      INICIO=$(date +%s)
    
-	log i "hive" $rc  " inicio ejecucion querys de campos adicionales" $paso
+	log i "HIVE" $rc  " INICIO EJECUCION QUERYS DE CAMPOS ADICIONALES" $PASO
 		
 		/usr/bin/hive -e "set hive.cli.print.header=false;
 		set hive.vectorized.execution.enabled=false;
 		set hive.vectorized.execution.reduce.enabled=false;
-		set tez.queue.name=$cola_ejecucion;
+		set tez.queue.name=$COLA_EJECUCION;
 		
-		--se obtienen los motivos de suspensi?, posteriormente esta temporal es usada en el proceso otc_t_360_genaral.sh
-		drop table $esquema_temp.tmp_360_motivos_suspension_cierre;
-		create table $esquema_temp.tmp_360_motivos_suspension_cierre as
-		select num.name, d.name as motivo_suspension,d.susp_code_id
-		from db_rdb.otc_t_r_boe_bsns_prod_inst a
-		inner join db_rdb.otc_t_r_boe_bsns_prod_inst b
-		on (a.top_bpi = b.object_id)
-		left join db_rdb.otc_t_r_ri_mobile_phone_number num
-		on (num.object_id = a.phone_number)
-		inner join db_rdb.otc_t_r_boe_bsns_prod_inst_susp_rsn c
-		on (a.object_id = c.object_id)
-		inner join db_rdb.otc_t_r_pim_status_change d
-		on (c.value=d.object_id)
-		where a.prod_inst_status in ('9132639016013293421','9126143611313472393')
-		and a.actual_end_date is null
-		and b.actual_end_date is null
-		and a.object_id = b.object_id
-		and cast(a.modified_when as date) <= '$fechaeje1'
-		order by num.name;
+		--SE OBTIENEN LOS MOTIVOS DE SUSPENSI?, POSTERIORMENTE ESTA TEMPORAL ES USADA EN EL PROCESO OTC_T_360_GENARAL.sh
+		DROP TABLE $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre;
+		CREATE TABLE $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre as
+		SELECT NUM.NAME, D.NAME AS MOTIVO_SUSPENSION,D.SUSP_CODE_ID
+		FROM db_rdb.OTC_T_R_BOE_BSNS_PROD_INST A
+		INNER JOIN db_rdb.OTC_T_R_BOE_BSNS_PROD_INST B
+		ON (A.TOP_BPI = B.OBJECT_ID)
+		LEFT JOIN db_rdb.OTC_T_R_RI_MOBILE_PHONE_NUMBER NUM
+		ON (NUM.OBJECT_ID = A.PHONE_NUMBER)
+		INNER JOIN db_rdb.OTC_T_R_BOE_BSNS_PROD_INST_SUSP_RSN C
+		ON (A.OBJECT_ID = C.OBJECT_ID)
+		INNER JOIN db_rdb.OTC_T_R_PIM_STATUS_CHANGE D
+		ON (C.VALUE=D.OBJECT_ID)
+		WHERE A.PROD_INST_STATUS in ('9132639016013293421','9126143611313472393')
+		AND A.ACTUAL_END_DATE IS NULL
+		AND B.ACTUAL_END_DATE IS NULL
+		AND A.OBJECT_ID = B.OBJECT_ID
+		AND cast(A.modified_when as date) <= '$fechaeje1'
+		ORDER BY NUM.NAME;
 
 		
-		--se obtiene las renovaciones de terminales a partir de la fecha de la salida janus
-		drop table $esquema_temp.tmp_360_ultima_renovacion_cierre;
-		create table $esquema_temp.tmp_360_ultima_renovacion_cierre as
-		select t1.* from 
-		(select a.p_fecha_factura as fecha_renovacion, 
-		a.telefono, 
+		--SE OBTIENE LAS RENOVACIONES DE TERMINALES A PARTIR DE LA FECHA DE LA SALIDA JANUS
+		drop table $ESQUEMA_TEMP.tmp_360_ultima_renovacion_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_ultima_renovacion_cierre as
+		select t1.* FROM 
+		(SELECT a.p_fecha_factura as fecha_renovacion, 
+		a.TELEFONO, 
 		a.identificacion_cliente,
-		a.movimiento,
-		row_number() over (partition by a.telefono order by a.telefono,a.p_fecha_factura desc) as orden
-		from db_cs_terminales.otc_t_terminales_simcards a where 
-		(a.p_fecha_factura >= 20171015 and a.p_fecha_factura <= $fechaeje )
-		and a.clasificacion = 'terminales'
-		and a.modelo_terminal not in ('diferencia de equipos','financiamiento')
+		a.MOVIMIENTO,
+		row_number() over (partition by a.TELEFONO order by a.TELEFONO,a.p_fecha_factura desc) as orden
+		FROM db_cs_terminales.otc_t_terminales_simcards a where 
+		(a.p_fecha_factura >= 20171015 and a.p_fecha_factura <= $FECHAEJE )
+		and a.clasificacion = 'TERMINALES'
+		AND a.modelo_terminal NOT IN ('DIFERENCIA DE EQUIPOS','FINANCIAMIENTO')
 		and a.codigo_tipo_documento <> 25
-		and a.movimiento like '%renovac%n%') as t1
+		AND a.MOVIMIENTO LIKE '%RENOVAC%N%') as t1
 		where t1.orden=1;
 
-		--se obtiene las renovaciones de terminales antes de la fecha de la salida janus
-		drop table $esquema_temp.tmp_360_ultima_renovacion_scl_cierre;
-		create table $esquema_temp.tmp_360_ultima_renovacion_scl_cierre as
+		--SE OBTIENE LAS RENOVACIONES DE TERMINALES ANTES DE LA FECHA DE LA SALIDA JANUS
+		drop table $ESQUEMA_TEMP.tmp_360_ultima_renovacion_scl_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_ultima_renovacion_scl_cierre as
 		select t2.* from (
-		select
-		t1.fecha_factura as fecha_renovacion, 
-		t1.min as telefono, 
+		SELECT
+		t1.FECHA_FACTURA as fecha_renovacion, 
+		t1.MIN as TELEFONO, 
 		t1.cedula_ruc_cliente as identificacion_cliente,
-		t1.movimiento,
-		row_number() over (partition by t1.min order by t1.min,t1.fecha_factura desc) as orden
-		from db_cs_terminales.otc_t_facturacion_terminales_scl t1
-		where t1.clasificacion_articulo like '%terminales%' and t1.movimiento like '%renovac%n%' and t1.codigo_tipo_documento <> 25) as t2
+		t1.MOVIMIENTO,
+		row_number() over (partition by t1.MIN order by t1.MIN,t1.FECHA_FACTURA desc) as orden
+		FROM db_cs_terminales.otc_t_facturacion_terminales_scl t1
+		where t1.CLASIFICACION_ARTICULO LIKE '%TERMINALES%' AND t1.MOVIMIENTO LIKE '%RENOVAC%N%' AND T1.codigo_tipo_documento <> 25) as t2
 		where t2.orden=1;
 
-		--se consolidan las dos fuentes, quedandonos con la ultima renovaciã“n por lãnea movil
-		drop table $esquema_temp.tmp_360_ultima_renovacion_end_cierre;
-		create table $esquema_temp.tmp_360_ultima_renovacion_end_cierre as
+		--SE CONSOLIDAN LAS DOS FUENTES, QUEDANDONOS CON LA ULTIMA RENOVACIÃ“N POR LÃNEA MOVIL
+		drop table $ESQUEMA_TEMP.tmp_360_ultima_renovacion_end_cierre;
+		CREATE TABLE $ESQUEMA_TEMP.tmp_360_ultima_renovacion_end_cierre as
 		select t2.* from
-		(select t1.telefono,
+		(SELECT t1.telefono,
 		t1.identificacion_cliente,
 		t1.fecha_renovacion,
 		row_number() over (partition by t1.telefono order by t1.telefono,t1.fecha_renovacion desc) as orden
-		from
-		(select telefono,
+		FROM
+		(select TELEFONO,
 		identificacion_cliente,
-		cast(date_format(from_unixtime(unix_timestamp(cast(fecha_renovacion as string),'yyyymmdd')),'yyyy-mm-dd') as date) as fecha_renovacion
-		from $esquema_temp.tmp_360_ultima_renovacion_cierre
+		cast(date_format(from_unixtime(unix_timestamp(cast(fecha_renovacion as string),'yyyyMMdd')),'yyyy-MM-dd') as date) as fecha_renovacion
+		from $ESQUEMA_TEMP.tmp_360_ultima_renovacion_cierre
 		where telefono is not null
 		union all
-		select cast(telefono as string) as telefono,
+		select cast(TELEFONO as string) as TELEFONO,
 		identificacion_cliente,
 		fecha_renovacion 
-		from $esquema_temp.tmp_360_ultima_renovacion_scl_cierre 
-		where telefono is not null) as t1) as t2
+		FROM $ESQUEMA_TEMP.tmp_360_ultima_renovacion_scl_cierre 
+		where telefono is not null) AS T1) as t2
 		where t2.orden=1;
 
-		--se obtien la direcciones por cliente
-		drop table $esquema_temp.tmp_360_adress_ord_cierre;
-		create table $esquema_temp.tmp_360_adress_ord_cierre as
-		select               
-		a.customer_ref,
-		a.address_seq,
-		a.address_1,
-		a.address_2,
-		a.address_3,
-		a.address_4 
-		from db_rbm.otc_t_address a,
-		(select                
-		b.customer_ref,
-		max(b.address_seq) as max_address_seq
-		from db_rbm.otc_t_address b
-		group by b.customer_ref) as c
-		where a.customer_ref=c.customer_ref and a.address_seq=c.max_address_seq;
+		--SE OBTIEN LA DIRECCIONES POR CLIENTE
+		drop table $ESQUEMA_TEMP.tmp_360_adress_ord_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_adress_ord_cierre as
+		SELECT               
+		a.CUSTOMER_REF,
+		A.ADDRESS_SEQ,
+		A.ADDRESS_1,
+		A.ADDRESS_2,
+		A.ADDRESS_3,
+		A.ADDRESS_4 
+		from db_rbm.otc_t_ADDRESS a,
+		(SELECT                
+		b.CUSTOMER_REF,
+		max(b.ADDRESS_SEQ) as MAX_ADDRESS_SEQ
+		from db_rbm.otc_t_ADDRESS b
+		GROUP BY b.CUSTOMER_REF) as c
+		where a.CUSTOMER_REF=c.CUSTOMER_REF and A.ADDRESS_SEQ=c.MAX_ADDRESS_SEQ;
 
-		--se asignan a las cuentas de facturaciã“n las direcciones
-		drop table $esquema_temp.tmp_360_account_address_cierre;
-		create table $esquema_temp.tmp_360_account_address_cierre as
-		select a.account_num,
-		b.address_2,
-		b.address_3,
-		b.address_4
-		from db_rbm.otc_t_account as a, $esquema_temp.tmp_360_adress_ord_cierre as b
-		where a.customer_ref=b.customer_ref;
+		--SE ASIGNAN A LAS CUENTAS DE FACTURACIÃ“N LAS DIRECCIONES
+		drop table $ESQUEMA_TEMP.tmp_360_account_address_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_account_address_cierre as
+		select a.ACCOUNT_NUM,
+		b.ADDRESS_2,
+		b.ADDRESS_3,
+		b.ADDRESS_4
+		from db_rbm.otc_t_ACCOUNT as a, $ESQUEMA_TEMP.tmp_360_adress_ord_cierre as b
+		where a.CUSTOMER_REF=b.CUSTOMER_REF;
 
-		--se obtiene la vigencia de contrato
-		drop table $esquema_temp.tmp_360_vigencia_contrato_cierre;
-		create table $esquema_temp.tmp_360_vigencia_contrato_cierre as
-		select 
-		h.name num_telefonico,
-		a.valid_from,
-		a.valid_until,
-		a.initial_term,
-		f.modified_when imei_fec_modificacion,
-		cast(c.actual_start_date as date) suscriptor_actual_start_date,
-		case when (f.modified_when is null or f.modified_when='') then cast(c.actual_start_date as date) else f.modified_when end as fecha_fin_contrato
-		from db_rdb.otc_t_r_cntm_contract_item a 
-		inner join db_rdb.otc_t_r_cntm_com_agrm b
-		on (a.parent_id = b.object_id) 
-		inner join db_rdb.otc_t_r_boe_bsns_prod_inst c
-		on (a.bsns_prod_inst = c.object_id )
-		inner join db_rdb.otc_t_r_ri_mobile_phone_number h
-		on (c.phone_number = h.object_id)
-		left join db_rdb.otc_t_r_am_cpe f 
-		on (c.imei = f.object_id)
-		and cast(c.actual_start_date as date) <= '$fechamas1_2';
+		--SE OBTIENE LA VIGENCIA DE CONTRATO
+		drop table $ESQUEMA_TEMP.tmp_360_vigencia_contrato_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_vigencia_contrato_cierre as
+		SELECT 
+		H.NAME NUM_TELEFONICO,
+		A.VALID_FROM,
+		A.VALID_UNTIL,
+		A.INITIAL_TERM,
+		F.MODIFIED_WHEN IMEI_FEC_MODIFICACION,
+		cast(C.ACTUAL_START_DATE as date) SUSCRIPTOR_ACTUAL_START_DATE,
+		case when (F.MODIFIED_WHEN is null or F.MODIFIED_WHEN='') then cast(C.ACTUAL_START_DATE as date) else F.MODIFIED_WHEN end as FECHA_FIN_CONTRATO
+		FROM db_rdb.otc_t_R_CNTM_CONTRACT_ITEM A 
+		INNER JOIN db_rdb.otc_t_R_CNTM_COM_AGRM B
+		ON (A.PARENT_ID = B.OBJECT_ID) 
+		INNER JOIN db_rdb.otc_t_R_BOE_BSNS_PROD_INST C
+		ON (A.BSNS_PROD_INST = C.OBJECT_ID )
+		INNER JOIN db_rdb.otc_t_R_RI_MOBILE_PHONE_NUMBER H
+		ON (C.PHONE_NUMBER = H.OBJECT_ID)
+		LEFT JOIN db_rdb.otc_t_R_AM_CPE F 
+		ON (C.IMEI = F.OBJECT_ID)
+		AND cast(C.ACTUAL_START_DATE as date) <= '$fechamas1_2';
 
-		--nos quedamos con la ãšltima vigencia de contrato
-		drop table $esquema_temp.tmp_360_vigencia_contrato_unicos_cierre;
-		create table $esquema_temp.tmp_360_vigencia_contrato_unicos_cierre as
+		--NOS QUEDAMOS CON LA ÃšLTIMA VIGENCIA DE CONTRATO
+		drop table $ESQUEMA_TEMP.tmp_360_vigencia_contrato_unicos_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_vigencia_contrato_unicos_cierre as
 		select * from 
-		(select num_telefonico,
-		valid_from,
-		valid_until,
-		initial_term,
-		imei_fec_modificacion,
-		suscriptor_actual_start_date,
-		fecha_fin_contrato,
-		row_number() over (partition by num_telefonico order by fecha_fin_contrato desc) as id
-		from $esquema_temp.tmp_360_vigencia_contrato_cierre) as t1
+		(select NUM_TELEFONICO,
+		VALID_FROM,
+		VALID_UNTIL,
+		INITIAL_TERM,
+		IMEI_FEC_MODIFICACION,
+		SUSCRIPTOR_ACTUAL_START_DATE,
+		FECHA_FIN_CONTRATO,
+		row_number() over (partition by NUM_TELEFONICO order by FECHA_FIN_CONTRATO desc) as id
+		from $ESQUEMA_TEMP.tmp_360_vigencia_contrato_cierre) as t1
 		where t1.id=1;
 
-		--se obtienen un catalogo de planes con la vigencias
-		drop table  $esquema_temp.tmp_360_planes_janus_cierre;
-		create table $esquema_temp.tmp_360_planes_janus_cierre as
-		select  
-		po.prod_code,
-		po.name, 
-		po.available_from, 
-		po.available_to, 
-		po.created_when, 
-		po.modified_when,
-		a.prod_offering,
+		--SE OBTIENEN UN CATALOGO DE PLANES CON LA VIGENCIAS
+		drop table  $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_cierre as
+		SELECT  
+		PO.PROD_CODE,
+		PO.NAME, 
+		PO.AVAILABLE_FROM, 
+		PO.AVAILABLE_TO, 
+		PO.CREATED_WHEN, 
+		PO.MODIFIED_WHEN,
+		A.PROD_OFFERING,
 		count(1) as cant
-		from db_rdb.otc_t_r_pim_prd_off po
-		inner join db_rdb.otc_t_r_boe_bsns_prod_inst a
-		on a.prod_offering=po.object_id
-		where po.is_top_offer = '7777001'
-		and po.prod_code is not null
-		and a.actual_end_date is null
-		and a.actual_start_date is not null
-		group by po.prod_code,
-		po.name, 
-		po.available_from, 
-		po.available_to, 
-		po.created_when, 
-		po.modified_when,
-		a.prod_offering
-		order by po.prod_code, po.available_from,po.available_to;
+		FROM db_rdb.otc_t_R_PIM_PRD_OFF PO
+		INNER JOIN db_rdb.otc_t_R_BOE_BSNS_PROD_INST A
+		ON A.PROD_OFFERING=PO.OBJECT_ID
+		WHERE PO.IS_TOP_OFFER = '7777001'
+		AND PO.PROD_CODE IS NOT NULL
+		AND A.ACTUAL_END_DATE IS NULL
+		AND A.ACTUAL_START_DATE IS NOT NULL
+		GROUP BY PO.PROD_CODE,
+		PO.NAME, 
+		PO.AVAILABLE_FROM, 
+		PO.AVAILABLE_TO, 
+		PO.CREATED_WHEN, 
+		PO.MODIFIED_WHEN,
+		A.PROD_OFFERING
+		ORDER BY PO.PROD_CODE, PO.AVAILABLE_FROM,PO.AVAILABLE_TO;
 
-		--se asigna un id secuencial, que sera la versiã“n del plan, ordenado por codigo de plan y sus fechas de vigencia
-		drop table $esquema_temp.tmp_360_planes_janus_version_cierre;
-		create table $esquema_temp.tmp_360_planes_janus_version_cierre as
+		--SE ASIGNA UN ID SECUENCIAL, QUE SERA LA VERSIÃ“N DEL PLAN, ORDENADO POR CODIGO DE PLAN Y SUS FECHAS DE VIGENCIA
+		drop table $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_cierre as
 		select *,
-		row_number() over (partition by prod_code order by available_from,available_to) as version
-		from $esquema_temp.tmp_360_planes_janus_cierre;
+		row_number() over (partition by PROD_CODE order by AVAILABLE_FROM,AVAILABLE_TO) as VERSION
+		from $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_cierre;
 
-		--debido a que no se tienen fechas continuas en las vigencias (actual_start_date y actual_end_date),  se reasignan las vigencias para que tengan secuencia en el tiempo
-		drop table $esquema_temp.tmp_360_planes_janus_version_fec_cierre;
-		create table $esquema_temp.tmp_360_planes_janus_version_fec_cierre as
-		select case 
-				when a.version=1 then a.available_from 
-				else b.available_to end as fecha_inicio,
-		a.available_to as fecha_fin, a.*,b.version as ver_b
-		from $esquema_temp.tmp_360_planes_janus_version_cierre a
-		left join $esquema_temp.tmp_360_planes_janus_version_cierre b
-		on (a.prod_code=b.prod_code and a.version = b.version +1);
+		--DEBIDO A QUE NO SE TIENEN FECHAS CONTINUAS EN LAS VIGENCIAS (ACTUAL_START_DATE Y ACTUAL_END_DATE),  SE REASIGNAN LAS VIGENCIAS PARA QUE TENGAN SECUENCIA EN EL TIEMPO
+		drop table $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_cierre AS
+		select CASE 
+				WHEN A.VERSION=1 THEN A.available_from 
+				else B.available_to END AS fecha_inicio,
+		A.AVAILABLE_TO as fecha_fin, A.*,b.VERSION AS ver_b
+		from $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_cierre a
+		left join $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_cierre b
+		on (a.PROD_CODE=b.PROD_CODE and a.version = b.version +1);
 
-		--obtenemos el catalogo solo para primera version
-		drop table $esquema_temp.tmp_360_planes_janus_version_fec_ver_uno_cierre;
-		create table $esquema_temp.tmp_360_planes_janus_version_fec_ver_uno_cierre as
-		select * from $esquema_temp.tmp_360_planes_janus_version_fec_cierre
-		where version=1;
+		--OBTENEMOS EL CATALOGO SOLO PARA PRIMERA VERSION
+		DROP table $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_VER_UNO_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_VER_UNO_cierre as
+		select * from $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_cierre
+		where VERSION=1;
 
-		--obtenemos el catalogo solo para la ultima version
-		drop table $esquema_temp.tmp_360_planes_janus_version_fec_ver_ultima_cierre;
-		create table $esquema_temp.tmp_360_planes_janus_version_fec_ver_ultima_cierre as
+		--OBTENEMOS EL CATALOGO SOLO PARA LA ULTIMA VERSION
+		DROP table $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_VER_ULTIMA_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_VER_ULTIMA_cierre as
 		select *
 		from
 		(select *,
-		row_number() over (partition by prod_code order by version desc) as orden
-		from $esquema_temp.tmp_360_planes_janus_version_fec_cierre) t1
+		row_number() over (partition by PROD_CODE order by version desc) as orden
+		from $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_cierre) t1
 		where t1.orden=1;
 
-		--obtenemos los planes que posee el abonado, esto genera todos los planes que tenga el abonado a la fecha de ejecucion
-		drop table $esquema_temp.tmp_360_abonado_plan_cierre;
-		create table $esquema_temp.tmp_360_abonado_plan_cierre as
-		select num.name as telefono, 
-		a.subscription_ref as num_abonado, 
-		po.prod_code,
-		po.object_id as object_id_plan, 
-		po.name as descripcion_paquete,
-		a.actual_start_date as fechainicio,
-		a.actual_end_date as fecha_desactivacion, 
-		a.modified_when
-		from db_rdb.otc_t_r_pim_prd_off po
-		inner join db_rdb.otc_t_r_boe_bsns_prod_inst a
-		on (po.object_id = a.prod_offering)
-		inner join db_rdb.otc_t_r_boe_bsns_prod_inst b
-		on (b.object_id = a.top_bpi)
-		left join db_rdb.otc_t_r_ri_mobile_phone_number num
-		on (num.object_id = b.phone_number)
-		where a.actual_end_date is null
-		and a.object_id = b.top_bpi
-		and cast(a.actual_start_date as date) < '$fechamas1_2';
+		--OBTENEMOS LOS PLANES QUE POSEE EL ABONADO, ESTO GENERA TODOS LOS PLANES QUE TENGA EL ABONADO A LA FECHA DE EJECUCION
+		drop table $ESQUEMA_TEMP.tmp_360_abonado_plan_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_abonado_plan_cierre as
+		SELECT NUM.NAME AS TELEFONO, 
+		A.SUBSCRIPTION_REF AS NUM_ABONADO, 
+		PO.PROD_CODE,
+		PO.OBJECT_ID AS OBJECT_ID_PLAN, 
+		PO.NAME AS DESCRIPCION_PAQUETE,
+		A.ACTUAL_START_DATE AS FECHAINICIO,
+		A.ACTUAL_END_DATE AS FECHA_DESACTIVACION, 
+		A.MODIFIED_WHEN
+		FROM db_rdb.OTC_T_R_PIM_PRD_OFF PO
+		INNER JOIN db_rdb.OTC_T_R_BOE_BSNS_PROD_INST A
+		ON (PO.OBJECT_ID = A.PROD_OFFERING)
+		INNER JOIN db_rdb.OTC_T_R_BOE_BSNS_PROD_INST B
+		ON (B.OBJECT_ID = A.TOP_BPI)
+		LEFT JOIN db_rdb.OTC_T_R_RI_MOBILE_PHONE_NUMBER NUM
+		ON (NUM.OBJECT_ID = B.PHONE_NUMBER)
+		WHERE A.ACTUAL_END_DATE IS NULL
+		AND A.OBJECT_ID = B.TOP_BPI
+		and cast(A.ACTUAL_START_DATE as date) < '$fechamas1_2';
 
-		--nos quedamos solo con el ãšltimo plan del abonado a la fecha de ejecucion
-		drop table $esquema_temp.tmp_360_abonado_plan_unico_cierre;
-		create table $esquema_temp.tmp_360_abonado_plan_unico_cierre as
+		--NOS QUEDAMOS SOLO CON EL ÃšLTIMO PLAN DEL ABONADO A LA FECHA DE EJECUCION
+		drop table $ESQUEMA_TEMP.tmp_360_abonado_plan_unico_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_abonado_plan_unico_cierre as
 		select b.* from 
 		(select a.*,
 		row_number() over (partition by a.telefono order by a.fechainicio desc) as id
-		from $esquema_temp.tmp_360_abonado_plan_cierre a) as b
+		from $ESQUEMA_TEMP.tmp_360_abonado_plan_cierre a) as b
 		where b.id=1;
 
-		--se asigna la verisã“n por object id, si no se obtiene or object id por la version minima y maxima del plan
-		drop table $esquema_temp.tmp_360_vigencia_abonado_plan_prev_cierre;
-		create table $esquema_temp.tmp_360_vigencia_abonado_plan_prev_cierre as 
-		select a.num_telefonico as telefono,
-		valid_from,
-		valid_until,
-		initial_term as initial_term,
-		case when (initial_term is null or initial_term ='0') then 18 else cast(initial_term as int) end as initial_term_new,
-		imei_fec_modificacion,
-		suscriptor_actual_start_date,
-		cast(fechainicio as date) as fecha_activacion_plan_actual,
-		case when cast(fechainicio as date)  is null and imei_fec_modificacion is null and valid_until is null then suscriptor_actual_start_date
-		when cast(fechainicio as date)  is null and imei_fec_modificacion is null and valid_until is null then valid_until
-		else (case 
-		when cast(fechainicio as date)  > fecha_fin_contrato then cast(fechainicio as date)  
-		else fecha_fin_contrato end
-		) end as fecha_fin_contrato,
-		date_format(from_unixtime(unix_timestamp(cast($fechaeje as string),'yyyymmdd')),'yyyy-mm-dd') as fecha_hoy,
-		months_between(date_format(from_unixtime(unix_timestamp(cast($fechaeje as string),'yyyymmdd')),'yyyy-mm-dd'),(case when cast(fechainicio as date)  is null and imei_fec_modificacion is null and valid_until is null then suscriptor_actual_start_date
-		when cast(fechainicio as date)  is null and imei_fec_modificacion is null and valid_until is null then valid_until
-		else (case 
-		when cast(fechainicio as date)  > fecha_fin_contrato then cast(fechainicio as date)  
-		else fecha_fin_contrato end
-		) end)) as meses_diferencia,
-		case when (c.version is null and (cast(b.fechainicio as date)<d.fecha_inicio or cast(b.fechainicio as date)<e.fecha_inicio)) then 1 else c.version end as version_plan,
+		--SE ASIGNA LA VERISÃ“N POR OBJECT ID, SI NO SE OBTIENE OR OBJECT ID POR LA VERSION MINIMA Y MAXIMA DEL PLAN
+		drop table $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_prev_cierre;
+		CREATE TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_prev_cierre AS 
+		SELECT a.NUM_TELEFONICO AS TELEFONO,
+		VALID_FROM,
+		VALID_UNTIL,
+		INITIAL_TERM AS INITIAL_TERM,
+		CASE WHEN (INITIAL_TERM IS NULL OR initial_term ='0') THEN 18 ELSE CAST(INITIAL_TERM AS INT) END AS INITIAL_TERM_NEW,
+		IMEI_FEC_MODIFICACION,
+		SUSCRIPTOR_ACTUAL_START_DATE,
+		cast(fechainicio as date) as FECHA_ACTIVACION_PLAN_ACTUAL,
+		CASE WHEN cast(fechainicio as date)  is null AND IMEI_FEC_MODIFICACION is null AND VALID_UNTIL is null THEN SUSCRIPTOR_ACTUAL_START_DATE
+		WHEN cast(fechainicio as date)  is null AND IMEI_FEC_MODIFICACION is null AND VALID_UNTIL is null THEN VALID_UNTIL
+		ELSE (CASE 
+		WHEN cast(fechainicio as date)  > FECHA_FIN_CONTRATO THEN cast(fechainicio as date)  
+		ELSE FECHA_FIN_CONTRATO END
+		) END AS FECHA_FIN_CONTRATO,
+		date_format(from_unixtime(unix_timestamp(cast($FECHAEJE as string),'yyyyMMdd')),'yyyy-MM-dd') AS fecha_hoy,
+		months_between(date_format(from_unixtime(unix_timestamp(cast($FECHAEJE as string),'yyyyMMdd')),'yyyy-MM-dd'),(CASE WHEN cast(fechainicio as date)  is null AND IMEI_FEC_MODIFICACION is null AND VALID_UNTIL is null THEN SUSCRIPTOR_ACTUAL_START_DATE
+		WHEN cast(fechainicio as date)  is null AND IMEI_FEC_MODIFICACION is null AND VALID_UNTIL is null THEN VALID_UNTIL
+		ELSE (CASE 
+		WHEN cast(fechainicio as date)  > FECHA_FIN_CONTRATO THEN cast(fechainicio as date)  
+		ELSE FECHA_FIN_CONTRATO END
+		) END)) AS MESES_DIFERENCIA,
+		CASE WHEN (C.VERSION IS NULL and (cast(b.fechainicio as date)<d.fecha_inicio or cast(b.fechainicio as date)<e.fecha_inicio)) then 1 else C.VERSION end AS VERSION_PLAN,
 		b.fechainicio,
 		cast(b.fechainicio as date) as fechainicio_date,
 		coalesce(c.fecha_inicio,d.fecha_inicio) as fecha_inicio,
-		c.version as old,
-		b.prod_code
-		from $esquema_temp.tmp_360_vigencia_contrato_unicos_cierre as a
-		left join $esquema_temp.tmp_360_abonado_plan_unico_cierre as b
-		on (a.num_telefonico = b.telefono)
-		left join $esquema_temp.tmp_360_planes_janus_version_fec_cierre as c
-		on (b.object_id_plan= c.prod_offering and b.prod_code = c.prod_code)
-		left join $esquema_temp.tmp_360_planes_janus_version_fec_ver_uno_cierre as d
-		on (b.prod_code = d.prod_code)
-		left join $esquema_temp.tmp_360_planes_janus_version_fec_ver_ultima_cierre as e
-		on (b.prod_code = e.prod_code);
+		C.VERSION as old,
+		B.PROD_CODE
+		FROM $ESQUEMA_TEMP.tmp_360_vigencia_contrato_unicos_cierre AS A
+		LEFT JOIN $ESQUEMA_TEMP.tmp_360_abonado_plan_unico_cierre AS B
+		ON (a.num_telefonico = B.telefono)
+		LEFT JOIN $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_cierre AS C
+		ON (B.OBJECT_ID_PLAN= C.PROD_OFFERING AND B.PROD_CODE = c.PROD_CODE)
+		LEFT JOIN $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_VER_UNO_cierre AS D
+		ON (B.PROD_CODE = D.PROD_CODE)
+		LEFT JOIN $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_VER_ULTIMA_cierre AS E
+		ON (B.PROD_CODE = E.PROD_CODE);
 
-		--asignacion de versiã“n por fechas solo para los que la version es nulll, esto va causar duplicidad en los registros cuya versiã“n de plan sea null
-		drop table $esquema_temp.tmp_360_vigencia_abonado_plan_dup_cierre;
-		create table $esquema_temp.tmp_360_vigencia_abonado_plan_dup_cierre as
+		--ASIGNACION DE VERSIÃ“N POR FECHAS SOLO PARA LOS QUE LA VERSION ES NULLL, ESTO VA CAUSAR DUPLICIDAD EN LOS REGISTROS CUYA VERSIÃ“N DE PLAN SEA NULL
+		drop table $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_dup_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_dup_cierre as
 		select
 		b.*,
-		case when b.version_plan is null and b.fechainicio_date between c.fecha_inicio and c.fecha_fin then c.version else b.version_plan end as version_plan_new
-		from $esquema_temp.tmp_360_vigencia_abonado_plan_prev_cierre as b
-		left join $esquema_temp.tmp_360_planes_janus_version_fec_cierre as c
-		on (b.prod_code = c.prod_code and b.version_plan is null);
+		case when b.VERSION_PLAN is null and B.fechainicio_date BETWEEN c.fecha_inicio and c.fecha_fin then c.version else b.version_plan end as version_plan_new
+		FROM $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_prev_cierre AS B
+		LEFT JOIN $ESQUEMA_TEMP.tmp_360_PLANES_JANUS_VERSION_FEC_cierre AS C
+		ON (B.PROD_CODE = c.PROD_CODE and b.VERSION_PLAN IS NULL);
 
-		--eliminamos los duplicados, ordenando por la nueva versiã“n de plan
-		drop table $esquema_temp.tmp_360_vigencia_abonado_plan_cierre;
-		create table $esquema_temp.tmp_360_vigencia_abonado_plan_cierre as 
+		--ELIMINAMOS LOS DUPLICADOS, ORDENANDO POR LA NUEVA VERSIÃ“N DE PLAN
+		drop table $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_cierre;
+		CREATE TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_cierre AS 
 		select t1.*
 		from
 		(select
 		b.*,
 		row_number() over(partition by telefono order by version_plan_new desc) as id
-		from $esquema_temp.tmp_360_vigencia_abonado_plan_dup_cierre as b) as t1
+		FROM $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_dup_cierre AS B) as t1
 		where t1.id=1;
 
-		--calculamos la fecha de fin de contrato
-		drop table $esquema_temp.tmp_360_vigencia_abonado_plan_def_cierre;
-		create table $esquema_temp.tmp_360_vigencia_abonado_plan_def_cierre as
+		--CALCULAMOS LA FECHA DE FIN DE CONTRATO
+		drop table $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_def_cierre;
+		CREATE TABLE $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_def_cierre as
 		select a.telefono,
 		a.valid_from,
 		a.valid_until,
@@ -2164,57 +2019,57 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 		a.fecha_hoy,
 		a.meses_diferencia,
 		a.version_plan_new as version_plan,
-		cast(ceil(meses_diferencia/initial_term_new) as int) as factor,
-		add_months(fecha_fin_contrato,(cast(ceil(meses_diferencia/initial_term_new) as int))*initial_term_new) as fecha_fin_contrato_definitivo
-		from $esquema_temp.tmp_360_vigencia_abonado_plan_cierre a;
+		CAST(CEIL(MESES_DIFERENCIA/INITIAL_TERM_NEW) AS INT) AS FACTOR,
+		ADD_MONTHS(FECHA_FIN_CONTRATO,(CAST(CEIL(MESES_DIFERENCIA/INITIAL_TERM_NEW) AS INT))*INITIAL_TERM_NEW) AS FECHA_FIN_CONTRATO_DEFINITIVO
+		from $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_cierre a;
 
-		drop table $esquema_temp.otc_t_360_parque_camp_ad_cierre;
-		create table $esquema_temp.otc_t_360_parque_camp_ad_cierre as
+		drop table $ESQUEMA_TEMP.otc_t_360_parque_camp_ad_cierre;
+		create table $ESQUEMA_TEMP.otc_t_360_parque_camp_ad_cierre as
 		select t1.* from
-		(select *,
+		(SELECT *,
 		row_number() over (partition by num_telefonico order by es_parque desc) as id
-		from $esquema_temp.otc_t_360_parque_1_tmp_cierre) as t1
+		FROM $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre) as t1
 		where t1.id=1;
 		
-		drop  table $esquema_temp.tmp_360_campos_adicionales_cierre;
-		create table $esquema_temp.tmp_360_campos_adicionales_cierre as
+		drop  table $ESQUEMA_TEMP.tmp_360_campos_adicionales_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_campos_adicionales_cierre as
 		select a.num_telefonico as telefono,a.account_num,
 		b.fecha_renovacion,
-		c.address_2,c.address_3,c.address_4,
-		d.fecha_fin_contrato_definitivo,d.initial_term_new as vigencia_contrato,d.version_plan,
-		d.imei_fec_modificacion as    fecha_ultima_renovacion_jn,
-		d.fecha_activacion_plan_actual as fecha_ultimo_cambio_plan
-		from $esquema_temp.otc_t_360_parque_camp_ad_cierre a
-		left join $esquema_temp.tmp_360_ultima_renovacion_end b
+		c.ADDRESS_2,c.ADDRESS_3,c.ADDRESS_4,
+		D.FECHA_FIN_CONTRATO_DEFINITIVO,d.initial_term_new AS VIGENCIA_CONTRATO,d.VERSION_PLAN,
+		d.imei_fec_modificacion as    FECHA_ULTIMA_RENOVACION_JN,
+		d.fecha_activacion_plan_actual as FECHA_ULTIMO_CAMBIO_PLAN
+		from $ESQUEMA_TEMP.otc_t_360_parque_camp_ad_cierre a
+		left join $ESQUEMA_TEMP.tmp_360_ultima_renovacion_end b
 		on (a.num_telefonico=b.telefono and a.identificacion_cliente=b.identificacion_cliente)
-		left join $esquema_temp.tmp_360_account_address c
+		left join $ESQUEMA_TEMP.tmp_360_account_address c
 		on a.account_num =c.account_num
-		left join $esquema_temp.tmp_360_vigencia_abonado_plan_def d
-		on (a.num_telefonico = d.telefono);
+		left join $ESQUEMA_TEMP.tmp_360_vigencia_abonado_plan_def d
+		on (a.num_telefonico = d.TELEFONO);
 		
-		drop table $esquema_temp.otc_t_360_cartera_vencimiento_cierre;
-		create table $esquema_temp.otc_t_360_cartera_vencimiento_cierre as
+		DROP TABLE $ESQUEMA_TEMP.otc_t_360_cartera_vencimiento_cierre;
+		CREATE TABLE $ESQUEMA_TEMP.otc_t_360_cartera_vencimiento_cierre as
 		select 
 		cuenta_facturacion,
 		case 
-		when t2.ddias_390 is not null and t2.ddias_390>=1 then '390'
-		when t2.ddias_360 is not null and t2.ddias_360>=1 then '360'
-		when t2.ddias_330 is not null and t2.ddias_330>=1 then '330'
-		when t2.ddias_300 is not null and t2.ddias_300>=1 then '300'
-		when t2.ddias_270 is not null and t2.ddias_270>=1 then '270'
-		when t2.ddias_240 is not null and t2.ddias_240>=1 then '240'
-		when t2.ddias_210 is not null and t2.ddias_210>=1 then '210'
-		when t2.ddias_180 is not null and t2.ddias_180>=1 then '180'
-		when t2.ddias_150 is not null and t2.ddias_150>=1 then '150'
-		when t2.ddias_120 is not null and t2.ddias_120>=1 then '120'
-		when t2.ddias_90 is not null and t2.ddias_90>=1 then '90'
-		when t2.ddias_60 is not null and t2.ddias_60>=1 then '60'
-		when t2.ddias_30 is not null and t2.ddias_30>=1 then '30'
-		when t2.ddias_0 is not null and t2.ddias_0>=1 then '0'
-		when t2.ddias_actual is not null and t2.ddias_actual>=1 then '0'
-		else (case when t2.ddias_total<0 then 'vnc'
-			when (t2.ddias_total>=0 and t2.ddias_total<1) then 'pagado' end)
-		end as vencimiento,
+		when t2.DDIAS_390 IS NOT NULL AND t2.DDIAS_390>=1 then '390'
+		when t2.DDIAS_360 IS NOT NULL AND t2.DDIAS_360>=1 then '360'
+		when t2.DDIAS_330 IS NOT NULL AND t2.DDIAS_330>=1 then '330'
+		when t2.DDIAS_300 IS NOT NULL AND t2.DDIAS_300>=1 then '300'
+		when t2.DDIAS_270 IS NOT NULL AND t2.DDIAS_270>=1 then '270'
+		when t2.DDIAS_240 IS NOT NULL AND t2.DDIAS_240>=1 then '240'
+		when t2.DDIAS_210 IS NOT NULL AND t2.DDIAS_210>=1 then '210'
+		when t2.DDIAS_180 IS NOT NULL AND t2.DDIAS_180>=1 then '180'
+		when t2.DDIAS_150 IS NOT NULL AND t2.DDIAS_150>=1 then '150'
+		when t2.DDIAS_120 IS NOT NULL AND t2.DDIAS_120>=1 then '120'
+		when t2.DDIAS_90 IS NOT NULL AND t2.DDIAS_90>=1 then '90'
+		when t2.DDIAS_60 IS NOT NULL AND t2.DDIAS_60>=1 then '60'
+		when t2.DDIAS_30 IS NOT NULL AND t2.DDIAS_30>=1 then '30'
+		when t2.DDIAS_0 IS NOT NULL AND t2.DDIAS_0>=1 then '0'
+		when t2.DDIAS_ACTUAL IS NOT NULL AND t2.DDIAS_ACTUAL>=1 then '0'
+		else (case when t2.ddias_total<0 then 'VNC'
+			when (t2.ddias_total>=0 and t2.ddias_total<1) then 'PAGADO' end)
+		end as VENCIMIENTO,
 		t2.ddias_total,
 		t2.estado_cuenta,
 		t2.forma_pago ,
@@ -2230,141 +2085,141 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 		t2.tipo_cliente ,
 		t2.tipo_identificacion,
 		t2.fecha_carga
-		from db_rbm.reporte_cartera t2 where fecha_carga=$fechamas1;" 1>> $logs/$ejecucion_log.log 2>> $logs/$ejecucion_log.log
+		FROM db_rbm.reporte_cartera t2 WHERE fecha_carga=$fechamas1;" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
-			# verificacion de creacion de archivo
+			# Verificacion de creacion de archivo
 			if [ $? -eq 0 ]; then
-				log i "hive" $rc  " fin del campos adicionales" $paso
+				log i "HIVE" $rc  " Fin del CAMPOS ADICIONALES" $PASO
 				else
 				(( rc = 106)) 
-				log e "hive" $rc  " fallo al ejecutar campos adicionales" $paso
+				log e "HIVE" $rc  " Fallo al ejecutar CAMPOS ADICIONALES" $PASO
 				exit $rc
 			fi
 			
-	log i "hive" $rc  " fin ejecucion querys de campos adicionales" $paso
+	log i "HIVE" $rc  " FIN EJECUCION QUERYS DE CAMPOS ADICIONALES" $PASO
 		
-		fin=$(date +%s)
-		dif=$(echo "$fin - $inicio" | bc)
-		total=$(printf '%d:%d:%d\n' $(($dif/3600)) $(($dif%3600/60)) $(($dif%60)))
-		stat "insert tabla hive final" $total 0 0
-	paso=7
+		FIN=$(date +%s)
+		DIF=$(echo "$FIN - $INICIO" | bc)
+		TOTAL=$(printf '%d:%d:%d\n' $(($DIF/3600)) $(($DIF%3600/60)) $(($DIF%60)))
+		stat "Insert tabla hive final" $TOTAL 0 0
+	PASO=7
 	fi
 	
 #------------------------------------------------------
-# ejecucion de consultas para parque traficador
+# EJECUCION DE CONSULTAS PARA PARQUE TRAFICADOR
 #------------------------------------------------------
-    #verificar si hay parã¡metro de re-ejecuciã³n
-    if [ "$paso" = "7" ]; then
-      inicio=$(date +%s)
+    #Verificar si hay parÃ¡metro de re-ejecuciÃ³n
+    if [ "$PASO" = "7" ]; then
+      INICIO=$(date +%s)
    
-	log i "hive" $rc  " inicio ejecucion querys para parque traficador" $paso
+	log i "HIVE" $rc  " INICIO EJECUCION QUERYS PARA PARQUE TRAFICADOR" $PASO
 		
 		/usr/bin/hive -e "set hive.cli.print.header=false;
 		set hive.vectorized.execution.enabled=false;
 		set hive.vectorized.execution.reduce.enabled=false;
-		set tez.queue.name=$cola_ejecucion;
+		set tez.queue.name=$COLA_EJECUCION;
 				
-			drop table $esquema_temp.otc_t_voz_dias_tmp_cierre;	   
-			create table $esquema_temp.otc_t_voz_dias_tmp_cierre as
-			select distinct cast(msisdn as bigint) msisdn, cast(fecha as bigint) fecha, 1 as t_voz
+			DROP TABLE $ESQUEMA_TEMP.OTC_T_voz_dias_tmp_cierre;	   
+			CREATE TABLE $ESQUEMA_TEMP.OTC_T_voz_dias_tmp_cierre AS
+			SELECT distinct cast(msisdn as bigint) msisdn, cast(fecha as bigint) fecha, 1 AS T_VOZ
 				from db_altamira.otc_t_ppcs_llamadas
-				where fecha >= $fechainimes and fecha <= $fechaeje
-				and tip_prepago in (select distinct codigo from db_reportes.otc_t_dev_cat_plan where marca='movistar');
+				where fecha >= $fechaIniMes and fecha <= $FECHAEJE
+				and tip_prepago in (select distinct codigo from db_reportes.otc_t_dev_cat_plan where marca='Movistar');
 				
-			drop table $esquema_temp.otc_t_datos_dias_tmp_cierre;
+			DROP TABLE $ESQUEMA_TEMP.OTC_T_datos_dias_tmp_cierre;
 			
-			create table  $esquema_temp.otc_t_datos_dias_tmp_cierre as
-			select distinct cast(msisdn as bigint) msisdn,cast(feh_llamada as bigint) fecha,1 as t_datos
+			CREATE TABLE  $ESQUEMA_TEMP.OTC_T_datos_dias_tmp_cierre AS
+			select distinct cast(msisdn as bigint) msisdn,cast(feh_llamada as bigint) fecha,1 AS T_DATOS
 				from db_altamira.otc_t_ppcs_diameter 
-				where feh_llamada >= '$fechainimes' and feh_llamada <= '$fechaeje'
-				and tip_prepago in (select distinct codigo from db_reportes.otc_t_dev_cat_plan where marca='movistar');
+				where feh_llamada >= '$fechaIniMes' and feh_llamada <= '$FECHAEJE'
+				and tip_prepago in (select distinct codigo from db_reportes.otc_t_dev_cat_plan where marca='Movistar');
 				
 				
-			drop table $esquema_temp.otc_t_sms_dias_tmp_cierre;
+			DROP TABLE $ESQUEMA_TEMP.OTC_T_sms_dias_tmp_cierre;
 
-			create table $esquema_temp.otc_t_sms_dias_tmp_cierre as
-			select distinct cast(msisdn as bigint) msisdn,cast(fecha as bigint) fecha,1 as t_sms
+			CREATE TABLE $ESQUEMA_TEMP.OTC_T_sms_dias_tmp_cierre AS
+			SELECT distinct cast(msisdn as bigint) msisdn,cast(fecha as bigint) fecha,1 AS T_SMS
 				from db_altamira.otc_t_ppcs_mecoorig
-				where fecha >= '$fechainimes' and fecha <= '$fechaeje'
-				and tip_prepago in (select distinct codigo from db_reportes.otc_t_dev_cat_plan where marca='movistar');
+				where fecha >= '$fechaIniMes' and fecha <= '$FECHAEJE'
+				and tip_prepago in (select distinct codigo from db_reportes.otc_t_dev_cat_plan where marca='Movistar');
 				
-			drop table $esquema_temp.otc_t_cont_dias_tmp_cierre;
+			DROP TABLE $ESQUEMA_TEMP.OTC_T_cont_dias_tmp_cierre;
 			
-			create table $esquema_temp.otc_t_cont_dias_tmp_cierre as
-			select distinct cast(msisdn as bigint) msisdn,cast(fecha as bigint) fecha,1 as t_contenido
+			CREATE TABLE $ESQUEMA_TEMP.OTC_T_cont_dias_tmp_cierre AS
+			SELECT distinct cast(msisdn as bigint) msisdn,cast(fecha as bigint) fecha,1 AS T_CONTENIDO
 				from db_altamira.otc_t_ppcs_content
-				where fecha >= '$fechainimes' and fecha <= '$fechaeje'
-				and tip_prepago in (select distinct codigo from db_reportes.otc_t_dev_cat_plan where marca='movistar');
+				where fecha >= '$fechaIniMes' and fecha <= '$FECHAEJE'
+				and tip_prepago in (select distinct codigo from db_reportes.otc_t_dev_cat_plan where marca='Movistar');
 
-			drop table	$esquema_temp.otc_t_parque_traficador_dias_tmp_cierre;
+			DROP TABLE	$ESQUEMA_TEMP.OTC_T_parque_traficador_dias_tmp_cierre;
 
-			create table $esquema_temp.otc_t_parque_traficador_dias_tmp_cierre as	
-			with contadias as (
-			select distinct msisdn,fecha from $esquema_temp.otc_t_voz_dias_tmp_cierre
+			CREATE TABLE $ESQUEMA_TEMP.OTC_T_parque_traficador_dias_tmp_cierre AS	
+			WITH contadias AS (
+			SELECT distinct msisdn,fecha FROM $ESQUEMA_TEMP.OTC_T_voz_dias_tmp_cierre
+			UNION
+			SELECT distinct msisdn,fecha FROM $ESQUEMA_TEMP.OTC_T_datos_dias_tmp_cierre
+			UNION
+			SELECT distinct msisdn,fecha FROM $ESQUEMA_TEMP.OTC_T_sms_dias_tmp_cierre
 			union
-			select distinct msisdn,fecha from $esquema_temp.otc_t_datos_dias_tmp_cierre
-			union
-			select distinct msisdn,fecha from $esquema_temp.otc_t_sms_dias_tmp_cierre
-			union
-			select distinct msisdn,fecha from $esquema_temp.otc_t_cont_dias_tmp_cierre
+			SELECT distinct msisdn,fecha FROM $ESQUEMA_TEMP.OTC_T_cont_dias_tmp_cierre
 			)
-			select
-			case when telefono like '30%' then substr(telefono,3) else telefono end as telefono
-			,$fechaeje fecha_corte
-			,sum(t_voz) dias_voz
-			,sum(t_datos) dias_datos
-			,sum(t_sms) dias_sms
-			,sum(t_contenido) dias_conenido
+			SELECT
+			CASE WHEN telefono LIKE '30%' THEN substr(telefono,3) ELSE telefono END AS TELEFONO
+			,$FECHAEJE fecha_corte
+			,sum(T_voz) dias_voz
+			,sum(T_datos) dias_datos
+			,sum(T_sms) dias_sms
+			,sum(T_CONTENIDO) dias_conenido
 			,sum(total) dias_total
-			from ( select contadias.msisdn telefono
+			from ( SELECT contadias.msisdn TELEFONO
 			,contadias.fecha
-			,coalesce(p.t_voz,0) t_voz
-			, coalesce(a.t_datos,0) t_datos
-			, coalesce(m.t_sms,0) t_sms
-			, coalesce(n.t_contenido,0) t_contenido
-			, coalesce (p.t_voz,a.t_datos,m.t_sms,n.t_contenido,0) total
-			from   contadias
-			left join $esquema_temp.otc_t_voz_dias_tmp_cierre p on contadias.msisdn = p.msisdn and contadias.fecha=p.fecha
-			left join $esquema_temp.otc_t_datos_dias_tmp_cierre a on contadias.msisdn = a.msisdn and contadias.fecha=a.fecha
-			left join $esquema_temp.otc_t_sms_dias_tmp_cierre m on contadias.msisdn = m.msisdn and contadias.fecha=m.fecha
-			left join $esquema_temp.otc_t_cont_dias_tmp_cierre n on contadias.msisdn = n.msisdn and contadias.fecha=n.fecha) bb
-			group by telefono;" 1>> $logs/$ejecucion_log.log 2>> $logs/$ejecucion_log.log
+			,COALESCE(p.T_voz,0) T_voz
+			, COALESCE(a.T_datos,0) T_datos
+			, COALESCE(m.T_sms,0) T_sms
+			, COALESCE(n.T_CONTENIDO,0) T_CONTENIDO
+			, COALESCE (p.T_voz,a.T_datos,m.T_sms,n.T_CONTENIDO,0) total
+			FROM   contadias
+			LEFT JOIN $ESQUEMA_TEMP.OTC_T_voz_dias_tmp_cierre p ON contadias.msisdn = p.msisdn and contadias.fecha=p.fecha
+			LEFT JOIN $ESQUEMA_TEMP.OTC_T_datos_dias_tmp_cierre a ON contadias.msisdn = a.msisdn and contadias.fecha=a.fecha
+			LEFT JOIN $ESQUEMA_TEMP.OTC_T_sms_dias_tmp_cierre m ON contadias.msisdn = m.msisdn and contadias.fecha=m.fecha
+			LEFT JOIN $ESQUEMA_TEMP.OTC_T_cont_dias_tmp_cierre n ON contadias.msisdn = n.msisdn and contadias.fecha=n.fecha) bb
+			group by telefono;" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
-			# verificacion de creacion de archivo
+			# Verificacion de creacion de archivo
 			if [ $? -eq 0 ]; then
-				log i "hive" $rc  " fin del parque traficador" $paso
+				log i "HIVE" $rc  " Fin del PARQUE TRAFICADOR" $PASO
 				else
 				(( rc = 107)) 
-				log e "hive" $rc  " fallo al ejecutar el parque traficador" $paso
+				log e "HIVE" $rc  " Fallo al ejecutar el PARQUE TRAFICADOR" $PASO
 				exit $rc
 			fi
 			
-	log i "hive" $rc  " fin ejecucion querys para parque traficador" $paso
+	log i "HIVE" $rc  " FIN EJECUCION QUERYS PARA PARQUE TRAFICADOR" $PASO
 		
-		fin=$(date +%s)
-		dif=$(echo "$fin - $inicio" | bc)
-		total=$(printf '%d:%d:%d\n' $(($dif/3600)) $(($dif%3600/60)) $(($dif%60)))
-		stat "insert parque recargador" $total 0 0
-	paso=8
+		FIN=$(date +%s)
+		DIF=$(echo "$FIN - $INICIO" | bc)
+		TOTAL=$(printf '%d:%d:%d\n' $(($DIF/3600)) $(($DIF%3600/60)) $(($DIF%60)))
+		stat "Insert PARQUE RECARGADOR" $TOTAL 0 0
+	PASO=8
 	fi	
 	
 #------------------------------------------------------
-# ejecucion de consultas para la tabla general
+# EJECUCION DE CONSULTAS PARA LA TABLA GENERAL
 #------------------------------------------------------
-    #verificar si hay parã¡metro de re-ejecuciã³n
-    if [ "$paso" = "8" ]; then
-      inicio=$(date +%s)
+    #Verificar si hay parÃ¡metro de re-ejecuciÃ³n
+    if [ "$PASO" = "8" ]; then
+      INICIO=$(date +%s)
    
-	log i "hive" $rc  " inicio ejecucion querys para la tabla general" $paso
+	log i "HIVE" $rc  " INICIO EJECUCION QUERYS PARA LA TABLA GENERAL" $PASO
 		
 		/usr/bin/hive -e "set hive.cli.print.header=false;
 		set hive.vectorized.execution.enabled=false;
 		set hive.vectorized.execution.reduce.enabled=false;
-		set tez.queue.name=$cola_ejecucion;
+		set tez.queue.name=$COLA_EJECUCION;
 		
-		--obtiene el metodo o forma de pago por cuenta
-					drop table $esquema_temp.otc_t_360_mop_defecto_tmp_cierre;
-					create table $esquema_temp.otc_t_360_mop_defecto_tmp_cierre as
+		--OBTIENE EL METODO O FORMA DE PAGO POR CUENTA
+					drop table $ESQUEMA_TEMP.otc_t_360_mop_defecto_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_mop_defecto_tmp_cierre as
 					select 
 					t.account_num,
 					t.payment_method_id,
@@ -2374,7 +2229,7 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					t.orden
 					from(
 					select a.account_num, a.payment_method_id,b.payment_method_name,a.start_dat,a.end_dat
-					,row_number() over (partition by account_num order by nvl(end_dat,current_date) desc) as orden
+					,row_number() over (partition by account_num order by nvl(end_dat,CURRENT_DATE) desc) as orden
 					from db_rbm.otc_t_accountdetails a
 					inner join db_rbm.otc_t_paymentmethod b on b.payment_method_id= a.payment_method_id
 					where a.start_dat <= '$fecha_alt_ini'
@@ -2382,44 +2237,44 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					where t.orden in (1,2);
 					
 
-			--se a?de la forma de pago al parque l?ea a l?ea
-					drop table $esquema_temp.otc_t_360_parque_mop_1_tmp_cierre;
-					create table $esquema_temp.otc_t_360_parque_mop_1_tmp_cierre as
+			--SE A?DE LA FORMA DE PAGO AL PARQUE L?EA A L?EA
+					drop table $ESQUEMA_TEMP.otc_t_360_parque_mop_1_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_parque_mop_1_tmp_cierre as
 					select *
 					from(
-					select num_telefonico,
+					SELECT num_telefonico,
 					forma_pago,
 					row_number() over (partition by num_telefonico order by fecha_alta asc) as orden
-					from db_cs_altas.otc_t_nc_movi_parque_v1
-					where fecha_proceso = $fechamas1
+					FROM db_cs_altas.otc_t_nc_movi_parque_v1
+					WHERE fecha_proceso = $fechamas1
 					) t
 					where t.orden=1;
 
-			--se obtiene el catalogo de segmento por combinaci? ?ica de segmento y subsegmento
-					drop table $esquema_temp.otc_t_360_homo_segmentos_1_tmp_cierre;
-					create table $esquema_temp.otc_t_360_homo_segmentos_1_tmp_cierre as
+			--SE OBTIENE EL CATALOGO DE SEGMENTO POR COMBINACI? ?ICA DE SEGMENTO Y SUBSEGMENTO
+					drop table $ESQUEMA_TEMP.otc_t_360_homo_segmentos_1_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_homo_segmentos_1_tmp_cierre as
 					select distinct
 					upper(segmentacion) segmentacion
-					,upper(segmento) segmento
+					,UPPER(segmento) segmento
 					from db_cs_altas.otc_t_homologacion_segmentos;
 
-			--se obtiene la edad y sexo calculados para cada l?ea
-					drop table $esquema_temp.otc_t_360_parque_edad_tmp_cierre;
-					create table $esquema_temp.otc_t_360_parque_edad_tmp_cierre as
-					select dd.user_id num_telefonico, dd.edad,dd.sexo
-					from db_thebox.otc_t_parque_edad20 dd
-					inner join (select max(fecha_proceso) max_fecha from db_thebox.otc_t_parque_edad20 where fecha_proceso < $fechamas1) fm on fm.max_fecha = dd.fecha_proceso;
+			--SE OBTIENE LA EDAD Y SEXO CALCULADOS PARA CADA L?EA
+					drop table $ESQUEMA_TEMP.otc_t_360_parque_edad_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_parque_edad_tmp_cierre as
+					SELECT dd.user_id num_telefonico, dd.edad,dd.sexo
+					FROM db_thebox.otc_t_parque_edad20 dd
+					inner join (SELECT max(fecha_proceso) max_fecha FROM db_thebox.otc_t_parque_edad20 where fecha_proceso < $fechamas1) fm on fm.max_fecha = dd.fecha_proceso;
 
-			--se obtiene a partir de la 360 modelo el tac de trafico de cada l?ea
-					drop table $esquema_temp.otc_t_360_imei_tmp_cierre;
-					create table $esquema_temp.otc_t_360_imei_tmp_cierre as
-					select ime.num_telefonico num_telefonico, ime.tac tac
-					from db_reportes.otc_t_360_modelo ime
-					where fecha_proceso=$fechaeje;
+			--SE OBTIENE A PARTIR DE LA 360 MODELO EL TAC DE TRAFICO DE CADA L?EA
+					drop table $ESQUEMA_TEMP.otc_t_360_imei_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_imei_tmp_cierre as
+					SELECT ime.num_telefonico num_telefonico, ime.tac tac
+					FROM db_reportes.otc_t_360_modelo ime
+					where fecha_proceso=$FECHAEJE;
 
-			--se obtienen los numeros telefonicos que usan la app mi movistar
-					drop table $esquema_temp.otc_t_360_usa_app_tmp_cierre;
-					create table $esquema_temp.otc_t_360_usa_app_tmp_cierre as
+			--SE OBTIENEN LOS NUMEROS TELEFONICOS QUE USAN LA APP MI MOVISTAR
+					drop table $ESQUEMA_TEMP.otc_t_360_usa_app_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_usa_app_tmp_cierre as
 					select numero_telefono, count(1) total
 					from db_files_novum.otc_t_usuariosactivos
 					where fecha_proceso >= $fechamenos1mes
@@ -2427,44 +2282,44 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					group by numero_telefono
 					having count(1)>0;
 
-			--se obtienen los numeros telefonicos registrados en la app mi movistar					
-					drop table $esquema_temp.otc_t_360_usuario_app_tmp_cierre;
-					create table $esquema_temp.otc_t_360_usuario_app_tmp_cierre as
+			--SE OBTIENEN LOS NUMEROS TELEFONICOS REGISTRADOS EN LA APP MI MOVISTAR					
+					drop table $ESQUEMA_TEMP.otc_t_360_usuario_app_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_usuario_app_tmp_cierre as
 					select celular numero_telefono, count(1) total
 					from db_files_novum.otc_t_rep_usuarios_registrados
 					group by celular
 					having count(1)>0;
 
-			--se obtienen la fecha m?ima de carga de la tabla de usuario movistar play, menor o igual a la fecha de ejecuci?
-					drop table $esquema_temp.tmp_360_fecha_mplay_cierre;
-					create table $esquema_temp.tmp_360_fecha_mplay_cierre as
-					select max(fecha_proceso) as fecha_proceso from db_mplay.otc_t_users_semanal where fecha_proceso <= $fechaeje;
+			--SE OBTIENEN LA FECHA M?IMA DE CARGA DE LA TABLA DE USUARIO MOVISTAR PLAY, MENOR O IGUAL A LA FECHA DE EJECUCI?
+					drop table $ESQUEMA_TEMP.tmp_360_fecha_mplay_cierre;
+					CREATE TABLE $ESQUEMA_TEMP.tmp_360_fecha_mplay_cierre as
+					SELECT MAX(FECHA_PROCESO) as fecha_proceso FROM DB_MPLAY.OTC_T_USERS_SEMANAL WHERE FECHA_PROCESO <= $FECHAEJE;
 			
-			--se obtienen los usuarios que usan movistar play
-					drop table $esquema_temp.otc_t_360_usa_app_movi_tmp_cierre;
-					create table $esquema_temp.otc_t_360_usa_app_movi_tmp_cierre as
-					select
+			--SE OBTIENEN LOS USUARIOS QUE USAN MOVISTAR PLAY
+					drop table $ESQUEMA_TEMP.otc_t_360_usa_app_movi_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_usa_app_movi_tmp_cierre as
+					SELECT
 					distinct
-					substr((case when a.userid = null or a.userid = '' then b.useruniqueid else a.userid end),-9) as numero_telefono
-					from db_mplay.otc_t_users_semanal as a
-					left join db_mplay.otc_t_users as b on (a.useruniqueid = b.mibid and a.fecha_proceso = b.fecha_proceso)
-					inner join $esquema_temp.tmp_360_fecha_mplay_cierre c on (a.fecha_proceso=c.fecha_proceso)
-					where upper (a.subscriptionname) = 'ec_int_tv_u_act_serv';
+					SUBSTR((CASE WHEN A.USERID = NULL OR A.USERID = '' THEN B.USERUNIQUEID ELSE A.USERID END),-9) AS numero_telefono
+					FROM DB_MPLAY.OTC_T_USERS_SEMANAL AS A
+					LEFT JOIN DB_MPLAY.OTC_T_USERS AS B ON (A.USERUNIQUEID = B.MIBID AND A.FECHA_PROCESO = B.FECHA_PROCESO)
+					inner join $ESQUEMA_TEMP.tmp_360_fecha_mplay_cierre c on (a.fecha_proceso=c.fecha_proceso)
+					WHERE UPPER (A.SUBSCRIPTIONNAME) = 'EC_INT_TV_U_ACT_SERV';
 
-			--se obtienen los usuarios registrados en movistar play					
-					drop table $esquema_temp.otc_t_360_usuario_app_movi_tmp_cierre;
-					create table $esquema_temp.otc_t_360_usuario_app_movi_tmp_cierre as
-					select
+			--SE OBTIENEN LOS USUARIOS REGISTRADOS EN MOVISTAR PLAY					
+					drop table $ESQUEMA_TEMP.otc_t_360_usuario_app_movi_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_usuario_app_movi_tmp_cierre as
+					SELECT
 					distinct
-					substr((case when a.userid = null or a.userid = ''  then b.useruniqueid else a.userid end),-9) as numero_telefono
-					from db_mplay.otc_t_users_semanal as a
-					left join db_mplay.otc_t_users as b on (a.useruniqueid = b.mibid and a.fecha_proceso = b.fecha_proceso)
-					inner join $esquema_temp.tmp_360_fecha_mplay_cierre c on (a.fecha_proceso=c.fecha_proceso)
-					where upper (a.subscriptionname) = 'ec_int_tv_u_reg';
+					SUBSTR((CASE WHEN A.USERID = NULL OR A.USERID = ''  THEN B.USERUNIQUEID ELSE A.USERID END),-9) AS numero_telefono
+					FROM DB_MPLAY.OTC_T_USERS_SEMANAL AS A
+					LEFT JOIN DB_MPLAY.OTC_T_USERS AS B ON (A.USERUNIQUEID = B.MIBID AND A.FECHA_PROCESO = B.FECHA_PROCESO)
+					inner join $ESQUEMA_TEMP.tmp_360_fecha_mplay_cierre c on (a.fecha_proceso=c.fecha_proceso)
+					WHERE UPPER (A.SUBSCRIPTIONNAME) = 'EC_INT_TV_U_REG';
 
 
-					drop table $esquema_temp.otc_t_360_bonos_devengo_tmp_cierre;
-					create table $esquema_temp.otc_t_360_bonos_devengo_tmp_cierre as 
+					drop table $ESQUEMA_TEMP.otc_t_360_bonos_devengo_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_bonos_devengo_tmp_cierre as 
 					select 
 					a.num_telefono as numero_telefono,
 					sum(b.imp_coste/1.12)/1000 as valor_bono,
@@ -2480,8 +2335,8 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					inner join db_rdb.otc_t_oferta_comercial_comberos t3 
 					on t3.cod_aa=a.cod_bono
 					where a.sec_baja is null
-					and b.cod_actuacio='ab'
-					and b.cod_estarec='ej'
+					and b.cod_actuacio='AB'
+					and b.cod_estarec='EJ'
 					and b.fecha > $fechamenos1mes and b.fecha < $fechamas1
 					and a.fecha > $fechamenos1mes and a.fecha < $fechamas1
 					and b.imp_coste > 0
@@ -2489,134 +2344,134 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					a.cod_bono,
 					a.fec_alta;
 
-					drop table $esquema_temp.otc_t_360_bonos_all_tmp_cierre;
-					create table $esquema_temp.otc_t_360_bonos_all_tmp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_bonos_all_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_bonos_all_tmp_cierre as
 					select t1.numero_telefono, sum(t1.valor_bono) as valor_bono, t1.codigo_bono, t1.fecha
 					from (select b.numero_telefono, b.valor_bono, b.codigo_bono,b.fecha
 					from(
 					select t.c_customer_id numero_telefono, t1.valor valor_bono, t1.cod_aa codigo_bono,cast(t.c_transaction_datetime as date) as fecha
-					,row_number() over (partition by t.c_customer_id order by t.c_transaction_datetime desc) as id
+					,row_number() over (partition by t.c_customer_id order by t.c_transaction_datetime DESC) as id
 					from db_payment_manager.otc_t_pmg_bonos_combos t
-					inner join $esquema_temp.otc_t_360_parque_1_tmp_cierre t2 on t2.num_telefonico= t.c_customer_id and upper(t2.linea_negocio) like 'pre%'
-					inner join db_dwec.otc_t_ctl_bonos t1 on t1.operacion=t.c_packet_code
+					inner join $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre t2 on t2.num_telefonico= t.c_customer_id and upper(t2.linea_negocio) like 'PRE%'
+					inner join db_dwec.OTC_T_CTL_BONOS t1 on t1.operacion=t.c_packet_code
 					where t.fecha_proceso > $fechamenos2mes
 					and t.fecha_proceso < $fechamas1
 					) b
 					where b.id=1
 					union all
-					select numero_telefono, valor_bono, codigo_bono, fec_alta as fecha from $esquema_temp.otc_t_360_bonos_devengo_tmp_cierre) as t1
+					select numero_telefono, valor_bono, codigo_bono, fec_alta as fecha from $ESQUEMA_TEMP.otc_t_360_bonos_devengo_tmp_cierre) as t1
 					group by t1.numero_telefono, t1.codigo_bono, t1.fecha;
 
-					drop table $esquema_temp.otc_t_360_bonos_tmp_cierre;
-					create table $esquema_temp.otc_t_360_bonos_tmp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_bonos_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_bonos_tmp_cierre as
 					select t1.numero_telefono, t1.valor_bono, t1.codigo_bono, t1.fecha
 					from (select numero_telefono, valor_bono, codigo_bono, fecha,
-							row_number() over (partition by numero_telefono order by fecha desc) as orden
-						from $esquema_temp.otc_t_360_bonos_all_tmp_cierre
+							row_number() over (partition by numero_telefono order by fecha DESC) as orden
+						from $ESQUEMA_TEMP.otc_t_360_bonos_all_tmp_cierre
 						) as t1
 					where orden=1;
 
 
-					drop table $esquema_temp.otc_t_360_combero_all_tmp_cierre;
-					create table $esquema_temp.otc_t_360_combero_all_tmp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_combero_all_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_combero_all_tmp_cierre as
 					select t1.numero_telefono, sum(t1.valor_bono) as valor_bono, t1.codigo_bono, t1.fecha
 					from (select b.numero_telefono, b.valor_bono, b.codigo_bono, b.fecha
 					from(
 					select t.c_customer_id numero_telefono, t1.valor valor_bono, t1.cod_aa codigo_bono,cast(t.c_transaction_datetime as date) as fecha
-					,row_number() over (partition by t.c_customer_id order by t.c_transaction_datetime desc) as id
+					,row_number() over (partition by t.c_customer_id order by t.c_transaction_datetime DESC) as id
 					from db_payment_manager.otc_t_pmg_bonos_combos t
-					inner join $esquema_temp.otc_t_360_parque_1_tmp_cierre t2 on t2.num_telefonico= t.c_customer_id and upper(t2.linea_negocio) like 'pre%'
-					inner join db_dwec.otc_t_ctl_bonos t1 on t1.operacion=t.c_packet_code
+					inner join $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre t2 on t2.num_telefonico= t.c_customer_id and upper(t2.linea_negocio) like 'PRE%'
+					inner join db_dwec.OTC_T_CTL_BONOS t1 on t1.operacion=t.c_packet_code
 					inner join db_rdb.otc_t_oferta_comercial_comberos t3 on t3.cod_aa=t1.cod_aa
 					where t.fecha_proceso > $fechamenos1mes
 					and t.fecha_proceso < $fechamas1
 					) b
 					where b.id=1
 					union all
-					select numero_telefono, valor_bono, codigo_bono, fec_alta as fecha from $esquema_temp.otc_t_360_bonos_devengo_tmp_cierre) as t1
+					select numero_telefono, valor_bono, codigo_bono, fec_alta as fecha from $ESQUEMA_TEMP.otc_t_360_bonos_devengo_tmp_cierre) as t1
 					group by t1.numero_telefono, t1.codigo_bono, t1.fecha;
 
 
-					drop table $esquema_temp.otc_t_360_combero_tmp_cierre;
-					create table $esquema_temp.otc_t_360_combero_tmp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_combero_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_combero_tmp_cierre as
 					select t1.numero_telefono, t1.valor_bono, t1.codigo_bono, t1.fecha
 					from (select numero_telefono, valor_bono, codigo_bono, fecha,
-							row_number() over (partition by numero_telefono order by fecha desc) as orden
-						from $esquema_temp.otc_t_360_combero_all_tmp_cierre
+							row_number() over (partition by numero_telefono order by fecha DESC) as orden
+						from $ESQUEMA_TEMP.otc_t_360_combero_all_tmp_cierre
 						) as t1
 					where orden=1;
 	
-					drop table $esquema_temp.otc_t_360_prob_churn_pre_temp_cierre;
-					create table $esquema_temp.otc_t_360_prob_churn_pre_temp_cierre as	
+					drop table $ESQUEMA_TEMP.otc_t_360_prob_churn_pre_temp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_prob_churn_pre_temp_cierre as	
 					select gen.num_telefonico, pre.prob_churn
-					from $esquema_temp.otc_t_360_parque_1_tmp_cierre gen
+					from $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre gen
 					inner join db_rdb.otc_t_churn_prepago pre on pre.telefono = gen.num_telefonico
-					inner join (select max(fecha) max_fecha from db_rdb.otc_t_churn_prepago where fecha < $fechamas1) fm on fm.max_fecha = pre.fecha
-					where upper(gen.linea_negocio) like 'pre%'
+					inner join (SELECT max(fecha) max_fecha FROM db_rdb.otc_t_churn_prepago where fecha < $fechamas1) fm on fm.max_fecha = pre.fecha
+					where upper(gen.linea_negocio) like 'PRE%'
 					group by gen.num_telefonico, pre.prob_churn;
 
-					drop table $esquema_temp.otc_t_360_prob_churn_pos_temp_cierre;
-					create table $esquema_temp.otc_t_360_prob_churn_pos_temp_cierre as	
+					drop table $ESQUEMA_TEMP.otc_t_360_prob_churn_pos_temp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_prob_churn_pos_temp_cierre as	
 					select gen.num_telefonico, pos.probability_label_1 as prob_churn
-					from $esquema_temp.otc_t_360_parque_1_tmp gen
+					from $ESQUEMA_TEMP.otc_t_360_parque_1_tmp gen
 					inner join db_thebox.pred_portabilidad2022 pos on pos.num_telefonico = gen.num_telefonico
-					where upper(gen.linea_negocio) not like 'pre%'
+					where upper(gen.linea_negocio) not like 'PRE%'
 					group by gen.num_telefonico, pos.probability_label_1;										
 
-					drop table $esquema_temp.otc_t_360_homologacion_segmentos_1_cierre;
-					create table $esquema_temp.otc_t_360_homologacion_segmentos_1_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_1_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_1_cierre as
 					select distinct
 					upper(segmentacion) segmentacion
-					,upper(segmento) segmento
-					,upper(segmento_fin) segmento_fin
+					,UPPER(segmento) segmento
+					,UPPER(segmento_fin) segmento_fin
 					from db_cs_altas.otc_t_homologacion_segmentos
 					union
-					select 'canales consignacion','otros','otros';
+					select 'CANALES CONSIGNACION','OTROS','OTROS';
 
-					drop table $esquema_temp.otc_t_360_homologacion_segmentos_cierre;
-					create table $esquema_temp.otc_t_360_homologacion_segmentos_cierre as
-					select distinct upper(a.sub_segmento) sub_segmento, b.segmento,b.segmento_fin
-					from $esquema_temp.otc_t_360_parque_1_tmp_cierre a
-					inner join $esquema_temp.otc_t_360_homologacion_segmentos_1_cierre b
-					on b.segmentacion = (case when upper(a.sub_segmento) = 'roaming' then 'roaming xdr'
-											when upper(a.sub_segmento) like 'peque%' then 'pequenas'
-											when upper(a.sub_segmento) like 'telefon%p%blica' then 'telefonia publica'
-											when upper(a.sub_segmento) like 'canales%consignaci%' then 'canales consignacion'
-											when upper(a.sub_segmento) like '%canales%simcards%(franquicias)%' then 'canales simcards (franquicias)'
-											else upper(a.sub_segmento) end);
+					drop table $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_cierre as
+					select distinct UPPER(a.sub_segmento) sub_segmento, b.segmento,b.segmento_fin
+					from $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre a
+					inner join $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_1_cierre b
+					on b.segmentacion = (case when UPPER(a.sub_segmento) = 'ROAMING' then 'ROAMING XDR'
+											when UPPER(a.sub_segmento) like 'PEQUE%' then 'PEQUENAS'
+											when UPPER(a.sub_segmento) like 'TELEFON%P%BLICA' then 'TELEFONIA PUBLICA'
+											when UPPER(a.sub_segmento) like 'CANALES%CONSIGNACI%' then 'CANALES CONSIGNACION'
+											when UPPER(a.sub_segmento) like '%CANALES%SIMCARDS%(FRANQUICIAS)%' then 'CANALES SIMCARDS (FRANQUICIAS)'
+											else UPPER(a.sub_segmento) end);
 
-  				    drop table $esquema_temp.otc_t_360_general_temp_1_cierre;
-					create table $esquema_temp.otc_t_360_general_temp_1_cierre as
+  				    drop table $ESQUEMA_TEMP.otc_t_360_general_temp_1_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_general_temp_1_cierre as
 					select t.num_telefonico telefono,
 					t.codigo_plan,
 					t.fecha_proceso,
-					case when nvl(t6.total,0) > 0 then 'si' else 'no' end usa_app,
-					case when nvl(t7.total,0) > 0 then 'si' else 'no' end usuario_app,
-					case when t9.numero_telefono is not null then 'si' else 'no' end usa_movistar_play,
-					case when t10.numero_telefono is not null then 'si' else 'no' end usuario_movistar_play,					
+					case when nvl(t6.total,0) > 0 then 'SI' else 'NO' end USA_APP,
+					case when nvl(t7.total,0) > 0 then 'SI' else 'NO' end USUARIO_APP,
+					case when t9.numero_telefono is not null then 'SI' else 'NO' end USA_MOVISTAR_PLAY,
+					case when t10.numero_telefono is not null then 'SI' else 'NO' end USUARIO_MOVISTAR_PLAY,					
 					t.fecha_alta,
 					t4.sexo,
 					t4.edad,
 					substr(t.fecha_proceso, 5, 2) mes,
 					substr(t.fecha_proceso, 1, 4) anio,
-					upper(t3.segmento) segmento,
+					UPPER(t3.segmento) segmento,
 					upper(t3.segmento_fin) segmento_fin,
 					t.linea_negocio,
 					t14.payment_method_name forma_pago_factura,
 					t1.forma_pago forma_pago_alta,
 					t.estado_abonado,
-					upper(t.sub_segmento) sub_segmento,
+					UPPER(t.sub_segmento) sub_segmento,
 					t.numero_abonado,
 					t.account_num,
 					t.identificacion_cliente,
 					t.customer_ref,
 					t5.tac,
-					case when t8.numero_telefono is null then 'no' else 'si' end tiene_bono,
+					case when t8.numero_telefono is null then 'NO' else 'SI' end TIENE_BONO,
 					t8.valor_bono,
 					t8.codigo_bono,
-					case when upper(t.linea_negocio) like 'pre%' then t11.prob_churn else t12.prob_churn end probabilidad_churn
-					,t.counted_days
-					,t.linea_negocio_homologado
+					case when upper(t.linea_negocio) like 'PRE%' then t11.prob_churn else t12.prob_churn end probabilidad_churn
+					,t.COUNTED_DAYS
+					,t.LINEA_NEGOCIO_HOMOLOGADO
 					,t.categoria_plan
 					,t.tarifa
 					,t.nombre_plan
@@ -2635,51 +2490,51 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					,t13.start_dat fecha_inicio_pago_anterior
 					,t13.end_dat fecha_fin_pago_anterior
 					,t13.payment_method_name forma_pago_anterior
-					from $esquema_temp.otc_t_360_parque_1_tmp_cierre t
-					left join $esquema_temp.otc_t_360_parque_mop_1_tmp_cierre t1 on t1.num_telefonico= t.num_telefonico
-					left join $esquema_temp.otc_t_360_mop_defecto_tmp_cierre t13 on t13.account_num= t.account_num and t13.orden=2
-					left join $esquema_temp.otc_t_360_mop_defecto_tmp_cierre t14 on t14.account_num= t.account_num and t14.orden=1
-					left outer join $esquema_temp.otc_t_360_homologacion_segmentos_cierre t3 on upper(t3.sub_segmento) = upper(t.sub_segmento)
-					left outer join $esquema_temp.otc_t_360_parque_edad_tmp_cierre t4 on t4.num_telefonico=t.num_telefonico
-					left outer join $esquema_temp.otc_t_360_imei_tmp_cierre t5 on t5.num_telefonico = t.num_telefonico
-					left outer join $esquema_temp.otc_t_360_usa_app_tmp_cierre t6 on t6.numero_telefono = t.num_telefonico
-					left outer join $esquema_temp.otc_t_360_usuario_app_tmp_cierre t7 on t7.numero_telefono = t.num_telefonico
-					left outer join $esquema_temp.otc_t_360_usa_app_movi_tmp_cierre t9 on t9.numero_telefono = t.num_telefonico
-					left outer join $esquema_temp.otc_t_360_usuario_app_movi_tmp_cierre t10 on t10.numero_telefono = t.num_telefonico
-					left outer join $esquema_temp.otc_t_360_bonos_tmp_cierre t8 on t8.numero_telefono = t.num_telefonico
-					left outer join $esquema_temp.otc_t_360_prob_churn_pre_temp_cierre t11 on t11.num_telefonico = t.num_telefonico
-					left outer join $esquema_temp.otc_t_360_prob_churn_pos_temp_cierre t12 on t12.num_telefonico = t.num_telefonico
+					from $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre t
+					left join $ESQUEMA_TEMP.otc_t_360_parque_mop_1_tmp_cierre t1 on t1.num_telefonico= t.num_telefonico
+					left join $ESQUEMA_TEMP.otc_t_360_mop_defecto_tmp_cierre t13 on t13.account_num= t.account_num and t13.orden=2
+					left join $ESQUEMA_TEMP.otc_t_360_mop_defecto_tmp_cierre t14 on t14.account_num= t.account_num and t14.orden=1
+					left outer join $ESQUEMA_TEMP.otc_t_360_homologacion_segmentos_cierre t3 on upper(t3.sub_segmento) = upper(t.sub_segmento)
+					left outer join $ESQUEMA_TEMP.otc_t_360_parque_edad_tmp_cierre t4 on t4.num_telefonico=t.num_telefonico
+					left outer join $ESQUEMA_TEMP.otc_t_360_imei_tmp_cierre t5 on t5.num_telefonico = t.num_telefonico
+					left outer join $ESQUEMA_TEMP.otc_t_360_usa_app_tmp_cierre t6 on t6.numero_telefono = t.num_telefonico
+					left outer join $ESQUEMA_TEMP.otc_t_360_usuario_app_tmp_cierre t7 on t7.numero_telefono = t.num_telefonico
+					left outer join $ESQUEMA_TEMP.otc_t_360_usa_app_movi_tmp_cierre t9 on t9.numero_telefono = t.num_telefonico
+					left outer join $ESQUEMA_TEMP.otc_t_360_usuario_app_movi_tmp_cierre t10 on t10.numero_telefono = t.num_telefonico
+					left outer join $ESQUEMA_TEMP.otc_t_360_bonos_tmp_cierre t8 on t8.numero_telefono = t.num_telefonico
+					left outer join $ESQUEMA_TEMP.otc_t_360_prob_churn_pre_temp_cierre t11 on t11.num_telefonico = t.num_telefonico
+					left outer join $ESQUEMA_TEMP.otc_t_360_prob_churn_pos_temp_cierre t12 on t12.num_telefonico = t.num_telefonico
 					where 1=1
 					group by t.num_telefonico,
 					t.codigo_plan,
 					t.fecha_proceso,
-					case when nvl(t6.total,0) > 0 then 'si' else 'no' end,
-					case when nvl(t7.total,0) > 0 then 'si' else 'no' end,
-					case when t9.numero_telefono is not null then 'si' else 'no' end,
-					case when t10.numero_telefono is not null then 'si' else 'no' end,
+					case when nvl(t6.total,0) > 0 then 'SI' else 'NO' end,
+					case when nvl(t7.total,0) > 0 then 'SI' else 'NO' end,
+					case when t9.numero_telefono is not null then 'SI' else 'NO' end,
+					case when t10.numero_telefono is not null then 'SI' else 'NO' end,
 					t.fecha_alta,
 					t4.sexo,
 					t4.edad,
 					substr(t.fecha_proceso, 5, 2),
 					substr(t.fecha_proceso, 1, 4),
-					upper(t3.segmento),
+					UPPER(t3.segmento),
 					t.linea_negocio,
 					t14.payment_method_name,
 					t1.forma_pago,
 					t.estado_abonado,
-					upper(t.sub_segmento),
-					upper(t3.segmento_fin),		
+					UPPER(t.sub_segmento),
+					UPPER(t3.segmento_fin),		
 					t.numero_abonado,
 					t.account_num,
 					t.identificacion_cliente,
 					t.customer_ref,
 					t5.tac,
-					case when t8.numero_telefono is null then 'no' else 'si' end,
+					case when t8.numero_telefono is null then 'NO' else 'SI' end,
 					t8.valor_bono,
 					t8.codigo_bono,
-					case when upper(t.linea_negocio) like 'pre%' then t11.prob_churn else t12.prob_churn end
-					,t.counted_days
-					,t.linea_negocio_homologado
+					case when upper(t.linea_negocio) like 'PRE%' then t11.prob_churn else t12.prob_churn end
+					,t.COUNTED_DAYS
+					,t.LINEA_NEGOCIO_HOMOLOGADO
 					,t.categoria_plan
 					,t.tarifa
 					,t.nombre_plan
@@ -2700,106 +2555,106 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					,t13.payment_method_name;
 															
 															
-					drop table $esquema_temp.otc_t_360_general_temp_cierre;
-					create table $esquema_temp.otc_t_360_general_temp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_general_temp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_general_temp_cierre as
 					select 
 					a.*
-					,case when (coalesce(b.ingreso_recargas_m0,0)+coalesce(b.ingreso_combos,0)+coalesce(b.ingreso_bonos,0)) >0 then 'si' else 'no' end as parque_recargador 
-					from $esquema_temp.otc_t_360_general_temp_1_cierre a 
-					left join $esquema_temp.tmp_otc_t_360_recargas_cierre b
+					,case when (coalesce(b.ingreso_recargas_m0,0)+coalesce(b.ingreso_combos,0)+coalesce(b.ingreso_bonos,0)) >0 then 'SI' else 'NO' end as PARQUE_RECARGADOR 
+					from $ESQUEMA_TEMP.otc_t_360_general_temp_1_cierre a 
+					left join $ESQUEMA_TEMP.tmp_otc_t_360_recargas_cierre b
 					on a.telefono=b.numero_telefono;
 
-					drop table $esquema_temp.otc_t_360_catalogo_celdas_dpa_tmp_cierre;
-					create table $esquema_temp.otc_t_360_catalogo_celdas_dpa_tmp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_catalogo_celdas_dpa_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_catalogo_celdas_dpa_tmp_cierre as
 					select cc.*
 					from db_ipaccess.catalogo_celdas_dpa cc 
-					inner join (select max(fecha_proceso) max_fecha from db_ipaccess.catalogo_celdas_dpa where fecha_proceso < $fechamas1) cfm on cfm.max_fecha = cc.fecha_proceso;
+					inner join (SELECT max(fecha_proceso) max_fecha FROM db_ipaccess.catalogo_celdas_dpa where fecha_proceso < $fechamas1) cfm on cfm.max_fecha = cc.fecha_proceso;
 															
-					drop table $esquema_temp.tmp_360_ticket_recarga_cierre;
-					create table $esquema_temp.tmp_360_ticket_recarga_cierre as
+					drop table $ESQUEMA_TEMP.tmp_360_ticket_recarga_cierre;
+					create table $ESQUEMA_TEMP.tmp_360_ticket_recarga_cierre as
 					select
 					fecha_proceso as mes,
 					num_telefonico as telefono,
 					sum(ingreso_recargas_m0) as total_rec_bono,
 					sum(cantidad_recargas_m0) as total_cantidad
 					from db_reportes.otc_t_360_ingresos
-					where fecha_proceso in ($fechainimenos3mes,$fechainimenos2mes,$fechainimenos1mes)
+					where fecha_proceso in ($fechaInimenos3mes,$fechaInimenos2mes,$fechaInimenos1mes)
 					group by fecha_proceso,
 					num_telefonico;
 
-					drop table $esquema_temp.otc_t_360_ticket_rec_tmp_cierre;
-					create table $esquema_temp.otc_t_360_ticket_rec_tmp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_ticket_rec_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_ticket_rec_tmp_cierre as
 					select t1.mes,t2.linea_negocio,t1.telefono, 
 					sum(t1.total_rec_bono) as valor_recarga_base, 
 					sum(total_cantidad) as cantidad_recargas,
 					sum(t1.total_rec_bono)/sum(total_cantidad)  as ticket_mes,
 					count(telefono) as cant
-					from $esquema_temp.tmp_360_ticket_recarga_cierre t1, $esquema_temp.otc_t_360_parque_1_tmp_cierre t2 
-					where t2.num_telefonico=t1.telefono and t2.linea_negocio_homologado ='prepago'
+					from $ESQUEMA_TEMP.tmp_360_ticket_recarga_cierre t1, $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_cierre t2 
+					where t2.num_telefonico=t1.telefono and t2.linea_negocio_homologado ='PREPAGO'
 					group by t1.mes,t2.linea_negocio,t1.telefono;
 
 					
-					drop table $esquema_temp.otc_t_360_ticket_fin_tmp_cierre;
-					create table $esquema_temp.otc_t_360_ticket_fin_tmp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_ticket_fin_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_ticket_fin_tmp_cierre as
 					select telefono, 
 					sum(nvl(ticket_mes,0)) as ticket_mes, 
 					sum(nvl(cant,0)) as cant,
 					sum(nvl(ticket_mes,0))/sum(nvl(cant,0)) as ticket
-					from $esquema_temp.otc_t_360_ticket_rec_tmp_cierre
+					from $ESQUEMA_TEMP.otc_t_360_ticket_rec_tmp_cierre
 					group by telefono;
 
-					drop table $esquema_temp.otc_t_fecha_scoring_tx_cierre;
-					create table $esquema_temp.otc_t_fecha_scoring_tx_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_fecha_scoring_tx_cierre;
+					create table $ESQUEMA_TEMP.otc_t_fecha_scoring_tx_cierre as
 					select max(fecha_carga) as fecha_carga
 					from db_reportes.otc_t_scoring_tiaxa 
-					where fecha_carga>=$fechamenos5 and fecha_carga<=$fechaeje;
+					where fecha_carga>=$fechamenos5 and fecha_carga<=$FECHAEJE;
 
-					drop table $esquema_temp.otc_t_scoring_tiaxa_tmp_cierre;
-					create table $esquema_temp.otc_t_scoring_tiaxa_tmp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_scoring_tiaxa_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_scoring_tiaxa_tmp_cierre as
 					select substr(a.msisdn,4,9) as numero_telefono, max(a.score1) as score1, max(a.score2) as score2,max(a.limite_credito) as limite_credito
-					from db_reportes.otc_t_scoring_tiaxa a, $esquema_temp.otc_t_fecha_scoring_tx_cierre b
+					from db_reportes.otc_t_scoring_tiaxa a, $ESQUEMA_TEMP.otc_t_fecha_scoring_tx_cierre b
 					where a.fecha_carga = b.fecha_carga
 					group by substr(a.msisdn,4,9);
 		
 
-					drop table $esquema_temp.otc_t_360_num_bancos_tmp_cierre;
-					create table $esquema_temp.otc_t_360_num_bancos_tmp_cierre as
-					select a.numerodestinosms as telefono,count(*) as conteo
-					from default.otc_t_xdrcursado_sms a
+					drop table $ESQUEMA_TEMP.otc_t_360_num_bancos_tmp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_num_bancos_tmp_cierre as
+					SELECT a.numerodestinosms AS telefono,COUNT(*) AS conteo
+					FROM default.otc_t_xdrcursado_sms a
 					inner join db_rdb.otc_t_numeros_bancos_sms b
 					on b.sc=a.numeroorigensms
-					where 1=1
-					and a.fechasms >= $fechamenos6mes and a.fechasms < $fechamas1
-					group by a.numerodestinosms;
+					WHERE 1=1
+					AND a.fechasms >= $fechamenos6mes AND a.fechasms < $fechamas1
+					GROUP BY a.numerodestinosms;
 					
 					--parte 2 general
 															
 
-					drop table $esquema_temp.otc_t_360_bonos_fidelizacion_row_temp_cierre ;
-					create table $esquema_temp.otc_t_360_bonos_fidelizacion_row_temp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_bonos_fidelizacion_row_temp_cierre ;
+					create table $ESQUEMA_TEMP.otc_t_360_bonos_fidelizacion_row_temp_cierre as
 					select telefono,tipo,codigo_slo,mb,fecha
 					,row_number() over (partition by telefono,tipo order by mb,codigo_slo) as orden
 					from db_rdb.otc_t_bonos_fidelizacion a
 					inner join (select max(fecha) fecha_max from db_rdb.otc_t_bonos_fidelizacion where fecha < $fechamas1) b on b.fecha_max=a.fecha;
 
-					drop table $esquema_temp.otc_t_360_bonos_fid_trans_megas_temp_cierre ;
-					create table $esquema_temp.otc_t_360_bonos_fid_trans_megas_temp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_megas_temp_cierre ;
+					create table $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_megas_temp_cierre as
 					select telefono
-					,max(case when orden = 1 then concat(codigo_slo,'-',mb) else 'no' end) m01
-					,max(case when orden = 2 then concat(codigo_slo,'-',mb) else 'no' end) m02
-					,max(case when orden = 3 then concat(codigo_slo,'-',mb) else 'no' end) m03
-					,max(case when orden = 4 then concat(codigo_slo,'-',mb) else 'no' end) m04
-					from $esquema_temp.otc_t_360_bonos_fidelizacion_row_temp_cierre
-					where tipo='bono_megas'
+					,max(case when orden = 1 then concat(codigo_slo,'-',mb) else 'NO' end) M01
+					,max(case when orden = 2 then concat(codigo_slo,'-',mb) else 'NO' end) M02
+					,max(case when orden = 3 then concat(codigo_slo,'-',mb) else 'NO' end) M03
+					,max(case when orden = 4 then concat(codigo_slo,'-',mb) else 'NO' end) M04
+					from $ESQUEMA_TEMP.otc_t_360_bonos_fidelizacion_row_temp_cierre
+					where tipo='BONO_MEGAS'
 					group by telefono;
 
-					drop table $esquema_temp.otc_t_360_bonos_fid_trans_megas_colum_temp_cierre ;
-					create table $esquema_temp.otc_t_360_bonos_fid_trans_megas_colum_temp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_megas_colum_temp_cierre ;
+					create table $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_megas_colum_temp_cierre as
 					select telefono
-					,case when m01 <>'no' 
-						then case when m02 <>'no' 
-							  then case when m03 <>'no' 
-									then case when m04 <>'no' 
+					,case when m01 <>'NO' 
+						then case when m02 <>'NO' 
+							  then case when m03 <>'NO' 
+									then case when m04 <>'NO' 
 										  then concat(m01,'|',m02,'|',m03,'|',m04)
 										  else concat(m01,'|',m02,'|',m03)
 										 end
@@ -2809,26 +2664,26 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 							 end
 						else ''
 					 end fide_megas
-					 from $esquema_temp.otc_t_360_bonos_fid_trans_megas_temp_cierre;
+					 from $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_megas_temp_cierre;
 
-					drop table $esquema_temp.otc_t_360_bonos_fid_trans_dumy_temp_cierre ;
-					create table $esquema_temp.otc_t_360_bonos_fid_trans_dumy_temp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_dumy_temp_cierre ;
+					create table $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_dumy_temp_cierre as
 					select telefono
-					,max(case when orden = 1 then codigo_slo else 'no' end) m01
-					,max(case when orden = 2 then codigo_slo else 'no' end) m02
-					,max(case when orden = 3 then codigo_slo else 'no' end) m03
-					,max(case when orden = 4 then codigo_slo else 'no' end) m04
-					from $esquema_temp.otc_t_360_bonos_fidelizacion_row_temp_cierre
-					where tipo='bono_dumy'
+					,max(case when orden = 1 then codigo_slo else 'NO' end) M01
+					,max(case when orden = 2 then codigo_slo else 'NO' end) M02
+					,max(case when orden = 3 then codigo_slo else 'NO' end) M03
+					,max(case when orden = 4 then codigo_slo else 'NO' end) M04
+					from $ESQUEMA_TEMP.otc_t_360_bonos_fidelizacion_row_temp_cierre
+					where tipo='BONO_DUMY'
 					group by telefono;
 
-					drop table $esquema_temp.otc_t_360_bonos_fid_trans_dumy_colum_temp_cierre;
-					create table $esquema_temp.otc_t_360_bonos_fid_trans_dumy_colum_temp_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_dumy_colum_temp_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_dumy_colum_temp_cierre as
 					select telefono
-					,case when m01 <>'no' 
-						then case when m02 <>'no' 
-							  then case when m03 <>'no' 
-									then case when m04 <>'no' 
+					,case when m01 <>'NO' 
+						then case when m02 <>'NO' 
+							  then case when m03 <>'NO' 
+									then case when m04 <>'NO' 
 										  then concat(m01,'|',m02,'|',m03,'|',m04)
 										  else concat(m01,'|',m02,'|',m03)
 										 end
@@ -2838,19 +2693,19 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 							 end
 						else ''
 					 end fide_dumy
-					 from $esquema_temp.otc_t_360_bonos_fid_trans_dumy_temp_cierre;
+					 from $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_dumy_temp_cierre;
 					 
-					 drop table $esquema_temp.otc_t_360_nse_adendum_cierre;
-					 create table $esquema_temp.otc_t_360_nse_adendum_cierre as
+					 drop table $ESQUEMA_TEMP.otc_t_360_nse_adendum_cierre;
+					 create table $ESQUEMA_TEMP.otc_t_360_nse_adendum_cierre as
 						select t1.es_parque, t1.num_telefonico, t1.adendum, t1.nse
 						from (select es_parque, num_telefonico, adendum, nse, 
 						row_number() over(partition by es_parque, num_telefonico order by es_parque, num_telefonico) as orden 
 						from db_reportes.otc_t_360_general 
-						where fecha_proceso=$fechaeje) as t1
+						where fecha_proceso=$FECHAEJE) as t1
 						where t1.orden=1;
 					 
-					drop table $esquema_temp.otc_t_360_general_temp_final_1_cierre;
-					create table $esquema_temp.otc_t_360_general_temp_final_1_cierre as
+					drop table $ESQUEMA_TEMP.otc_t_360_general_temp_final_1_cierre;
+					create table $ESQUEMA_TEMP.otc_t_360_general_temp_final_1_cierre as
 					select gen.telefono
 					,gen.codigo_plan
 					,gen.usa_app
@@ -2880,22 +2735,22 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					,gen.identificacion_cliente
 					,gen.customer_ref
 					,gen.tac
-					,gen.tiene_bono
+					,gen.TIENE_BONO
 					,gen.valor_bono
 					,gen.codigo_bono
 					,gen.probabilidad_churn
-					,gen.counted_days
+					,gen.COUNTED_DAYS
 					,gen.categoria_plan
 					,gen.tarifa
 					,gen.nombre_plan
 					,gen.marca
 					,case
-					 when upper(gen.linea_negocio) like 'pre%' then
+					 when upper(gen.linea_negocio) like 'PRE%' then
 					  case
-						 when gen.tiene_bono ='si' and upper(tra.categoria_uso) ='datos' then '1'
-						 when gen.tiene_bono ='si' and upper(tra.categoria_uso) ='minutos' then '2'
-						 when gen.tiene_bono ='no' and upper(tra.categoria_uso) ='datos' then '3'
-						 when gen.tiene_bono ='no' and upper(tra.categoria_uso) ='minutos' then '4'
+						 when gen.TIENE_BONO ='SI' and upper(tra.categoria_uso) ='DATOS' then '1'
+						 when gen.TIENE_BONO ='SI' and upper(tra.categoria_uso) ='MINUTOS' then '2'
+						 when gen.TIENE_BONO ='NO' and upper(tra.categoria_uso) ='DATOS' then '3'
+						 when gen.TIENE_BONO ='NO' and upper(tra.categoria_uso) ='MINUTOS' then '4'
 						 else ''
 						 end
 					  else ''
@@ -2907,7 +2762,7 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					,case when nb.telefono is null then '0' else '1' end bancarizado
 					,nvl(tk.ticket,0) as ticket_recarga
 					,nvl(comb.codigo_bono,'') as bono_combero
-					  ,case when (tx.numero_telefono is null or tx.numero_telefono='') then 'no' else 'si' end as tiene_score_tiaxa
+					  ,case when (tx.numero_telefono is null or tx.numero_telefono='') then 'NO' else 'SI' end as tiene_score_tiaxa
 					  ,tx.score1 as score_1_tiaxa
 					  ,tx.score2 as score_2_tiaxa
 					  ,tx.limite_credito
@@ -2917,27 +2772,27 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					  ,gen.correo_cliente_pr as email
 					  ,gen.telefono_cliente_pr as telefono_contacto
 					  ,ca.fecha_renovacion as fecha_ultima_renovacion
-					  ,ca.address_2,ca.address_3,ca.address_4
-					  ,ca.fecha_fin_contrato_definitivo
-					  ,ca.vigencia_contrato
-					  ,ca.version_plan
-					  ,ca.fecha_ultima_renovacion_jn
-					  ,ca.fecha_ultimo_cambio_plan
+					  ,ca.ADDRESS_2,ca.ADDRESS_3,ca.ADDRESS_4
+					  ,ca.FECHA_FIN_CONTRATO_DEFINITIVO
+					  ,ca.VIGENCIA_CONTRATO
+					  ,ca.VERSION_PLAN
+					  ,ca.FECHA_ULTIMA_RENOVACION_JN
+					  ,ca.FECHA_ULTIMO_CAMBIO_PLAN
 					  ,gen.tipo_movimiento_mes
 					  ,gen.fecha_movimiento_mes
 					  ,gen.es_parque
 					  ,gen.banco				
 					  ,gen.fecha_proceso
-					from $esquema_temp.otc_t_360_general_temp_cierre gen
-					left outer join $esquema_temp.otc_t_360_nse_adendum_cierre nse on nse.num_telefonico = gen.telefono
+					from $ESQUEMA_TEMP.otc_t_360_general_temp_cierre gen
+					left outer join $ESQUEMA_TEMP.otc_t_360_nse_adendum_cierre nse on nse.num_telefonico = gen.telefono
 					left outer join db_reportes.otc_t_360_trafico tra on tra.telefono = gen.telefono and tra.fecha_proceso = gen.fecha_proceso
-					left join $esquema_temp.otc_t_360_bonos_fid_trans_megas_colum_temp_cierre fm on fm.telefono=gen.telefono
-					left join $esquema_temp.otc_t_360_bonos_fid_trans_dumy_colum_temp_cierre fd on fd.telefono=gen.telefono
-					left join $esquema_temp.otc_t_360_num_bancos_tmp_cierre nb on nb.telefono=gen.telefono
-					left join $esquema_temp.otc_t_360_ticket_fin_tmp_cierre tk on tk.telefono=gen.telefono
-					left join $esquema_temp.otc_t_360_combero_tmp_cierre comb on comb.numero_telefono=gen.telefono
-          left join $esquema_temp.otc_t_scoring_tiaxa_tmp_cierre tx on tx.numero_telefono=gen.telefono
-		  left join $esquema_temp.tmp_360_campos_adicionales_cierre ca on gen.telefono=ca.telefono
+					left join $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_megas_colum_temp_cierre fm on fm.telefono=gen.telefono
+					left join $ESQUEMA_TEMP.otc_t_360_bonos_fid_trans_dumy_colum_temp_cierre fd on fd.telefono=gen.telefono
+					left join $ESQUEMA_TEMP.otc_t_360_num_bancos_tmp_cierre nb on nb.telefono=gen.telefono
+					left join $ESQUEMA_TEMP.otc_t_360_ticket_fin_tmp_cierre tk on tk.telefono=gen.telefono
+					left join $ESQUEMA_TEMP.otc_t_360_combero_tmp_cierre comb on comb.numero_telefono=gen.telefono
+          left join $ESQUEMA_TEMP.otc_t_scoring_tiaxa_tmp_cierre tx on tx.numero_telefono=gen.telefono
+		  left join $ESQUEMA_TEMP.tmp_360_campos_adicionales_cierre ca on gen.telefono=ca.telefono
 					group by gen.telefono
 					,gen.codigo_plan
 					,gen.usa_app
@@ -2967,7 +2822,7 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					,gen.identificacion_cliente
 					,gen.customer_ref
 					,gen.tac
-					,gen.tiene_bono
+					,gen.TIENE_BONO
 					,gen.valor_bono
 					,gen.codigo_bono
 					,gen.probabilidad_churn
@@ -2977,12 +2832,12 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					,gen.nombre_plan
 					,gen.marca
 					,case
-					 when upper(gen.linea_negocio) like 'pre%' then
+					 when upper(gen.linea_negocio) like 'PRE%' then
 					  case
-						 when gen.tiene_bono ='si' and upper(tra.categoria_uso) ='datos' then '1'
-						 when gen.tiene_bono ='si' and upper(tra.categoria_uso) ='minutos' then '2'
-						 when gen.tiene_bono ='no' and upper(tra.categoria_uso) ='datos' then '3'
-						 when gen.tiene_bono ='no' and upper(tra.categoria_uso) ='minutos' then '4'
+						 when gen.TIENE_BONO ='SI' and upper(tra.categoria_uso) ='DATOS' then '1'
+						 when gen.TIENE_BONO ='SI' and upper(tra.categoria_uso) ='MINUTOS' then '2'
+						 when gen.TIENE_BONO ='NO' and upper(tra.categoria_uso) ='DATOS' then '3'
+						 when gen.TIENE_BONO ='NO' and upper(tra.categoria_uso) ='MINUTOS' then '4'
 						 else ''
 						 end
 					  else ''
@@ -2994,7 +2849,7 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 					,case when nb.telefono is null then '0' else '1' end
 					,nvl(tk.ticket,0)
 					,comb.codigo_bono
-          ,case when (tx.numero_telefono is null or tx.numero_telefono='') then 'no' else 'si' end
+          ,case when (tx.numero_telefono is null or tx.numero_telefono='') then 'NO' else 'SI' end
           ,tx.score1
           ,tx.score2
 		  ,tx.limite_credito
@@ -3004,77 +2859,77 @@ from db_cs_altas.otc_t_cambio_plan_bi where p_fecha_proceso=$fecha_movimientos_c
 		  ,gen.correo_cliente_pr
 		  ,gen.telefono_cliente_pr
 		  ,ca.fecha_renovacion
-		  ,ca.address_2,ca.address_3,ca.address_4
-		  ,ca.fecha_fin_contrato_definitivo
-		  ,ca.vigencia_contrato
-		  ,ca.version_plan
-		  ,ca.fecha_ultima_renovacion_jn
-		  ,ca.fecha_ultimo_cambio_plan
+		  ,ca.ADDRESS_2,ca.ADDRESS_3,ca.ADDRESS_4
+		  ,ca.FECHA_FIN_CONTRATO_DEFINITIVO
+		  ,ca.VIGENCIA_CONTRATO
+		  ,ca.VERSION_PLAN
+		  ,ca.FECHA_ULTIMA_RENOVACION_JN
+		  ,ca.FECHA_ULTIMO_CAMBIO_PLAN
 		  ,gen.tipo_movimiento_mes
 		  ,gen.fecha_movimiento_mes
 		  ,gen.es_parque
 		  ,gen.banco
 		  ,gen.fecha_proceso;
 
-drop table $esquema_temp.otc_t_360_susp_cobranza_cierre;
-create table $esquema_temp.otc_t_360_susp_cobranza_cierre as
+drop table $ESQUEMA_TEMP.otc_t_360_susp_cobranza_cierre;
+create table $ESQUEMA_TEMP.otc_t_360_susp_cobranza_cierre as
 select t2.* 
 from
 (select t1.*,
-row_number() over (partition by t1.name order by t1.name, t1.orden_susp desc) as orden
+row_number() over (partition by t1.name order by t1.name, t1.orden_susp DESC) as orden
 from (
 select 
 case 
-when motivo_suspension= 'por cobranzas (bi-direccional)' then 3
-when motivo_suspension='por cobranzas (uni-direccional)' then 1 --2
-when motivo_suspension like 'suspensi%facturaci%'then 2 --1
+when motivo_suspension= 'Por Cobranzas (bi-direccional)' then 3
+when motivo_suspension='Por Cobranzas (uni-direccional)' then 1 --2
+when motivo_suspension like 'Suspensi%facturaci%'then 2 --1
 end as orden_susp,
 a.*
-from $esquema_temp.tmp_360_motivos_suspension_cierre a
+from $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre a
 where (motivo_suspension in 
-('por cobranzas (uni-direccional)',
-'suspensiã³n por facturaciã³n',
-'por cobranzas (bi-direccional)')
-or motivo_suspension like 'suspensi%facturaci%')
+('Por Cobranzas (uni-direccional)',
+'SuspensiÃ³n por facturaciÃ³n',
+'Por Cobranzas (bi-direccional)')
+or motivo_suspension like 'Suspensi%facturaci%')
 and a.name is not null and a.name <>'') as t1) as t2
 where t2.orden=1;
 
-drop table $esquema_temp.tmp_360_otras_suspensiones_cierre;
-create table $esquema_temp.tmp_360_otras_suspensiones_cierre as
+drop table $ESQUEMA_TEMP.tmp_360_otras_suspensiones_cierre;
+create table $ESQUEMA_TEMP.tmp_360_otras_suspensiones_cierre as
 select 
 a.name,
-case when b.name is not null or c.name is not null then 'abuso 911' else '' end as susp_911,
+case when b.name is not null or c.name is not null then 'Abuso 911' else '' end as susp_911,
 case when d.name is not null then d.motivo_suspension else '' end as susp_cobranza_puntual,
 case when e.name is not null then e.motivo_suspension else '' end as susp_fraude,
 case when f.name is not null then f.motivo_suspension else '' end as susp_robo,
 case when g.name is not null then g.motivo_suspension else '' end as susp_voluntaria
-from $esquema_temp.tmp_360_motivos_suspension_cierre a
-left join $esquema_temp.tmp_360_motivos_suspension_cierre b
-on (a.name=b.name and (b.motivo_suspension like 'abuso 911 - 180 d%'))
-left join $esquema_temp.tmp_360_motivos_suspension_cierre c
-on (a.name=c.name and (c.motivo_suspension like 'abuso 911 - 30 d%'))
-left join $esquema_temp.tmp_360_motivos_suspension_cierre d
-on (a.name=d.name and d.motivo_suspension ='cobranza puntual')
-left join $esquema_temp.tmp_360_motivos_suspension_cierre e
-on (a.name=e.name and e.motivo_suspension ='fraude')
-left join $esquema_temp.tmp_360_motivos_suspension_cierre f
-on (a.name=f.name and f.motivo_suspension ='robo')
-left join $esquema_temp.tmp_360_motivos_suspension_cierre g
-on (a.name=g.name and g.motivo_suspension ='voluntaria')
-where (a.motivo_suspension in ('abuso 911 - 180 dã­as',
-'abuso 911 - 30 dã­as',
-'cobranza puntual',
-'fraude',
-'robo',
-'voluntaria')
-or a.motivo_suspension like 'abuso 911 - 180 d%'
-or a.motivo_suspension like 'abuso 911 - 30 d%')
+from $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre a
+left join $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre b
+on (a.name=b.name and (b.motivo_suspension like 'Abuso 911 - 180 d%'))
+left join $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre c
+on (a.name=c.name and (c.motivo_suspension like 'Abuso 911 - 30 d%'))
+left join $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre d
+on (a.name=d.name and d.motivo_suspension ='Cobranza puntual')
+left join $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre e
+on (a.name=e.name and e.motivo_suspension ='Fraude')
+left join $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre f
+on (a.name=f.name and f.motivo_suspension ='Robo')
+left join $ESQUEMA_TEMP.tmp_360_motivos_suspension_cierre g
+on (a.name=g.name and g.motivo_suspension ='Voluntaria')
+where (a.motivo_suspension in ('Abuso 911 - 180 dÃ­as',
+'Abuso 911 - 30 dÃ­as',
+'Cobranza puntual',
+'Fraude',
+'Robo',
+'Voluntaria')
+or a.motivo_suspension like 'Abuso 911 - 180 d%'
+or a.motivo_suspension like 'Abuso 911 - 30 d%')
 and a.name is not null and a.name <>'';	
 
 		
 					  
-drop table $esquema_temp.otc_t_360_general_temp_final_2_cierre;
-create table $esquema_temp.otc_t_360_general_temp_final_2_cierre	as 	  
+drop table $ESQUEMA_TEMP.otc_t_360_general_temp_final_2_cierre;
+create table $ESQUEMA_TEMP.otc_t_360_general_temp_final_2_cierre	as 	  
 select 
 a.telefono
 ,a.codigo_plan
@@ -3110,7 +2965,7 @@ a.telefono
 ,a.codigo_bono
 ,a.probabilidad_churn
 ,case 
-when a.linea_negocio_homologado = 'prepago' and (coalesce(b.ingreso_recargas_m0,0)+coalesce(b.ingreso_combos,0)+coalesce(b.ingreso_bonos,0)) >0 and a.counted_days>30 
+when a.linea_negocio_homologado = 'PREPAGO' and (coalesce(b.ingreso_recargas_m0,0)+coalesce(b.ingreso_combos,0)+coalesce(b.ingreso_bonos,0)) >0 and a.counted_days>30 
 then 0 else a.counted_days end as counted_days
 ,a.categoria_plan
 ,a.tarifa
@@ -3146,9 +3001,9 @@ then 0 else a.counted_days end as counted_days
 ,a.es_parque
 ,a.banco 
 ,case 
-when a.linea_negocio_homologado = 'prepago' and (coalesce(b.ingreso_recargas_m0,0)+coalesce(b.ingreso_combos,0)+coalesce(b.ingreso_bonos,0)) >0 then 'si' 
-when a.linea_negocio_homologado = 'prepago' and (coalesce(b.ingreso_recargas_m0,0)+coalesce(b.ingreso_combos,0)+coalesce(b.ingreso_bonos,0)) =0 then 'no' 
-else 'na' end as parque_recargador 
+when a.linea_negocio_homologado = 'PREPAGO' and (coalesce(b.ingreso_recargas_m0,0)+coalesce(b.ingreso_combos,0)+coalesce(b.ingreso_bonos,0)) >0 then 'SI' 
+when a.linea_negocio_homologado = 'PREPAGO' and (coalesce(b.ingreso_recargas_m0,0)+coalesce(b.ingreso_combos,0)+coalesce(b.ingreso_bonos,0)) =0 then 'NO' 
+else 'NA' end as PARQUE_RECARGADOR 
 ,c.motivo_suspension as susp_cobranza
 ,d.susp_911
 ,d.susp_cobranza_puntual
@@ -3159,79 +3014,79 @@ else 'na' end as parque_recargador
 ,e.ddias_total as saldo_cartera
 ,a.adendum
 ,a.fecha_proceso
-from $esquema_temp.otc_t_360_general_temp_final_1_cierre a 
-left join $esquema_temp.tmp_otc_t_360_recargas_cierre b
+from $ESQUEMA_TEMP.otc_t_360_general_temp_final_1_cierre a 
+left join $ESQUEMA_TEMP.tmp_otc_t_360_recargas_cierre b
 on a.telefono=b.numero_telefono
-left join $esquema_temp.otc_t_360_susp_cobranza_cierre c
-on a.telefono=c.name and a.estado_abonado='saa'
-left join $esquema_temp.tmp_360_otras_suspensiones_cierre d
-on a.telefono=d.name and a.estado_abonado='saa'
-left join $esquema_temp.otc_t_360_cartera_vencimiento_cierre e
+left join $ESQUEMA_TEMP.otc_t_360_susp_cobranza_cierre c
+on a.telefono=c.name and a.estado_abonado='SAA'
+left join $ESQUEMA_TEMP.tmp_360_otras_suspensiones_cierre d
+on a.telefono=d.name and a.estado_abonado='SAA'
+left join $ESQUEMA_TEMP.otc_t_360_cartera_vencimiento_cierre e
 on a.account_num=e.cuenta_facturacion;
 
-drop table $esquema_temp.otc_t_360_general_temp_final_cierre;
-create table $esquema_temp.otc_t_360_general_temp_final_cierre as
+drop table $ESQUEMA_TEMP.otc_t_360_general_temp_final_cierre;
+create table $ESQUEMA_TEMP.otc_t_360_general_temp_final_cierre as
 select * from (select *,
 row_number() over (partition by es_parque, telefono order by fecha_alta desc) as orden
 from 
-$esquema_temp.otc_t_360_general_temp_final_2_cierre) as t1
+$ESQUEMA_TEMP.otc_t_360_general_temp_final_2_cierre) as t1
 where orden=1;
 
---fecha alta de la cuenta
-		drop table $esquema_temp.otc_t_360_cuenta_fecha_cierre;
-		create table $esquema_temp.otc_t_360_cuenta_fecha_cierre as
-		select
-		cast(a.actual_start_date as date) as suscriptor_actual_start_date,
-		acct.billing_acct_number as cta_fact
-		from db_rdb.otc_t_r_boe_bsns_prod_inst a
-		inner join db_rdb.otc_t_r_cbm_billing_acct acct
-		on a.billing_account = acct.object_id;
+--FECHA ALTA DE LA CUENTA
+		drop table $ESQUEMA_TEMP.otc_t_360_cuenta_fecha_cierre;
+		create table $ESQUEMA_TEMP.otc_t_360_cuenta_fecha_cierre as
+		SELECT
+		cast(A.ACTUAL_START_DATE as date) as SUSCRIPTOR_ACTUAL_START_DATE,
+		ACCT.BILLING_ACCT_NUMBER as CTA_FACT
+		FROM db_rdb.otc_t_R_BOE_BSNS_PROD_INST A
+		INNER JOIN db_rdb.otc_t_R_CBM_BILLING_ACCT ACCT
+		ON A.BILLING_ACCOUNT = ACCT.OBJECT_ID;
 
-	drop table $esquema_temp.otc_t_cuenta_num_tmp_cierre;
-	create table $esquema_temp.otc_t_cuenta_num_tmp_cierre as 
-		select fecha_alta_cuenta,cta_fact
+	DROP TABLE $ESQUEMA_TEMP.otc_t_cuenta_num_tmp_cierre;
+	CREATE TABLE $ESQUEMA_TEMP.otc_t_cuenta_num_tmp_cierre AS 
+		SELECT Fecha_Alta_Cuenta,CTA_FACT
 		from (
-		select
-		suscriptor_actual_start_date as fecha_alta_cuenta,
-		cta_fact,
-		row_number() over (partition by cta_fact order by cta_fact, suscriptor_actual_start_date) as orden
-		from $esquema_temp.otc_t_360_cuenta_fecha_cierre) ff 
-		where orden=1;" 1>> $logs/$ejecucion_log.log 2>> $logs/$ejecucion_log.log
+		SELECT
+		SUSCRIPTOR_ACTUAL_START_DATE as Fecha_Alta_Cuenta,
+		CTA_FACT,
+		row_number() over (partition by CTA_FACT order by CTA_FACT, SUSCRIPTOR_ACTUAL_START_DATE) as orden
+		FROM $ESQUEMA_TEMP.otc_t_360_cuenta_fecha_cierre) FF 
+		WHERE orden=1;" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
-			# verificacion de creacion de archivo
+			# Verificacion de creacion de archivo
 			if [ $? -eq 0 ]; then
-				log i "hive" $rc  " fin del merge con otc_t_360_general" $paso
+				log i "HIVE" $rc  " Fin del merge con otc_t_360_general" $PASO
 				else
 				(( rc = 108)) 
-				log e "hive" $rc  " fallo al ejecutar el merge con otc_t_360_general" $paso
+				log e "HIVE" $rc  " Fallo al ejecutar el merge con otc_t_360_general" $PASO
 				exit $rc
 			fi
 			
-	log i "hive" $rc  " fin ejecucion querys para la tabla general" $paso
+	log i "HIVE" $rc  " FIN EJECUCION QUERYS PARA LA TABLA GENERAL" $PASO
 		
-		fin=$(date +%s)
-		dif=$(echo "$fin - $inicio" | bc)
-		total=$(printf '%d:%d:%d\n' $(($dif/3600)) $(($dif%3600/60)) $(($dif%60)))
-		stat "insert tabla hive final" $total 0 0
-	paso=9
+		FIN=$(date +%s)
+		DIF=$(echo "$FIN - $INICIO" | bc)
+		TOTAL=$(printf '%d:%d:%d\n' $(($DIF/3600)) $(($DIF%3600/60)) $(($DIF%60)))
+		stat "Insert tabla hive final" $TOTAL 0 0
+	PASO=9
 	fi
 	
 #------------------------------------------------------
-# ejecucion de consultas para ajustar al parque global
+# EJECUCION DE CONSULTAS PARA AJUSTAR AL PARQUE GLOBAL
 #------------------------------------------------------
-    #verificar si hay parã¡metro de re-ejecuciã³n
-    if [ "$paso" = "9" ]; then
-      inicio=$(date +%s)
+    #Verificar si hay parÃ¡metro de re-ejecuciÃ³n
+    if [ "$PASO" = "9" ]; then
+      INICIO=$(date +%s)
    
-	log i "hive" $rc  " inicio ejecucion querys para ajustar al parque global" $paso
+	log i "HIVE" $rc  " INICIO EJECUCION QUERYS PARA AJUSTAR AL PARQUE GLOBAL" $PASO
 		
 		/usr/bin/hive -e "set hive.cli.print.header=false;
 		set hive.vectorized.execution.enabled=false;
 		set hive.vectorized.execution.reduce.enabled=false;
-		set tez.queue.name=$cola_ejecucion;
+		set tez.queue.name=$COLA_EJECUCION;
 			
-	drop table $esquema_temp.tmp_360_general_cierre_prev;
-	create table $esquema_temp.tmp_360_general_cierre_prev as
+	drop table $ESQUEMA_TEMP.tmp_360_general_cierre_prev;
+	create table $ESQUEMA_TEMP.tmp_360_general_cierre_prev as
 				select distinct 
 				t1.telefono
 					,t1.codigo_plan
@@ -3272,7 +3127,7 @@ where orden=1;
 					,t1.bancarizado
 					,nvl(t1.bono_combero,'') as bono_combero
 					,t1.ticket_recarga		
-          ,nvl(t1.tiene_score_tiaxa,'no') as tiene_score_tiaxa
+          ,nvl(t1.tiene_score_tiaxa,'NO') as tiene_score_tiaxa
           ,t1.score_1_tiaxa
            ,t1.score_2_tiaxa
 			,t1.limite_credito
@@ -3292,7 +3147,7 @@ where orden=1;
 		  ,t1.fecha_ultimo_cambio_plan
 		  ,t1.tipo_movimiento_mes
 		  ,t1.fecha_movimiento_mes
-		  ,case when a6.telefono is not null then 'si' else 'no' end as es_parque
+		  ,case when a6.telefono is not null then 'SI' else 'NO' end as es_parque
 		  ,t1.banco			   
 		  ,t1.parque_recargador			
 		,t1.segmento_fin as segmento_parque
@@ -3304,259 +3159,259 @@ where orden=1;
 		  ,t1.susp_voluntaria
 		  ,t1.vencimiento_cartera
 		  ,t1.saldo_cartera
-		,a2.fecha_alta_historica	
-		,a2.canal_alta
-		,a2.sub_canal_alta
-		--,a2.nuevo_sub_canal_alta
-		,a2.distribuidor_alta
-		,a2.oficina_alta
-		,a2.portabilidad
-		,a2.operadora_origen
-		,a2.operadora_destino
-		,a2.motivo
-		,a2.fecha_pre_pos
-		,a2.canal_pre_pos
-		,a2.sub_canal_pre_pos
-		--,a2.nuevo_sub_canal_pre_pos
-		,a2.distribuidor_pre_pos
-		,a2.oficina_pre_pos
-		,a2.fecha_pos_pre
-		,a2.canal_pos_pre
-		,a2.sub_canal_pos_pre
-		--,a2.nuevo_sub_canal_pos_pre
-		,a2.distribuidor_pos_pre
-		,a2.oficina_pos_pre
-		,a2.fecha_cambio_plan
-		,a2.canal_cambio_plan
-		,a2.sub_canal_cambio_plan
-		--,a2.nuevo_sub_canal_cambio_plan
-		,a2.distribuidor_cambio_plan
-		,a2.oficina_cambio_plan
-		,a2.cod_plan_anterior
-		,a2.des_plan_anterior
-		,a2.tb_descuento
-		,a2.tb_override
-		,a2.delta
-		,a1.canal_movimiento_mes
-		,a1.sub_canal_movimiento_mes
-		--,a1.nuevo_sub_canal_movimiento_mes
-		,a1.distribuidor_movimiento_mes
-		,a1.oficina_movimiento_mes
-		,a1.portabilidad_movimiento_mes
-		,a1.operadora_origen_movimiento_mes
-		,a1.operadora_destino_movimiento_mes
-		,a1.motivo_movimiento_mes
-		,a1.cod_plan_anterior_movimiento_mes
-		,a1.des_plan_anterior_movimiento_mes
-		,a1.tb_descuento_movimiento_mes
-		,a1.tb_override_movimiento_mes
-		,a1.delta_movimiento_mes
-		,a3.fecha_alta_cuenta
+		,A2.fecha_alta_historica	
+		,A2.CANAL_ALTA
+		,A2.SUB_CANAL_ALTA
+		--,A2.NUEVO_SUB_CANAL_ALTA
+		,A2.DISTRIBUIDOR_ALTA
+		,A2.OFICINA_ALTA
+		,A2.PORTABILIDAD
+		,A2.OPERADORA_ORIGEN
+		,A2.OPERADORA_DESTINO
+		,A2.MOTIVO
+		,A2.FECHA_PRE_POS
+		,A2.CANAL_PRE_POS
+		,A2.SUB_CANAL_PRE_POS
+		--,A2.NUEVO_SUB_CANAL_PRE_POS
+		,A2.DISTRIBUIDOR_PRE_POS
+		,A2.OFICINA_PRE_POS
+		,A2.FECHA_POS_PRE
+		,A2.CANAL_POS_PRE
+		,A2.SUB_CANAL_POS_PRE
+		--,A2.NUEVO_SUB_CANAL_POS_PRE
+		,A2.DISTRIBUIDOR_POS_PRE
+		,A2.OFICINA_POS_PRE
+		,A2.FECHA_CAMBIO_PLAN
+		,A2.CANAL_CAMBIO_PLAN
+		,A2.SUB_CANAL_CAMBIO_PLAN
+		--,A2.NUEVO_SUB_CANAL_CAMBIO_PLAN
+		,A2.DISTRIBUIDOR_CAMBIO_PLAN
+		,A2.OFICINA_CAMBIO_PLAN
+		,A2.COD_PLAN_ANTERIOR
+		,A2.DES_PLAN_ANTERIOR
+		,A2.TB_DESCUENTO
+		,A2.TB_OVERRIDE
+		,A2.DELTA
+		,A1.CANAL_MOVIMIENTO_MES
+		,A1.SUB_CANAL_MOVIMIENTO_MES
+		--,A1.NUEVO_SUB_CANAL_MOVIMIENTO_MES
+		,A1.DISTRIBUIDOR_MOVIMIENTO_MES
+		,A1.OFICINA_MOVIMIENTO_MES
+		,A1.PORTABILIDAD_MOVIMIENTO_MES
+		,A1.OPERADORA_ORIGEN_MOVIMIENTO_MES
+		,A1.OPERADORA_DESTINO_MOVIMIENTO_MES
+		,A1.MOTIVO_MOVIMIENTO_MES
+		,A1.COD_PLAN_ANTERIOR_MOVIMIENTO_MES
+		,A1.DES_PLAN_ANTERIOR_MOVIMIENTO_MES
+		,A1.TB_DESCUENTO_MOVIMIENTO_MES
+		,A1.TB_OVERRIDE_MOVIMIENTO_MES
+		,A1.DELTA_MOVIMIENTO_MES
+		,A3.Fecha_Alta_Cuenta
 		,t1.fecha_inicio_pago_actual
 		,t1.fecha_fin_pago_actual
 		,t1.fecha_inicio_pago_anterior
 		,t1.fecha_fin_pago_anterior
 		,t1.forma_pago_anterior
-		,a4.origen_alta_segmento
-		,a4.fecha_alta_segmento
-		,a5.dias_voz
-		,a5.dias_datos
-		,a5.dias_sms
-		,a5.dias_conenido
-		,a5.dias_total
+		,A4.origen_alta_segmento
+		,A4.fecha_alta_segmento
+		,A5.dias_voz
+		,A5.dias_datos
+		,A5.dias_sms
+		,A5.dias_conenido
+		,A5.dias_total
 		--,cast(t1.fecha_proceso as bigint) fecha_proceso
 		,t1.adendum
-		 ,$fechaeje as fecha_proceso
+		 ,$FECHAEJE as fecha_proceso
 		 ,t1.es_parque as es_parque_old
-		from $esquema_temp.otc_t_360_general_temp_final_cierre t1
-		left join $esquema_temp.otc_t_360_parque_1_tmp_t_mov_cierre a2 on (t1.telefono=a2.num_telefonico) and (t1.linea_negocio=a2.linea_negocio)
-		left join  $esquema_temp.otc_t_360_parque_1_mov_mes_tmp_cierre a1 on (t1.telefono=a1.telefono) and (t1.fecha_movimiento_mes=a1.fecha_movimiento_mes)
-		left join $esquema_temp.otc_t_cuenta_num_tmp_cierre a3 on (t1.account_num=a3.cta_fact)
-		left join $esquema_temp.otc_t_360_parque_1_mov_seg_tmp_cierre a4 on (t1.telefono=a4.telefono) and (t1.es_parque='si')
-		left join $esquema_temp.otc_t_parque_traficador_dias_tmp_cierre a5 on (t1.telefono=a5.telefono) and ($fechaeje=a5.fecha_corte)
-		left join $esquema_temp.tmp_360_prq_glb a6 on (t1.telefono=a6.telefono and t1.account_num=a6.account_no);
+		FROM $ESQUEMA_TEMP.otc_t_360_general_temp_final_cierre t1
+		LEFT JOIN $ESQUEMA_TEMP.otc_t_360_parque_1_tmp_t_mov_cierre A2 ON (t1.TELEFONO=A2.NUM_TELEFONICO) AND (t1.LINEA_NEGOCIO=a2.LINEA_NEGOCIO)
+		LEFT JOIN  $ESQUEMA_TEMP.OTC_T_360_PARQUE_1_MOV_MES_TMP_cierre A1 ON (t1.TELEFONO=A1.TELEFONO) AND (t1.fecha_movimiento_mes=A1.fecha_movimiento_mes)
+		LEFT JOIN $ESQUEMA_TEMP.otc_t_cuenta_num_tmp_cierre A3 ON (t1.account_num=A3.cta_fact)
+		LEFT JOIN $ESQUEMA_TEMP.otc_t_360_parque_1_mov_seg_tmp_cierre A4 ON (t1.TELEFONO=A4.TELEFONO) AND (t1.es_parque='SI')
+		LEFT JOIN $ESQUEMA_TEMP.OTC_T_parque_traficador_dias_tmp_cierre A5 ON (t1.TELEFONO=A5.TELEFONO) AND ($FECHAEJE=A5.fecha_corte)
+		LEFT JOIN $ESQUEMA_TEMP.tmp_360_prq_glb A6 ON (T1.TELEFONO=A6.TELEFONO AND T1.ACCOUNT_NUM=A6.ACCOUNT_NO);
 		
-		drop table $esquema_temp.tmp_360_dup_cierre;
-		create table $esquema_temp.tmp_360_dup_cierre as
+		drop table $ESQUEMA_TEMP.tmp_360_dup_cierre;
+		create table $ESQUEMA_TEMP.tmp_360_dup_cierre as
 		select es_parque, telefono, count(1) as cant
-		from $esquema_temp.tmp_360_general_cierre_prev
+		from $ESQUEMA_TEMP.tmp_360_general_cierre_prev
 		group by es_parque, telefono
 		having count(1) >1;
 
-		drop table $esquema_temp.tmp_360_cierre_correccion_dup;
-		create table $esquema_temp.tmp_360_cierre_correccion_dup as
+		drop table $ESQUEMA_TEMP.tmp_360_cierre_correccion_dup;
+		create table $ESQUEMA_TEMP.tmp_360_cierre_correccion_dup as
 		select t3.*
 		from 
 		(select t1.*,
-		case when t1.estado_abonado <> 'baa' then 'si' else 'no' end as es_parque_ok,
-		row_number() over (partition by t1.telefono order by t1.telefono, t1.fecha_alta desc) as id
-		from $esquema_temp.tmp_360_general_cierre_prev t1,$esquema_temp.tmp_360_dup_cierre t2
+		case when t1.estado_abonado <> 'BAA' then 'SI' ELSE 'NO' END AS ES_PARQUE_OK,
+		ROW_NUMBER() OVER (PARTITION by t1.telefono order by t1.telefono, t1.fecha_alta desc) as id
+		from $ESQUEMA_TEMP.tmp_360_general_cierre_prev t1,$ESQUEMA_TEMP.tmp_360_dup_cierre t2
 		where t1.telefono=t2.telefono) as t3
 		where t3.id=1;
 		
-		drop table $esquema_temp.tmp_otc_t_user_sin_duplicados_cierre;
-		drop table $esquema_temp.tmp_360_web_cierre;
-		drop table $esquema_temp.tmp_360_app_mi_movistar_cierre;
+		DROP TABLE $ESQUEMA_TEMP.tmp_otc_t_user_sin_duplicados_cierre;
+		DROP TABLE $ESQUEMA_TEMP.tmp_360_web_cierre;
+		DROP TABLE $ESQUEMA_TEMP.tmp_360_app_mi_movistar_cierre;
 		
-		create table $esquema_temp.tmp_otc_t_user_sin_duplicados_cierre as
-		select firstname,
-		'si' as usuario_web,
-		min(cast(from_unixtime(unix_timestamp(web.createdate,'yyyy-mm-dd hh:mm:ss.sss')) as timestamp)) as fecha_registro_web
-		from db_lportal.otc_t_user web
-		where web.pt_fecha_creacion >= 20200827 and web.pt_fecha_creacion <= $fechaeje
-		and length(firstname)=19
-		group by firstname;
+		CREATE TABLE $ESQUEMA_TEMP.tmp_otc_t_user_sin_duplicados_cierre AS
+		SELECT firstname,
+		'SI' as usuario_web,
+		MIN(cast(from_unixtime(unix_timestamp(web.createdate,'yyyy-MM-dd HH:mm:ss.SSS')) as timestamp)) as fecha_registro_web
+		FROM db_lportal.otc_t_user web
+		WHERE web.pt_fecha_creacion >= 20200827 AND web.pt_fecha_creacion <= $FECHAEJE
+		AND LENGTH(firstname)=19
+		GROUP BY firstname;
 
-		create table $esquema_temp.tmp_360_web_cierre as
-		select 
+		CREATE TABLE $ESQUEMA_TEMP.tmp_360_web_cierre AS
+		SELECT 
 		web.usuario_web,
 		web.fecha_registro_web,
 		cst.cust_ext_ref
-		from $esquema_temp.tmp_otc_t_user_sin_duplicados_cierre web
-		inner join db_rdb.otc_t_r_cim_res_cust_acct cst
-		on cast(firstname as bigint)=cst.object_id;
+		FROM $ESQUEMA_TEMP.tmp_otc_t_user_sin_duplicados_cierre web
+		INNER JOIN db_rdb.otc_t_r_cim_res_cust_acct cst
+		ON CAST(firstname AS bigint)=cst.object_id;
 
-		create table $esquema_temp.tmp_360_app_mi_movistar_cierre as
-		select
+		CREATE TABLE $ESQUEMA_TEMP.tmp_360_app_mi_movistar_cierre AS
+		SELECT
 		num_telefonico,
 		usuario_app,
 		fecha_registro_app,
 		perfil,
 		usa_app
-		from (
-		select
-		reg.celular as num_telefonico,
-		'si' as usuario_app,
-		reg.fecha_creacion as fecha_registro_app,
+		FROM (
+		SELECT
+		reg.celular AS num_telefonico,
+		'SI' AS usuario_app,
+		reg.fecha_creacion AS fecha_registro_app,
 		reg.perfil,
-		(case when trx.activo is null then 'no' else trx.activo end) as usa_app,
-		(row_number() over (partition by reg.celular order by reg.fecha_creacion desc)) as rnum
-		from db_trxdb.otc_t_registro_usuario reg
-		left join (select 'si' as activo, 
+		(CASE WHEN trx.activo IS NULL THEN 'NO' ELSE trx.activo END) AS usa_app,
+		(ROW_NUMBER() OVER (PARTITION BY reg.celular ORDER BY reg.fecha_creacion DESC)) AS rnum
+		FROM db_trxdb.otc_t_registro_usuario reg
+		LEFT JOIN (SELECT 'SI' AS activo, 
 		min_mines_wv,
-		max(fecha_mines_wv)
-		from db_trxdb.otc_t_mines_wv
-		where id_action_wv=2005 
-		and pt_mes = substring($fechaeje,1,6)
-		group by min_mines_wv) trx
-		on reg.celular=trx.min_mines_wv
-		where reg.pt_fecha_creacion<=$fechaeje) x
-		where x.rnum=1;
+		MAX(fecha_mines_wv)
+		FROM db_trxdb.otc_t_mines_wv
+		WHERE id_action_wv=2005 
+		AND pt_mes = SUBSTRING($FECHAEJE,1,6)
+		GROUP BY min_mines_wv) trx
+		ON reg.celular=trx.min_mines_wv
+		WHERE reg.pt_fecha_creacion<=$FECHAEJE) x
+		WHERE x.rnum=1;
 		
-		--20210629 - ejecuta el borrado de las tablas temporales
-		drop table if exists $esquema_temp.tmp_otc_t_r_cim_cont;
-		drop table if exists $esquema_temp.tmp_thebox_base_censo;
-		drop table if exists $esquema_temp.tmp_cim_cont_cedula_duplicada;
-		drop table if exists $esquema_temp.tmp_cim_cont_sin_duplicados;
-		drop table if exists $esquema_temp.tmp_cim_cont_con_fecha_ok;
-		drop table if exists $esquema_temp.tmp_data_total_sin_duplicados;
-		drop table if exists $esquema_temp.tmp_principal_min_fecha;
-		drop table if exists $esquema_temp.tmp_fecha_nacimiento_mvp;
+		--20210629 - EJECUTA EL BORRADO DE LAS TABLAS TEMPORALES
+		DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_otc_t_r_cim_cont;
+		DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_thebox_base_censo;
+		DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_cim_cont_cedula_duplicada;
+		DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_cim_cont_sin_duplicados;
+		DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_cim_cont_con_fecha_ok;
+		DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_data_total_sin_duplicados;
+		DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_principal_min_fecha;
+		DROP TABLE IF EXISTS $ESQUEMA_TEMP.tmp_fecha_nacimiento_mvp;
 
-		--20210629 - crea tabla temporal con la informacion de la fuente otc_t_r_cim_cont
-		create table $esquema_temp.tmp_otc_t_r_cim_cont as
-		select distinct doc_number as cedula, 
-		birthday as fecha_nacimiento
-		from db_rdb.otc_t_r_cim_cont
-		where doc_number is not null 
-		and birthday is not null;
+		--20210629 - CREA TABLA TEMPORAL CON LA INFORMACION DE LA FUENTE otc_t_r_cim_cont
+		CREATE TABLE $ESQUEMA_TEMP.tmp_otc_t_r_cim_cont AS
+		SELECT DISTINCT doc_number AS cedula, 
+		birthday AS fecha_nacimiento
+		FROM db_rdb.otc_t_r_cim_cont
+		WHERE doc_number IS NOT NULL 
+		AND birthday IS NOT NULL;
 
-		--20210629 - crea tabla temporal con la informacion de la fuente base_censo
-		create table $esquema_temp.tmp_thebox_base_censo as
-		select distinct cedula, 
+		--20210629 - CREA TABLA TEMPORAL CON LA INFORMACION DE LA FUENTE base_censo
+		CREATE TABLE $ESQUEMA_TEMP.tmp_thebox_base_censo AS
+		SELECT DISTINCT cedula, 
 		fecha_nacimiento
-		from db_thebox.base_censo
-		where cedula is not null 
-		and fecha_nacimiento is not null;
+		FROM db_thebox.base_censo
+		WHERE cedula IS NOT NULL 
+		AND fecha_nacimiento IS NOT NULL;
 
-		--20210629 - crea tabla con solo la informacion de las cedulas duplicados 
-		create table $esquema_temp.tmp_cim_cont_cedula_duplicada as
-		select distinct x.cedula from(select cedula,count(1) 
-		from $esquema_temp.tmp_otc_t_r_cim_cont 
-		group by cedula having count(1)>1) x;
+		--20210629 - CREA TABLA CON SOLO LA INFORMACION DE LAS CEDULAS DUPLICADOS 
+		CREATE TABLE $ESQUEMA_TEMP.tmp_cim_cont_cedula_duplicada AS
+		SELECT DISTINCT x.cedula FROM(SELECT cedula,count(1) 
+		FROM $ESQUEMA_TEMP.tmp_otc_t_r_cim_cont 
+		GROUP BY cedula HAVING COUNT(1)>1) x;
 
-		--20210629 - crea tabla con solo la informaciã“n de las cedulas con fecha sin duplicados
-		create table $esquema_temp.tmp_cim_cont_sin_duplicados as
-		select a.cedula,a.fecha_nacimiento from $esquema_temp.tmp_otc_t_r_cim_cont a
-		left join (select cedula from $esquema_temp.tmp_cim_cont_cedula_duplicada) b
-		on a.cedula=b.cedula
-		where b.cedula is null;
+		--20210629 - CREA TABLA CON SOLO LA INFORMACIÃ“N DE LAS CEDULAS CON FECHA SIN DUPLICADOS
+		CREATE TABLE $ESQUEMA_TEMP.tmp_cim_cont_sin_duplicados AS
+		SELECT a.cedula,a.fecha_nacimiento FROM $ESQUEMA_TEMP.tmp_otc_t_r_cim_cont a
+		LEFT JOIN (SELECT cedula FROM $ESQUEMA_TEMP.tmp_cim_cont_cedula_duplicada) b
+		ON a.cedula=b.cedula
+		WHERE b.cedula IS NULL;
 
-		--20210629 - crea tabla principal con la informacion de otc_t_r_cim_cont con fecha ok sin duplicados
-		create table $esquema_temp.tmp_cim_cont_con_fecha_ok as
-		select distinct a.cedula,b.fecha_nacimiento from $esquema_temp.tmp_cim_cont_cedula_duplicada a
-		inner join (select cedula,fecha_nacimiento from $esquema_temp.tmp_thebox_base_censo) b
-		on a.cedula=b.cedula;
+		--20210629 - CREA TABLA PRINCIPAL CON LA INFORMACION DE otc_t_r_cim_cont CON FECHA OK SIN DUPLICADOS
+		CREATE TABLE $ESQUEMA_TEMP.tmp_cim_cont_con_fecha_ok AS
+		SELECT DISTINCT a.cedula,b.fecha_nacimiento FROM $ESQUEMA_TEMP.tmp_cim_cont_cedula_duplicada a
+		INNER JOIN (SELECT cedula,fecha_nacimiento FROM $ESQUEMA_TEMP.tmp_thebox_base_censo) b
+		ON a.cedula=b.cedula;
 
-		--20210629 - crea tabla principal con la informacion de otc_t_r_cim_cont con fecha min sin duplicados
-		create table $esquema_temp.tmp_principal_min_fecha as
-		select a.cedula,min(a.fecha_nacimiento) as fecha_nacimiento
-		from $esquema_temp.tmp_otc_t_r_cim_cont a
-		inner join (select a.cedula from $esquema_temp.tmp_cim_cont_cedula_duplicada a
-		left join (select cedula from $esquema_temp.tmp_cim_cont_con_fecha_ok) b
-		on a.cedula=b.cedula
-		where b.cedula is null) c
-		on a.cedula=c.cedula
-		group by a.cedula;
+		--20210629 - CREA TABLA PRINCIPAL CON LA INFORMACION DE otc_t_r_cim_cont CON FECHA MIN SIN DUPLICADOS
+		CREATE TABLE $ESQUEMA_TEMP.tmp_principal_min_fecha AS
+		SELECT a.cedula,MIN(a.fecha_nacimiento) AS fecha_nacimiento
+		FROM $ESQUEMA_TEMP.tmp_otc_t_r_cim_cont a
+		INNER JOIN (SELECT a.cedula FROM $ESQUEMA_TEMP.tmp_cim_cont_cedula_duplicada a
+		LEFT JOIN (SELECT cedula FROM $ESQUEMA_TEMP.tmp_cim_cont_con_fecha_ok) b
+		ON a.cedula=b.cedula
+		WHERE b.cedula IS NULL) c
+		ON a.cedula=c.cedula
+		GROUP BY a.cedula;
 
-		--20210629 - crea tabla principal con la informacion total de otc_t_r_cim_cont y base_censo sin duplicados
-		create table $esquema_temp.tmp_data_total_sin_duplicados as
-		select cedula,fecha_nacimiento from $esquema_temp.tmp_cim_cont_sin_duplicados
-		union
-		select cedula,fecha_nacimiento from $esquema_temp.tmp_cim_cont_con_fecha_ok
-		union
-		select cedula,fecha_nacimiento from $esquema_temp.tmp_principal_min_fecha;
+		--20210629 - CREA TABLA PRINCIPAL CON LA INFORMACION TOTAL DE otc_t_r_cim_cont Y base_censo SIN DUPLICADOS
+		CREATE TABLE $ESQUEMA_TEMP.tmp_data_total_sin_duplicados AS
+		SELECT cedula,fecha_nacimiento FROM $ESQUEMA_TEMP.tmp_cim_cont_sin_duplicados
+		UNION
+		SELECT cedula,fecha_nacimiento FROM $ESQUEMA_TEMP.tmp_cim_cont_con_fecha_ok
+		UNION
+		SELECT cedula,fecha_nacimiento FROM $ESQUEMA_TEMP.tmp_principal_min_fecha;
 
-		--20210629 - crea tabla con la informacion de todos las cedulas con su fecha, antes de cruzar con la moviparque
-		create table $esquema_temp.tmp_fecha_nacimiento_mvp as
+		--20210629 - CREA TABLA CON LA INFORMACION DE TODOS LAS CEDULAS CON SU FECHA, ANTES DE CRUZAR CON LA MOVIPARQUE
+		CREATE TABLE $ESQUEMA_TEMP.tmp_fecha_nacimiento_mvp AS
 
-		--20210629 - obtiene la informacion de los registros comunes
-		select coalesce(a.cedula,b.cedula) as cedula,
-		coalesce(a.fecha_nacimiento,b.fecha_nacimiento) as fecha_nacimiento
-		from (select cedula, fecha_nacimiento from $esquema_temp.tmp_data_total_sin_duplicados) a
-		inner join (select distinct cast(cedula as string) as cedula, 
+		--20210629 - OBTIENE LA INFORMACION DE LOS REGISTROS COMUNES
+		SELECT COALESCE(a.cedula,b.cedula) AS cedula,
+		COALESCE(a.fecha_nacimiento,b.fecha_nacimiento) AS fecha_nacimiento
+		FROM (SELECT cedula, fecha_nacimiento FROM $ESQUEMA_TEMP.tmp_data_total_sin_duplicados) a
+		INNER JOIN (SELECT DISTINCT CAST(cedula AS string) AS cedula, 
 		fecha_nacimiento
-		from db_thebox.base_censo
-		where cedula is not null 
-		and fecha_nacimiento is not null) b
-		on a.cedula=b.cedula
+		FROM db_thebox.base_censo
+		WHERE cedula IS NOT NULL 
+		AND fecha_nacimiento IS NOT NULL) b
+		ON a.cedula=b.cedula
 
-		union
+		UNION
 
-		--20210629 - obtiene la informacion de solo los registros de la tabla principal otc_t_r_cim_cont
-		select a.cedula,
+		--20210629 - OBTIENE LA INFORMACION DE SOLO LOS REGISTROS DE LA TABLA PRINCIPAL otc_t_r_cim_cont
+		SELECT a.cedula,
 		a.fecha_nacimiento
-		from (select cedula, fecha_nacimiento from $esquema_temp.tmp_data_total_sin_duplicados) a
-		left join (select distinct cast(cedula as string) as cedula, 
+		FROM (SELECT cedula, fecha_nacimiento FROM $ESQUEMA_TEMP.tmp_data_total_sin_duplicados) a
+		LEFT JOIN (SELECT DISTINCT CAST(cedula AS string) AS cedula, 
 		fecha_nacimiento
-		from db_thebox.base_censo
-		where cedula is not null 
-		and fecha_nacimiento is not null) b
-		on a.cedula=b.cedula
-		where b.cedula is null
+		FROM db_thebox.base_censo
+		WHERE cedula IS NOT NULL 
+		AND fecha_nacimiento IS NOT NULL) b
+		ON a.cedula=b.cedula
+		WHERE b.cedula IS NULL
 
-		union
+		UNION
 
-		--20210629 - obtiene la informacion de solo los registros de la tabla secundaria base_censo
-		select a.cedula,
+		--20210629 - OBTIENE LA INFORMACION DE SOLO LOS REGISTROS DE LA TABLA SECUNDARIA base_censo
+		SELECT a.cedula,
 		a.fecha_nacimiento
-		from (select distinct cast(cedula as string) as cedula, 
+		FROM (SELECT DISTINCT CAST(cedula AS string) AS cedula, 
 		fecha_nacimiento
-		from db_thebox.base_censo
-		where cedula is not null 
-		and fecha_nacimiento is not null) a
-		left join (select cedula, fecha_nacimiento from $esquema_temp.tmp_data_total_sin_duplicados) b
-		on a.cedula=b.cedula
-		where b.cedula is null;
+		FROM db_thebox.base_censo
+		WHERE cedula IS NOT NULL 
+		AND fecha_nacimiento IS NOT NULL) a
+		LEFT JOIN (SELECT cedula, fecha_nacimiento FROM $ESQUEMA_TEMP.tmp_data_total_sin_duplicados) b
+		ON a.cedula=b.cedula
+		WHERE b.cedula IS NULL;
 		
-		alter table db_reportes.otc_t_360_general drop if exists partition(fecha_proceso=$fechaeje);
+		ALTER TABLE db_reportes.otc_t_360_general DROP IF EXISTS PARTITION(fecha_proceso=$FECHAEJE);
 		
 		insert into db_reportes.otc_t_360_general partition(fecha_proceso)
 		select 
 		t1.telefono
 		,t1.codigo_plan
-		,(case when t1.estado_abonado not in('baa','bap') then coalesce(pp.usa_app,'no') else 'no' end) as usa_app
-		,(case when t1.estado_abonado not in('baa','bap') then coalesce(pp.usuario_app,'no') else 'no' end) as usuario_app
+		,(CASE WHEN t1.estado_abonado NOT IN('BAA','BAP') THEN COALESCE(pp.usa_app,'NO') ELSE 'NO' END) as usa_app
+		,(CASE WHEN t1.estado_abonado NOT IN('BAA','BAP') THEN COALESCE(pp.usuario_app,'NO') ELSE 'NO' END) as usuario_app
 		,t1.usa_movistar_play
 		,t1.usuario_movistar_play						
 		,t1.fecha_alta
@@ -3624,48 +3479,48 @@ where orden=1;
 		  ,t1.vencimiento_cartera
 		  ,t1.saldo_cartera
 		,t1.fecha_alta_historica	
-		,t1.canal_alta
-		,t1.sub_canal_alta
-		,t1.distribuidor_alta
-		,t1.oficina_alta
-		,t1.portabilidad
-		,t1.operadora_origen
-		,t1.operadora_destino
-		,t1.motivo
-		,t1.fecha_pre_pos
-		,t1.canal_pre_pos
-		,t1.sub_canal_pre_pos
-		,t1.distribuidor_pre_pos
-		,t1.oficina_pre_pos
-		,t1.fecha_pos_pre
-		,t1.canal_pos_pre
-		,t1.sub_canal_pos_pre
-		,t1.distribuidor_pos_pre
-		,t1.oficina_pos_pre
-		,t1.fecha_cambio_plan
-		,t1.canal_cambio_plan
-		,t1.sub_canal_cambio_plan
-		,t1.distribuidor_cambio_plan
-		,t1.oficina_cambio_plan
-		,t1.cod_plan_anterior
-		,t1.des_plan_anterior
-		,t1.tb_descuento
-		,t1.tb_override
-		,t1.delta
-		,t1.canal_movimiento_mes
-		,t1.sub_canal_movimiento_mes
-		,t1.distribuidor_movimiento_mes
-		,t1.oficina_movimiento_mes
-		,t1.portabilidad_movimiento_mes
-		,t1.operadora_origen_movimiento_mes
-		,t1.operadora_destino_movimiento_mes
-		,t1.motivo_movimiento_mes
-		,t1.cod_plan_anterior_movimiento_mes
-		,t1.des_plan_anterior_movimiento_mes
-		,t1.tb_descuento_movimiento_mes
-		,t1.tb_override_movimiento_mes
-		,t1.delta_movimiento_mes
-		,t1.fecha_alta_cuenta
+		,t1.CANAL_ALTA
+		,t1.SUB_CANAL_ALTA
+		,t1.DISTRIBUIDOR_ALTA
+		,t1.OFICINA_ALTA
+		,t1.PORTABILIDAD
+		,t1.OPERADORA_ORIGEN
+		,t1.OPERADORA_DESTINO
+		,t1.MOTIVO
+		,t1.FECHA_PRE_POS
+		,t1.CANAL_PRE_POS
+		,t1.SUB_CANAL_PRE_POS
+		,t1.DISTRIBUIDOR_PRE_POS
+		,t1.OFICINA_PRE_POS
+		,t1.FECHA_POS_PRE
+		,t1.CANAL_POS_PRE
+		,t1.SUB_CANAL_POS_PRE
+		,t1.DISTRIBUIDOR_POS_PRE
+		,t1.OFICINA_POS_PRE
+		,t1.FECHA_CAMBIO_PLAN
+		,t1.CANAL_CAMBIO_PLAN
+		,t1.SUB_CANAL_CAMBIO_PLAN
+		,t1.DISTRIBUIDOR_CAMBIO_PLAN
+		,t1.OFICINA_CAMBIO_PLAN
+		,t1.COD_PLAN_ANTERIOR
+		,t1.DES_PLAN_ANTERIOR
+		,t1.TB_DESCUENTO
+		,t1.TB_OVERRIDE
+		,t1.DELTA
+		,t1.CANAL_MOVIMIENTO_MES
+		,t1.SUB_CANAL_MOVIMIENTO_MES
+		,t1.DISTRIBUIDOR_MOVIMIENTO_MES
+		,t1.OFICINA_MOVIMIENTO_MES
+		,t1.PORTABILIDAD_MOVIMIENTO_MES
+		,t1.OPERADORA_ORIGEN_MOVIMIENTO_MES
+		,t1.OPERADORA_DESTINO_MOVIMIENTO_MES
+		,t1.MOTIVO_MOVIMIENTO_MES
+		,t1.COD_PLAN_ANTERIOR_MOVIMIENTO_MES
+		,t1.DES_PLAN_ANTERIOR_MOVIMIENTO_MES
+		,t1.TB_DESCUENTO_MOVIMIENTO_MES
+		,t1.TB_OVERRIDE_MOVIMIENTO_MES
+		,t1.DELTA_MOVIMIENTO_MES
+		,t1.Fecha_Alta_Cuenta
 		,t1.fecha_inicio_pago_actual
 		,t1.fecha_fin_pago_actual
 		,t1.fecha_inicio_pago_anterior
@@ -3680,52 +3535,52 @@ where orden=1;
 		,t1.dias_total
 		,t1.limite_credito
 		,t1.adendum
-		,(case when t1.estado_abonado not in('baa','bap') then pp.fecha_registro_app else null end) as fecha_registro_app
-		,(case when t1.estado_abonado not in('baa','bap') then pp.perfil else 'no' end) as perfil
-		,(case when t1.estado_abonado not in('baa','bap') then coalesce(wb.usuario_web,'no') else 'no' end) as usuario_web
-		,(case when t1.estado_abonado not in('baa','bap') then wb.fecha_registro_web else null end) as fecha_registro_web
-		--20210629 - se agrega campo fecha nacimiento
-		--20210712 - giovanny cholca, valida que la fecha actual - fecha de nacimiento no sea menor a 18 aã±os, si se cumple colocamos null al a la fecha de nacimiento
+		,(CASE WHEN t1.estado_abonado NOT IN('BAA','BAP') THEN pp.fecha_registro_app ELSE NULL END) as fecha_registro_app
+		,(CASE WHEN t1.estado_abonado NOT IN('BAA','BAP') THEN pp.perfil ELSE 'NO' END) as perfil
+		,(CASE WHEN t1.estado_abonado NOT IN('BAA','BAP') THEN COALESCE(wb.usuario_web,'NO') ELSE 'NO' END) as usuario_web
+		,(CASE WHEN t1.estado_abonado NOT IN('BAA','BAP') THEN wb.fecha_registro_web ELSE NULL END) as fecha_registro_web
+		--20210629 - SE AGREGA CAMPO FECHA NACIMIENTO
+		--20210712 - Giovanny Cholca, valida que la fecha actual - fecha de nacimiento no sea menor a 18 aÃ±os, si se cumple colocamos null al a la fecha de nacimiento
 		,case when round(datediff('$fecha_eje1',coalesce(cast(cs.fecha_nacimiento as varchar(12)),'$fecha_eje1'))/365.25) <18 
 		or round(datediff('$fecha_eje1',coalesce(cast(cs.fecha_nacimiento as varchar(12)),'$fecha_eje1'))/365.25) > 120
 		then null else cs.fecha_nacimiento end as fecha_nacimiento
 		,t1.fecha_proceso
-		from $esquema_temp.tmp_360_general_cierre_prev t1
-		left join $esquema_temp.tmp_360_cierre_correccion_dup t2 on t1.telefono=t2.telefono and t1.account_num=t2.account_num
-		left join $esquema_temp.tmp_360_app_mi_movistar_cierre pp on (t1.telefono=pp.num_telefonico)
-		left join $esquema_temp.tmp_360_web_cierre wb on (t1.customer_ref=wb.cust_ext_ref)
-		--20210629 - se realiza el cruce con la temporal para agregar campo fecha nacimiento
-		left join $esquema_temp.tmp_fecha_nacimiento_mvp cs on t1.identificacion_cliente=cs.cedula;
+		from $ESQUEMA_TEMP.tmp_360_general_cierre_prev t1
+		left join $ESQUEMA_TEMP.tmp_360_cierre_correccion_dup t2 on t1.telefono=t2.telefono and t1.account_num=t2.account_num
+		LEFT JOIN $ESQUEMA_TEMP.tmp_360_app_mi_movistar_cierre pp ON (t1.telefono=pp.num_telefonico)
+		LEFT JOIN $ESQUEMA_TEMP.tmp_360_web_cierre wb ON (t1.customer_ref=wb.cust_ext_ref)
+		--20210629 - SE REALIZA EL CRUCE CON LA TEMPORAL PARA AGREGAR CAMPO FECHA NACIMIENTO
+		LEFT JOIN $ESQUEMA_TEMP.tmp_fecha_nacimiento_mvp cs ON t1.identificacion_cliente=cs.cedula;
 		
-		drop table $esquema_temp.tmp_otc_t_user_sin_duplicados_cierre;
-		drop table $esquema_temp.tmp_360_web_cierre;
-		drop table $esquema_temp.tmp_360_app_mi_movistar_cierre;
-		--20210629 - se agrega drop de las tablas
-		drop table $esquema_temp.tmp_otc_t_r_cim_cont;
-		drop table $esquema_temp.tmp_thebox_base_censo;
-		drop table $esquema_temp.tmp_cim_cont_cedula_duplicada;
-		drop table $esquema_temp.tmp_cim_cont_sin_duplicados;
-		drop table $esquema_temp.tmp_cim_cont_con_fecha_ok;
-		drop table $esquema_temp.tmp_data_total_sin_duplicados;
-		drop table $esquema_temp.tmp_principal_min_fecha;
-		drop table $esquema_temp.tmp_fecha_nacimiento_mvp;" 1>> $logs/$ejecucion_log.log 2>> $logs/$ejecucion_log.log
+		DROP TABLE $ESQUEMA_TEMP.tmp_otc_t_user_sin_duplicados_cierre;
+		DROP TABLE $ESQUEMA_TEMP.tmp_360_web_cierre;
+		DROP TABLE $ESQUEMA_TEMP.tmp_360_app_mi_movistar_cierre;
+		--20210629 - SE AGREGA DROP DE LAS TABLAS
+		drop table $ESQUEMA_TEMP.tmp_otc_t_r_cim_cont;
+		drop table $ESQUEMA_TEMP.tmp_thebox_base_censo;
+		drop table $ESQUEMA_TEMP.tmp_cim_cont_cedula_duplicada;
+		drop table $ESQUEMA_TEMP.tmp_cim_cont_sin_duplicados;
+		drop table $ESQUEMA_TEMP.tmp_cim_cont_con_fecha_ok;
+		drop table $ESQUEMA_TEMP.tmp_data_total_sin_duplicados;
+		drop table $ESQUEMA_TEMP.tmp_principal_min_fecha;
+		drop table $ESQUEMA_TEMP.tmp_fecha_nacimiento_mvp;" 1>> $LOGS/$EJECUCION_LOG.log 2>> $LOGS/$EJECUCION_LOG.log
 
-			# verificacion de creacion de archivo
+			# Verificacion de creacion de archivo
 			if [ $? -eq 0 ]; then
-				log i "hive" $rc  " fin del ajuste al parque global" $paso
+				log i "HIVE" $rc  " Fin del AJUSTE AL PARQUE GLOBAL" $PASO
 				else
 				(( rc = 109)) 
-				log e "hive" $rc  " fallo al ajustar al parque global" $paso
+				log e "HIVE" $rc  " Fallo al AJUSTAR AL PARQUE GLOBAL" $PASO
 				exit $rc
 			fi
 			
-	log i "hive" $rc  " fin ejecucion querys para ajustar al parque global" $paso
+	log i "HIVE" $rc  " FIN EJECUCION QUERYS PARA AJUSTAR AL PARQUE GLOBAL" $PASO
 		
-		fin=$(date +%s)
-		dif=$(echo "$fin - $inicio" | bc)
-		total=$(printf '%d:%d:%d\n' $(($dif/3600)) $(($dif%3600/60)) $(($dif%60)))
-		stat "insert tabla hive final" $total 0 0
-	paso=10
+		FIN=$(date +%s)
+		DIF=$(echo "$FIN - $INICIO" | bc)
+		TOTAL=$(printf '%d:%d:%d\n' $(($DIF/3600)) $(($DIF%3600/60)) $(($DIF%60)))
+		stat "Insert tabla hive final" $TOTAL 0 0
+	PASO=10
 	fi
 	
 exit $rc 

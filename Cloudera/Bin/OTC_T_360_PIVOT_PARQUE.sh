@@ -120,28 +120,28 @@ day="01"
 fechaMes=$year$month
 fechaIniMes=$year$month$day                            #Formato YYYYMMDD
 fecha=`date "+%Y-%m-%d"`
-let fecha_hoy=$fecha
+fecha_hoy=$fecha
 fecha_proc=`date -d "${VAL_FECHA_PROCESO} +1 day"  +"%Y%m%d"`
 
-let fecha_proc1=$fecha_proc
+fecha_proc1=$fecha_proc
 
 fecha_inico_mes_1_1=`date '+%Y-%m-%d' -d "$fechaIniMes"`
-let fechainiciomes=$fecha_inico_mes_1_1
+fechainiciomes=$fecha_inico_mes_1_1
 fechamas1_1=`date '+%Y%m%d' -d "$VAL_FECHA_PROCESO+1 day"`
-let fechamas1=$fechamas1_1*1
+fechamas1=$(expr $fechamas1_1 \* 1)
 
 fechaInimenos2mes_1=`date '+%Y%m%d' -d "$fechaIniMes-2 month"`
-let fechaInimenos2mes=$fechaInimenos2mes_1*1
+fechaInimenos2mes=$(expr $fechaInimenos2mes_1 \* 1)
 fechaInimenos3mes_1=`date '+%Y%m%d' -d "$fechaIniMes-3 month"`
-let fechaInimenos3mes=$fechaInimenos3mes_1*1
+fechaInimenos3mes=$(expr $fechaInimenos3mes_1 \* 1)
 fechamenos1_1=`date '+%Y%m%d' -d "$VAL_FECHA_PROCESO-1 day"`
-let fecha_menos1=$fechamenos1_1
+fecha_menos1=$fechamenos1_1
 fechamenos5_1=`date '+%Y%m%d' -d "$VAL_FECHA_PROCESO-10 day"`
-let fechamenos5=$fechamenos5_1*1
+fechamenos5=$(expr $fechamenos5_1 \* 1)
 fechaeje1=`date '+%Y-%m-%d' -d "$VAL_FECHA_PROCESO"`
-let fecha_form_eje=$fechaeje1
+fecha_form_eje=$fechaeje1
 fecha_inac_1=`date '+%Y%m%d' -d "$fecha_inico_mes_1_1-1 day"`
-let fecha_foto_inac=$fecha_inac_1
+fecha_foto_inac=$fecha_inac_1
 
 fecha_alt_ini=`date '+%Y-%m-%d' -d "$fecha_proc"`
 ultimo_dia_mes_ant=`date -d "${fechaIniMes} -1 day"  +"%Y%m%d"`
@@ -274,7 +274,7 @@ $RUTA_PYTHON/otc_t_360_pivot_parque_2.py \
 -fec_inac_1 $fecha_inac_1 \
 -fec_tmstmp '$fecha_tmstmp' 2>&1 &>> $VAL_LOG_EJECUCION
 
-# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
+	# Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
 error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO EXISTE TABLA|cannot resolve|Non-ASCII character|UnicodeEncodeError:|can not accept object|pyspark.sql.utils.ParseException|AnalysisException:|NameError:|IndentationError:|Permission denied:|ValueError:|ERROR:|error:|unrecognized arguments:|No such file or directory|Failed to connect|Could not open client' $log_Extraccion | wc -l`
 	if [ $error_spark -eq 0 ];then
 		echo "==== OK - La ejecucion del archivo spark otc_t_360_pivot_parque_2.py es EXITOSO ===="`date '+%H%M%S'` 2>&1 &>> $VAL_LOG_EJECUCION
@@ -319,21 +319,10 @@ error_spark=`egrep 'An error occurred|Caused by:|ERROR: Creando df de query|NO E
 		ETAPA=4
 		#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
 		echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Se procesa la ETAPA 3 con EXITO " 2>&1 &>> $VAL_LOG_EJECUCION
-		`mysql -N  <<<"update params set valor='4' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
+		`mysql -N  <<<"update params set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
 	else		
 		echo "==== ERROR: - En la ejecucion del archivo spark otc_t_360_pivot_parque_3.py ====" 2>&1 &>> $VAL_LOG_EJECUCION
 		exit 1
 	fi
 fi
 
-if [ "$ETAPA" = "4" ]; then
-###########################################################################################################################################################
-echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Finalizar el proceso " 2>&1 &>> $VAL_LOG_EJECUCION
-###########################################################################################################################################################
-						   
-	#SE REALIZA EL SETEO DE LA ETAPA EN LA TABLA params
-	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El Proceso termina de manera exitosa " 2>&1 &>> $VAL_LOG_EJECUCION
-	`mysql -N  <<<"update params set valor='1' where ENTIDAD = '${ENTIDAD}' and parametro = 'ETAPA';"`
-
-	echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: El proceso OTC_T_360_PIVOT_PARQUE finaliza correctamente " 2>&1 &>> $VAL_LOG_EJECUCION
-fi

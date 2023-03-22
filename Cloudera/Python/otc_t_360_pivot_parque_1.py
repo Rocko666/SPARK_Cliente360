@@ -124,7 +124,7 @@ try:
         .config("spark.sql.broadcastTimeout", "36000") \
         .config("hive.exec.dynamic.partition", "true") \
         .config("hive.exec.dynamic.partition.mode", "nonstrict") \
-        .config("spark.yarn.queue", "default") \
+        .config("spark.yarn.queue", "capa_semantica") \
         .config("hive.enforce.bucketing", "false")\
 	    .config("hive.enforce.sorting", "false")\
         .getOrCreate()
@@ -209,15 +209,15 @@ try:
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(vTPP01)))
-    print(etq_sql(qyr_tmp_360_alta_tmp(vTAltasBi,vIFechaProceso)))
-    df01=spark.sql(qyr_tmp_360_alta_tmp(vTAltasBi,vIFechaProceso))
+    print(etq_sql(qyr_tmp_360_alta_tmp(vTAltasBi,fec_proc)))
+    df01=spark.sql(qyr_tmp_360_alta_tmp(vTAltasBi,fec_proc))
     if df01.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df01'))))
     else:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP01)))
-            df01.repartition(1).write.mode('overwrite').saveAsTable(vTPP01)
+            df01.write.mode('overwrite').saveAsTable(vTPP01)
             df01.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP01,str(df01.count())))) 
             te_step_tbl = datetime.now()
@@ -237,15 +237,15 @@ try:
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(vTPP02)))
-    print(etq_sql(qyr_tmp_360_transfer_in_pp_tmp(vTTransferOutBi,vIFechaProceso)))
-    df02=spark.sql(qyr_tmp_360_transfer_in_pp_tmp(vTTransferOutBi,vIFechaProceso))
+    print(etq_sql(qyr_tmp_360_transfer_in_pp_tmp(vTTransferOutBi,fec_proc)))
+    df02=spark.sql(qyr_tmp_360_transfer_in_pp_tmp(vTTransferOutBi,fec_proc))
     if df02.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df02'))))
     else:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP02)))
-            df02.repartition(1).write.mode('overwrite').saveAsTable(vTPP02)
+            df02.write.mode('overwrite').saveAsTable(vTPP02)
             df02.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP02,str(df02.count())))) 
             te_step_tbl = datetime.now()
@@ -265,15 +265,15 @@ try:
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(vTPP03)))
-    print(etq_sql(qyr_tmp_360_transfer_in_pos_tmp(vTTransferInBi,vIFechaProceso)))
-    df03=spark.sql(qyr_tmp_360_transfer_in_pos_tmp(vTTransferInBi,vIFechaProceso))
+    print(etq_sql(qyr_tmp_360_transfer_in_pos_tmp(vTTransferInBi,fec_proc)))
+    df03=spark.sql(qyr_tmp_360_transfer_in_pos_tmp(vTTransferInBi,fec_proc))
     if df03.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df03'))))
     else:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP03)))
-            df03.repartition(1).write.mode('overwrite').saveAsTable(vTPP03)
+            df03.write.mode('overwrite').saveAsTable(vTPP03)
             df03.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP03,str(df03.count())))) 
             te_step_tbl = datetime.now()
@@ -293,15 +293,15 @@ try:
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(vTPP04)))
-    print(etq_sql(qyr_tmp_360_upsell_tmp(vTCPBi,vIFechaProceso)))
-    df04=spark.sql(qyr_tmp_360_upsell_tmp(vTCPBi,vIFechaProceso))
+    print(etq_sql(qyr_tmp_360_upsell_tmp(vTCPBi,fec_proc)))
+    df04=spark.sql(qyr_tmp_360_upsell_tmp(vTCPBi,fec_proc))
     if df04.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df04'))))
     else:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP04)))
-            df04.repartition(1).write.mode('overwrite').saveAsTable(vTPP04)
+            df04.write.mode('overwrite').saveAsTable(vTPP04)
             df04.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP04,str(df04.count())))) 
             te_step_tbl = datetime.now()
@@ -321,15 +321,15 @@ try:
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(vTPP05)))
-    print(etq_sql(qyr_tmp_360_downsell_tmp(vTCPBi,vIFechaProceso)))
-    df05=spark.sql(qyr_tmp_360_downsell_tmp(vTCPBi,vIFechaProceso))
+    print(etq_sql(qyr_tmp_360_downsell_tmp(vTCPBi,fec_proc)))
+    df05=spark.sql(qyr_tmp_360_downsell_tmp(vTCPBi,fec_proc))
     if df05.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df05'))))
     else:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP05)))
-            df05.repartition(1).write.mode('overwrite').saveAsTable(vTPP05)
+            df05.write.mode('overwrite').saveAsTable(vTPP05)
             df05.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP05,str(df05.count())))) 
             te_step_tbl = datetime.now()
@@ -349,15 +349,15 @@ try:
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(vTPP06)))
-    print(etq_sql(qyr_tmp_360_misma_tarifa_tmp(vTCPBi,vIFechaProceso)))
-    df06=spark.sql(qyr_tmp_360_misma_tarifa_tmp(vTCPBi,vIFechaProceso))
+    print(etq_sql(qyr_tmp_360_misma_tarifa_tmp(vTCPBi,fec_proc)))
+    df06=spark.sql(qyr_tmp_360_misma_tarifa_tmp(vTCPBi,fec_proc))
     if df06.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df06'))))
     else:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP06)))
-            df06.repartition(1).write.mode('overwrite').saveAsTable(vTPP06)
+            df06.write.mode('overwrite').saveAsTable(vTPP06)
             df06.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP06,str(df06.count())))) 
             te_step_tbl = datetime.now()
@@ -385,7 +385,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP07)))
-            df07.repartition(1).write.mode('overwrite').saveAsTable(vTPP07)
+            df07.write.mode('overwrite').saveAsTable(vTPP07)
             df07.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP07,str(df07.count())))) 
             te_step_tbl = datetime.now()
@@ -413,7 +413,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP08)))
-            df08.repartition(1).write.mode('overwrite').saveAsTable(vTPP08)
+            df08.write.mode('overwrite').saveAsTable(vTPP08)
             df08.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP08,str(df08.count())))) 
             te_step_tbl = datetime.now()
@@ -441,7 +441,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP09)))
-            df09.repartition(1).write.mode('overwrite').saveAsTable(vTPP09)
+            df09.write.mode('overwrite').saveAsTable(vTPP09)
             df09.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP09,str(df09.count())))) 
             te_step_tbl = datetime.now()
@@ -461,15 +461,15 @@ try:
     print(etq_info(VStp))
     print(lne_dvs())
     print(etq_info(msg_i_create_hive_tmp(vTPP10)))
-    print(etq_sql(qyr_tmp_360_baja_tmp(vTBajasBi, vIFechaProceso)))
-    df10=spark.sql(qyr_tmp_360_baja_tmp(vTBajasBi, vIFechaProceso))
+    print(etq_sql(qyr_tmp_360_baja_tmp(vTBajasBi, fec_proc)))
+    df10=spark.sql(qyr_tmp_360_baja_tmp(vTBajasBi, fec_proc))
     if df10.rdd.isEmpty():
         exit(etq_nodata(msg_e_df_nodata(str('df10'))))
     else:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP10)))
-            df10.repartition(1).write.mode('overwrite').saveAsTable(vTPP10)
+            df10.write.mode('overwrite').saveAsTable(vTPP10)
             df10.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP10,str(df10.count())))) 
             te_step_tbl = datetime.now()
@@ -497,7 +497,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP11)))
-            df11.repartition(1).write.mode('overwrite').saveAsTable(vTPP11)
+            df11.write.mode('overwrite').saveAsTable(vTPP11)
             df11.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP11,str(df10.count())))) 
             te_step_tbl = datetime.now()
@@ -525,7 +525,7 @@ try:
         try:
             ts_step_tbl = datetime.now()
             print(etq_info(msg_i_insert_hive(vTPP12)))
-            df12.repartition(1).write.mode('overwrite').saveAsTable(vTPP12)
+            df12.write.mode('overwrite').saveAsTable(vTPP12)
             df12.printSchema()
             print(etq_info(msg_t_total_registros_hive(vTPP12,str(df12.count())))) 
             te_step_tbl = datetime.now()
