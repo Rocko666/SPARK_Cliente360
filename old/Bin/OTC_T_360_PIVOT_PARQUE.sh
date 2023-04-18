@@ -490,7 +490,23 @@ group by PHONE_ID,COUNTED_DAYS ;" 2>> $LOGS/$EJECUCION_LOG.log
 # EJECUCION DE CONSULTAS PARA EXTRACCIÃ“N DE DATOS RAW CON PYSPARK
 #------------------------------------------------------
   # Ejecucion Proceso SPARK
-  $VAL_RUTA_SPARK --master yarn --executor-memory 2G --num-executors 80 --executor-cores 3 --driver-memory 2G $RUTA/Python/$VAL_NOMBRE_PROCESO.py -fec_alt_ini $fecha_alt_ini -fec_alt_fin $fecha_alt_fin -fec_eje_pv $FECHAEJE -fec_proc $fecha_proc -fec_menos_5 $fechamenos5 -fec_mas_1 $fechamas1 -fec_alt_dos_meses_ant_fin $fecha_alt_dos_meses_ant_fin -fec_alt_dos_meses_ant_ini $fecha_alt_dos_meses_ant_ini -fec_ini_mes $fechaIniMes -fec_inac_1 $fecha_inac_1 &> $LOGS/$EJECUCION_LOG.log
+  $VAL_RUTA_SPARK 
+  --master yarn 
+  --executor-memory 2G 
+  --num-executors 80 
+  --executor-cores 3 
+  --driver-memory 2G 
+  $RUTA/Python/$VAL_NOMBRE_PROCESO.py 
+  -fec_alt_ini $fecha_alt_ini 
+  -fec_alt_fin $fecha_alt_fin 
+  -fec_eje_pv $FECHAEJE 
+  -fec_proc $fecha_proc 
+  -fec_menos_5 $fechamenos5 
+  -fec_mas_1 $fechamas1 
+  -fec_alt_dos_meses_ant_fin $fecha_alt_dos_meses_ant_fin 
+  -fec_alt_dos_meses_ant_ini $fecha_alt_dos_meses_ant_ini 
+  -fec_ini_mes $fechaIniMes 
+  -fec_inac_1 $fecha_inac_1 &> $LOGS/$EJECUCION_LOG.log
 
   # Validamos el LOG de la ejecucion, si encontramos errores finalizamos con error >0
   VAL_ERRORES=`grep 'Error PySpark:\|error:' $LOGS/$EJECUCION_LOG.log | wc -l`
