@@ -13,7 +13,7 @@ set -e
 # FECHA  		AUTOR     		DESCRIPCION MOTIVO														                                
 # 2022-11-09	Ricardo Jerez (Softconsulting)	BIGD-833
 # 2022-11-17	Diego Cuasapaz (Softconsulting) BIGD-833 - Cambios en la shell parametrizando  
-# 2023-01-16	Cristian Ortiz (Softconsulting) BIGD-677 - Reing Cliente360 (Migracion a Spark)                                                                                                 
+# 2023-01-16	Cristian Ortiz (Softconsulting) BIGD-60 - Reing Cliente360 (Migracion a Spark)                                                                                                 
 #########################################################################################################
 
 ##############

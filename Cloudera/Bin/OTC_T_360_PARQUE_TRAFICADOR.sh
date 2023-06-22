@@ -11,7 +11,7 @@ set -e
 #########################################################################################################
 # MODIFICACIONES																						                                            
 # FECHA  		AUTOR     		DESCRIPCION MOTIVO														                                
-# 2023-01-10    Cristian Ortiz (Softconsulting) BIGD-677 - Reing Cliente360 (Migracion a Spark)                                                                                       
+# 2023-01-10    Cristian Ortiz (Softconsulting) BIGD-60 - Reing Cliente360 (Migracion a Spark)                                                                                       
 #########################################################################################################
 
 ##############
