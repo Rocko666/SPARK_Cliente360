@@ -193,9 +193,9 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1: Extraer datos desde hive " 2>&1
 ###########################################################################################################################################################
 
 $VAL_RUTA_SPARK \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --name $ENTIDAD \
 --master $VAL_ETP01_MASTER \
 --driver-memory $VAL_ETP01_DRIVER_MEMORY \
@@ -252,9 +252,9 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2: Ejecucion del segundo proceso s
 ###########################################################################################################################################################
 
 $VAL_RUTA_SPARK \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --name $ENTIDAD \
 --master $VAL_ETP02_MASTER \
 --driver-memory $VAL_ETP02_DRIVER_MEMORY \
@@ -294,9 +294,9 @@ if [ "$ETAPA" = "3" ]; then
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 3: Ejecucion del tercer proceso spark " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 $VAL_RUTA_SPARK \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --name $ENTIDAD \
 --master $VAL_ETP02_MASTER \
 --driver-memory $VAL_ETP02_DRIVER_MEMORY \

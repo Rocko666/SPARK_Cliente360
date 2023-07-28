@@ -21,9 +21,9 @@ def nme_tbl_tmp_otc_t_360_rtd_04(vSchema):
 
 
 /usr/bin/spark-submit \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --name OTC_T_360_RTD \
 --master yarn \
 --driver-memory 16G \

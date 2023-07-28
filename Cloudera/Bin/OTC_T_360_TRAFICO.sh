@@ -105,9 +105,9 @@ if [ "$ETAPA" = "1" ]; then
 echo "**********INICIO DE EJECUCION PYSPARK********" 2>&1 &>> $VAL_LOG_EJECUCION
 
 $VAL_RUTA_SPARK \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --master yarn \
 --executor-memory 2G \
 --num-executors 8 \
@@ -143,9 +143,9 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Reingenieria del proceso $ENTIDAD (Queri
 ###########################################################################################################################################################
 
 $VAL_RUTA_SPARK \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --name $ENTIDAD \
 --master $VAL_MASTER \
 --driver-memory $VAL_DRIVER_MEMORY \
@@ -180,9 +180,9 @@ if [ "$ETAPA" = "3" ]; then
 echo "**********INICIO DE PROCESO PYSPARK PREFERENCIA DE CONSUMO********" 2>&1 &>> $VAL_LOG_EJECUCION
 
 $VAL_RUTA_SPARK \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --master yarn \
 --executor-memory 2G \
 --num-executors 8 \
@@ -215,9 +215,9 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Reingenieria del proceso $ENTIDAD (Inser
 ###########################################################################################################################################################
 
 $VAL_RUTA_SPARK \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --name $ENTIDAD \
 --master $VAL_MASTER2 \
 --driver-memory $VAL_DRIVER_MEMORY2 \

@@ -128,9 +128,9 @@ $VAL_RUTA_SPARK \
 --conf spark.datasource.hive.warehouse.user.name="rgenerator" \
 --py-files /opt/cloudera/parcels/CDH/lib/hive_warehouse_connector/pyspark_hwc-1.0.0.7.1.7.1000-141.zip \
 --conf spark.sql.hive.hiveserver2.jdbc.url="jdbc:hive2://quisrvbigdata1.otecel.com.ec:2181,quisrvbigdata2.otecel.com.ec:2181,quisrvbigdata10.otecel.com.ec:2181,quisrvbigdata11.otecel.com.ec:2181/default;serviceDiscoveryMode=zooKeeper;zooKeeperNamespace=hiveserver2" \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --name $ENTIDAD \
 --master $VAL_MASTER \
 --driver-memory $VAL_DRIVER_MEMORY \

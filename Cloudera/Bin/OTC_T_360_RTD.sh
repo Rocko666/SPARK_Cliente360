@@ -154,9 +154,9 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1: Extraer datos desde hive " 2>&1
 ###########################################################################################################################################################
 
 $VAL_RUTA_SPARK \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --name $ENTIDAD \
 --master $VAL_ETP01_MASTER \
 --driver-memory $VAL_ETP01_DRIVER_MEMORY \
@@ -199,9 +199,9 @@ if [ "$ETAPA" = "2" ]; then
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 2: Exportar a Oracle " 2>&1 &>> $VAL_LOG_EJECUCION
 ###########################################################################################################################################################
 $VAL_RUTA_SPARK \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --name $ENTIDAD \
 --master $VAL_ETP02_MASTER \
 --driver-memory $VAL_ETP02_DRIVER_MEMORY \

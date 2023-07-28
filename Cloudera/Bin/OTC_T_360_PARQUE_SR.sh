@@ -151,9 +151,9 @@ if [ "$ETAPA" = "1" ]; then
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: ETAPA 1: Extraer datos desde hive " 2>&1 &>> $VAL_LOG
 ###########################################################################################################################################################
 $VAL_RUTA_SPARK \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --name $ENTIDAD \
 --master $VAL_MASTER \
 --driver-memory $VAL_DRIVER_MEMORY \
@@ -192,9 +192,9 @@ echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando la exportacion a Oracle en spa
 ###################################################################################################################
 
 $VAL_RUTA_SPARK \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --master $VAL_MASTER_EXPORT \
 --name $ENTIDAD \
 --driver-memory $VAL_DRIVER_MEMORY \

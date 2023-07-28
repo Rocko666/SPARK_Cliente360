@@ -219,9 +219,9 @@ if [ "$ETAPA" = "1" ]; then
 echo `date '+%Y-%m-%d %H:%M:%S'`" INFO: Iniciando la importacion en spark" 2>&1 &>> $VAL_LOG
 ###################################################################################################################
 $VAL_RUTA_SPARK \
---conf spark.ui.enabled=false \
+ 
 --conf spark.shuffle.service.enabled=false \
---conf spark.dynamicAllocation.enabled=false \
+
 --master $VAL_MASTER \
 --name $ENTIDAD \
 --driver-memory $VAL_DRIVER_MEMORY \
